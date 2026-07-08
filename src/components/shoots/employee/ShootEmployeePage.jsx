@@ -9,6 +9,7 @@ import {
   Layers, 
   Link2, 
   AlertTriangle, 
+  AlertOctagon,
   CheckCircle2, 
   ChevronRight, 
   Loader2, 
@@ -24,7 +25,8 @@ const ShootEmployeePage = () => {
   // Modal States
   const [selectedTask, setSelectedTask] = useState(null)
   const [actionType, setActionType] = useState('submit') // 'submit' | 'unable'
-  const [submissionUrl, setSubmissionUrl] = useState('')
+  const [submissionLinksRaw, setSubmissionLinksRaw] = useState('')
+  const [submissionNote, setSubmissionNote] = useState('')
   const [unableReason, setUnableReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -49,11 +51,28 @@ const ShootEmployeePage = () => {
     }
   }
 
-  // Open Action Modal with corrected parameter references from schema tracking mappings
+  // Determine current lifecycle status of a subtask
+  const getStatus = (subtask) => {
+    if (subtask.status) return subtask.status
+    if (subtask.submissionLinks?.length > 0) return 'SUBMITTED'
+    if (subtask.unableToSubmitReason) return 'REJECTED'
+    return 'PENDING'
+  }
+
+  // Predicate: checks if a deliverable requires immediate attention/resubmission
+  const needsResubmission = (subtask) => getStatus(subtask) === 'REJECTED'
+
+  const totalNeedingResubmission = shoots.reduce(
+    (sum, shoot) => sum + (shoot.subtasks?.filter(needsResubmission).length || 0),
+    0
+  )
+
+  // Open modal container with operational mappings
   const openActionModal = (shootId, taskId, subtask, type) => {
     setSelectedTask({ shootId, taskId, subtask })
     setActionType(type)
-    setSubmissionUrl('')
+    setSubmissionLinksRaw(subtask.submissionLinks ? subtask.submissionLinks.join(', ') : '')
+    setSubmissionNote(subtask.submissionNote || '')
     setUnableReason('')
   }
 
@@ -65,15 +84,32 @@ const ShootEmployeePage = () => {
     const subtaskId = subtask.id
 
     if (!shootId || !taskId || !subtaskId) {
-      alert("Error: Missing parameters required for delivery tracking sequence framework details.")
+      alert("Error: Missing parameters required for delivery tracking operations.")
       return
     }
-    
-    setSubmitting(true)
 
-    const payload = actionType === 'submit' 
-      ? { submissionLinks: [submissionUrl.trim()] }
-      : { unableToSubmitReason: unableReason.trim() }
+    let payload
+
+    if (actionType === 'submit') {
+      const parsedLinks = submissionLinksRaw
+        .split(',')
+        .map(link => link.trim())
+        .filter(link => link.length > 0)
+
+      if (parsedLinks.length === 0) {
+        alert('Please provide at least one submission link.')
+        return
+      }
+
+      payload = {
+        submissionLinks: parsedLinks,
+        note: submissionNote.trim() || undefined
+      }
+    } else {
+      payload = { unableToSubmitReason: unableReason.trim() }
+    }
+
+    setSubmitting(true)
 
     try {
       const response = await API.post(
@@ -119,8 +155,13 @@ const ShootEmployeePage = () => {
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 p-6 md:p-10 font-sans selection:bg-indigo-100">
       <header className="mb-8 max-w-5xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
           My Shoots
+          {totalNeedingResubmission > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 text-xs font-bold text-white bg-rose-500 rounded-full" title="Deliverables rejected — resubmission needed">
+              {totalNeedingResubmission}
+            </span>
+          )}
         </h1>
         <p className="text-xs text-slate-500 mt-1">Manage, monitor, and submit your content deliverables dynamically.</p>
       </header>
@@ -134,22 +175,29 @@ const ShootEmployeePage = () => {
       ) : (
         <div className="max-w-5xl mx-auto space-y-6">
           {shoots.map((shoot) => {
-            // EXPLICIT ALIGNMENT: workspaceId mapped to shoot id, shoot.id mapped to taskId setup
             const currentShootId = shoot.workspaceId;
             const currentTaskId = shoot.id;
+            const shootNeedingResubmissionCount = shoot.subtasks?.filter(needsResubmission).length || 0;
             
             return (
               <div 
                 key={currentTaskId} 
                 className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm"
               >
-                {/* Shoot Top Details Panel */}
+                {/* Header Information Section */}
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                   <div className="space-y-1">
                     <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700">
                       {shoot.workspaceName || 'Shoot Area'}
                     </span>
-                    <h2 className="text-lg font-bold text-slate-900 tracking-tight pt-1">{shoot.title}</h2>
+                    <h2 className="text-lg font-bold text-slate-900 tracking-tight pt-1 flex items-center gap-2">
+                      {shoot.title}
+                      {shootNeedingResubmissionCount > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-rose-500 rounded-full" title="Deliverables rejected — resubmission needed">
+                          {shootNeedingResubmissionCount}
+                        </span>
+                      )}
+                    </h2>
                     <p className="text-xs text-slate-500 leading-relaxed max-w-sm">{shoot.description}</p>
                   </div>
 
@@ -177,7 +225,7 @@ const ShootEmployeePage = () => {
                     )}
                   </div>
 
-                  {/* Target Deliverables Metrics Layout */}
+                  {/* Operational Benchmarks Tracker */}
                   <div className="flex flex-wrap md:justify-end gap-2">
                     <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center min-w-[75px] shadow-xs">
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pics Goal</span>
@@ -194,13 +242,14 @@ const ShootEmployeePage = () => {
                   </div>
                 </div>
 
-                {/* Subtasks Tracker Timeline */}
+                {/* Breakdown Matrix of Subtasks */}
                 <div className="p-6 bg-white space-y-3">
                   <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Required Subtasks Breakdown</h3>
                   
                   {shoot.subtasks?.map((subtask) => {
-                    const isSubmitted = subtask.submissionLinks?.length > 0
-                    const isUnable = !!subtask.unableToSubmitReason
+                    const status = getStatus(subtask)
+                    const isUnable = !!subtask.unableToSubmitReason && status !== 'REJECTED'
+                    const rejectionReason = subtask.reviewReason || subtask.reason || subtask.rejectionReason
                     const currentSubtaskId = subtask.id;
 
                     return (
@@ -217,10 +266,25 @@ const ShootEmployeePage = () => {
                               {subtask.type} {subtask.videoType ? `(${subtask.videoType})` : ''}
                             </span>
 
-                            {/* Status Flags */}
-                            {isSubmitted && (
+                            {/* Lifecycle Status Indicators */}
+                            {status === 'APPROVED' && (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Submitted
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Approved
+                              </span>
+                            )}
+                            {status === 'SUBMITTED' && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
+                                <Clock className="w-3 h-3 text-amber-500" /> Awaiting Review
+                              </span>
+                            )}
+                            {status === 'REJECTED' && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                                <AlertOctagon className="w-3 h-3 text-rose-500" /> Rejected — Resubmit
+                              </span>
+                            )}
+                            {status === 'DRAFT' && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                <Layers className="w-3 h-3 text-slate-400" /> Draft / Pending
                               </span>
                             )}
                             {isUnable && (
@@ -231,7 +295,7 @@ const ShootEmployeePage = () => {
                           </div>
                           <p className="text-xs text-slate-500 max-w-2xl">{subtask.description}</p>
 
-                          {/* References */}
+                          {/* Reference Material Access Links */}
                           {subtask.referenceLinks?.length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-1">
                               {subtask.referenceLinks.map((ref, idx) => (
@@ -248,17 +312,32 @@ const ShootEmployeePage = () => {
                             </div>
                           )}
 
-                          {/* Submission Link Display */}
-                          {isSubmitted && (
-                            <div className="mt-2 bg-white p-2 rounded-lg border border-slate-200 text-[11px] inline-block max-w-md truncate shadow-2xs">
-                              <span className="text-slate-400 font-medium">Deliverable Vector: </span>
-                              <a href={subtask.submissionLinks[0]} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline font-semibold">
-                                {subtask.submissionLinks[0]}
-                              </a>
+                          {/* Render Existing Submissions Content */}
+                          {subtask.submissionLinks?.length > 0 && (status === 'SUBMITTED' || status === 'APPROVED' || status === 'REJECTED') && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {subtask.submissionLinks.map((link, idx) => (
+                                <a
+                                  key={idx}
+                                  href={link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 text-[11px] text-emerald-600 hover:underline font-semibold shadow-2xs truncate max-w-[220px]"
+                                >
+                                  Deliverable {idx + 1}
+                                </a>
+                              ))}
                             </div>
                           )}
 
-                          {/* Failure Reason Display */}
+                          {/* Review Framework / Correction Alerts */}
+                          {status === 'REJECTED' && rejectionReason && (
+                            <div className="mt-2 bg-rose-50/60 px-2.5 py-1 rounded-lg border border-rose-100 text-[11px] inline-block">
+                              <span className="text-rose-700 font-bold">Rejection Reason: </span>
+                              <span className="text-slate-600 font-medium">{rejectionReason}</span>
+                            </div>
+                          )}
+
+                          {/* Unsubmitted Constraints Reason Output */}
                           {isUnable && (
                             <div className="mt-2 bg-rose-50/60 px-2.5 py-1 rounded-lg border border-rose-100 text-[11px] inline-block">
                               <span className="text-rose-700 font-bold">Reason for Unsubmit: </span>
@@ -267,8 +346,8 @@ const ShootEmployeePage = () => {
                           )}
                         </div>
 
-                        {/* Interactive Controls */}
-                        {!isSubmitted && !isUnable && (
+                        {/* Interactive Workflow Controls */}
+                        {(status === 'PENDING' || status === 'DRAFT' || status === 'SUBMITTED' || status === 'REJECTED') && (
                           <div className="flex items-center gap-2 self-stretch md:self-auto justify-end border-t border-slate-100 md:border-0 pt-2 md:pt-0 shrink-0">
                             <button
                               type="button"
@@ -282,7 +361,12 @@ const ShootEmployeePage = () => {
                               onClick={() => openActionModal(currentShootId, currentTaskId, subtask, 'submit')}
                               className="px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition flex items-center gap-1"
                             >
-                              Submit Deliverable <ChevronRight className="w-3 h-3" />
+                              {status === 'REJECTED' 
+                                ? 'Resubmit Deliverable' 
+                                : status === 'SUBMITTED' 
+                                ? 'Update Submission' 
+                                : 'Submit Deliverable'} 
+                              <ChevronRight className="w-3 h-3" />
                             </button>
                           </div>
                         )}
@@ -296,12 +380,11 @@ const ShootEmployeePage = () => {
         </div>
       )}
 
-      {/* Action Workspace Modal Container */}
+      {/* Submission & Action Dialogue Drawer */}
       {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
           <div className="bg-white border border-slate-100 rounded-2xl w-full max-w-md shadow-xl overflow-hidden transform scale-100 transition-all">
             
-            {/* Header */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">
@@ -318,23 +401,37 @@ const ShootEmployeePage = () => {
               </button>
             </div>
 
-            {/* Form Input Matrix */}
             <form onSubmit={handleModalSubmit} className="p-5 space-y-4">
               {actionType === 'submit' ? (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Submission Deliverable Asset URL
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://docs.google.com/spreadsheets/d/... or shared cloud link"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition"
-                    value={submissionUrl}
-                    onChange={(e) => setSubmissionUrl(e.target.value)}
-                  />
-                  <p className="text-[11px] text-slate-400 font-medium">Provide complete assets deployment paths (Google Sheets, Drive, Frame.io, etc.).</p>
-                </div>
+                <>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Submission Deliverable Links
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="https://docs.google.com/..., https://drive.google.com/..."
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition"
+                      value={submissionLinksRaw}
+                      onChange={(e) => setSubmissionLinksRaw(e.target.value)}
+                    />
+                    <p className="text-[11px] text-slate-400 font-medium">Separate multiple links with commas (Google Sheets, Drive, Frame.io, etc.).</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Note (optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Any context for the reviewing manager..."
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 resize-none transition"
+                      value={submissionNote}
+                      onChange={(e) => setSubmissionNote(e.target.value)}
+                    />
+                  </div>
+                </>
               ) : (
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -352,7 +449,6 @@ const ShootEmployeePage = () => {
                 </div>
               )}
 
-              {/* Controls Footer */}
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
