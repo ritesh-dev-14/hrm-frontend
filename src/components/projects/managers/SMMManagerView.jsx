@@ -548,8 +548,9 @@ const SMMManagerView = ({ projectId }) => {
         moodBoardLink: sheetMeta.moodBoardLink.trim() || null,
         days: activeDaysPayload.map((day) => ({
           date: day.date,
-          reelType: day.reelType,
-          postType: day.postType,
+          // Normalise values: backend expects either "SHOOT", "AI" or null for postType/reelType
+          reelType: day.reelType && day.reelType !== "NONE" ? day.reelType : null,
+          postType: day.postType && day.postType !== "NONE" ? day.postType : null,
           title: day.title || "",
           videoType: day.videoType || "HORIZONTAL",
           referenceLinks: day.referenceLinks || [],
@@ -1173,14 +1174,14 @@ const SMMManagerView = ({ projectId }) => {
                           </td>
                           <td style={styles.tdCell}>
                             <select value={dayItem.reelType} onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)} style={styles.tableSelect}>
-                              <option value="NONE">NONE</option>
+                              <option value="NONE">null</option>
                               <option value="SHOOT">SHOOT</option>
                               <option value="AI">AI</option>
                             </select>
                           </td>
                           <td style={styles.tdCell}>
                             <select value={dayItem.postType} onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)} style={styles.tableSelect}>
-                              <option value="NONE">NONE</option>
+                              <option value="NONE">null</option>
                               <option value="SHOOT">SHOOT</option>
                               <option value="AI">AI</option>
                             </select>

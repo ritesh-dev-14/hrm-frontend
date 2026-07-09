@@ -419,7 +419,7 @@ const ShootEmployeePage = () => {
                     <p className="text-[11px] text-slate-400 font-medium">Separate multiple links with commas (Google Sheets, Drive, Frame.io, etc.).</p>
                   </div>
 
-                  <div className="space-y-1.5">
+                  {/* <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Note (optional)
                     </label>
@@ -430,7 +430,7 @@ const ShootEmployeePage = () => {
                       value={submissionNote}
                       onChange={(e) => setSubmissionNote(e.target.value)}
                     />
-                  </div>
+                  </div> */}
                 </>
               ) : (
                 <div className="space-y-1.5">
