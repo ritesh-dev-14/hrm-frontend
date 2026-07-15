@@ -13,9 +13,11 @@
 
 
 import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../../services/api"; // Your custom API service instance
 
 const AdminPage = () => {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [monthlySheets, setMonthlySheets] = useState([]);
@@ -93,18 +95,18 @@ const AdminPage = () => {
       <div>
         <h2 className="text-xl font-semibold text-gray-700 mb-4">Core Ecosystem Numbers</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <Link to="/hr/team?role=MANAGER" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
             <p className="text-sm font-medium text-gray-500 uppercase">Total Managers</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">{counts.totalManagers || 0}</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          </Link>
+          <Link to="/hr/team?role=EMPLOYEE" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
             <p className="text-sm font-medium text-gray-500 uppercase">Total Employees</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">{counts.totalEmployees || 0}</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          </Link>
+          <Link to="/projects" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block">
             <p className="text-sm font-medium text-gray-500 uppercase">Active Projects</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">{counts.totalProjects || 0}</p>
-          </div>
+          </Link>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <p className="text-sm font-medium text-gray-500 uppercase">Monthly Sheets Tracked</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">{counts.totalMonthlySheets || 0}</p>
@@ -151,7 +153,11 @@ const AdminPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-600">
                 {projects.map((proj) => (
-                  <tr key={proj.id} className="hover:bg-gray-50/70">
+                  <tr 
+                    key={proj.id} 
+                    onClick={() => navigate(`/project/${proj.id}`)}
+                    className="hover:bg-gray-50/70 cursor-pointer transition-colors"
+                  >
                     <td className="px-4 py-3 font-medium text-gray-900">{proj.projectName}</td>
                     <td className="px-4 py-3">{proj.department?.name || "N/A"}</td>
                     <td className="px-4 py-3 text-xs">

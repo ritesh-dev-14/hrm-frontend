@@ -12,7 +12,7 @@ import {
   Filter,
   Layers,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTeamData } from "./hooks/useTeamData";
 import API from "../../services/api"; 
 
@@ -24,10 +24,11 @@ import HrEditEmployee from "./HrEditEmployee.jsx";
 
 export default function HrTeamPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { staff, loading, error, refresh } = useTeamData();
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [roleFilter, setRoleFilter] = useState(() => searchParams.get("role") || "ALL");
 
   const [modal, setModal] = useState({
     type: null,

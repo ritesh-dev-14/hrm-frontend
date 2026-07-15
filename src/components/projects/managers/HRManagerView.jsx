@@ -7,6 +7,7 @@ const HRManagerView = ({ projectId }) => {
 
   // State Management
   const [project, setProject] = useState(null);
+  const [monthlySheets, setMonthlySheets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -29,9 +30,15 @@ const HRManagerView = ({ projectId }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await API.get(`/api/projects/${projectId}`);
+      const [response, sheetsRes] = await Promise.all([
+        API.get(`/api/projects/${projectId}`),
+        API.get(`/api/projects/${projectId}/monthly-sheets`).catch(() => ({ data: [] }))
+      ]);
+
       const resData = response.data ? response.data : response;
+      const sheetsData = sheetsRes.data?.data || sheetsRes.data || [];
+      
+      setMonthlySheets(Array.isArray(sheetsData) ? sheetsData : []);
 
       if (resData && resData.success) {
         const projectData = resData.data;
@@ -417,6 +424,55 @@ const HRManagerView = ({ projectId }) => {
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* --- MONTHLY SHEETS SECTION --- */}
+          <div style={{ marginTop: '24px' }}>
+            <div style={styles.card}>
+              <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Monthly Sheets & Targets</h2>
+                <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>
+                  {monthlySheets.length} Logged
+                </span>
+              </div>
+              
+              <div style={{ padding: '24px' }}>
+                {monthlySheets.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '14px', margin: '20px 0' }}>No monthly sheets have been created for this project yet.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                    {monthlySheets.map(sheet => (
+                      <div key={sheet.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', background: '#f8fafc' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '16px' }}>{sheet.month} / {sheet.year}</span>
+                          {sheet.moodBoardLink && (
+                            <a href={sheet.moodBoardLink} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>
+                              View Moodboard ↗
+                            </a>
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                          <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Reels Target</div>
+                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>{sheet.totalReels || 0}</div>
+                          </div>
+                          <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Posts Target</div>
+                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>{sheet.totalPosts || 0}</div>
+                          </div>
+                        </div>
+                        
+                        <div style={{ fontSize: '13px', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
+                          <span>Logged Days: <strong>{sheet.days?.length || 0}</strong></span>
+                          <span>Created by: <strong>{sheet.createdBy?.name || 'Unknown'}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
