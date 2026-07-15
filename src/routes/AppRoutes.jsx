@@ -353,6 +353,21 @@ export const AppRoutes = () => {
             </>
           )}
 
+          {role === "ADMIN" && (
+            <>
+              <Route
+                path="/hr/employees-attendance"
+                element={<HrAllEmployeeAttendence />}
+              />
+              <Route path="/hr/team/:id" element={<EmployeeDetails />} />
+              <Route
+                path="/hr/employees-leaves"
+                element={<HrLeaveManagement />}
+              />
+              <Route path="/hr/team" element={<HrTeamPage />} />
+            </>
+          )}
+
           {/* ADMIN */}
           {role === "ADMIN" && (
             <Route path="/admin/settings" element={<AdminHomePage />} />

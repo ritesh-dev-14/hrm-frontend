@@ -112,7 +112,7 @@ export default function HrTeamPage() {
         {/* HEADER */}
         <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-slate-200 pb-6 mb-8 gap-4">
           <div>
-            <span className="text-xs font-bold tracking-wider uppercase text-slate-400">HR Workspace</span>
+            {/* <span className="text-xs font-bold tracking-wider uppercase text-slate-400">HR Workspace</span> */}
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 mt-1">Team Directory</h1>
             <p className="text-sm text-slate-500 mt-1">Manage corporate positioning, edit assignments, and structure organizational departments.</p>
           </div>

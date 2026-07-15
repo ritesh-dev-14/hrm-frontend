@@ -117,7 +117,7 @@ const NAV_CONFIG = [
     label: "Leave",
     icon: FileText,
     path: "/leave",
-    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
+    roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
   },
   {
     id: "admin-panel",
@@ -141,6 +141,7 @@ export default function ProfessionalSidebar({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [assignedActionsCount, setAssignedActionsCount] = useState(0);
+  const [unreadCounts, setUnreadCounts] = useState({ projects: 0, shoots: 0, creative: 0, editor: 0 });
   const [departmentName, setDepartmentName] = useState("");
 
   // Fetch or calculate department alignment contexts exactly like the router configuration
@@ -246,6 +247,25 @@ export default function ProfessionalSidebar({ children }) {
   }, [role, user?.id]);
 
   useEffect(() => {
+    let interval;
+    const fetchUnreads = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await API.get("/api/sidebar-unread");
+        if (res.data?.success) {
+          setUnreadCounts(res.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch sidebar unread counts:", err);
+      }
+    };
+
+    fetchUnreads();
+    interval = setInterval(fetchUnreads, 5000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  useEffect(() => {
     localStorage.setItem("sidebar", collapsed ? "collapsed" : "open");
   }, [collapsed]);
 
@@ -326,6 +346,31 @@ export default function ProfessionalSidebar({ children }) {
                 onClick={() => {
                   navigate(item.path);
                   setMobileOpen(false);
+
+                  // Reset unread count for clicked menu
+                  let menuIdToReset = null;
+                  if (item.id === "project" || item.id === "tasks-emp") {
+                    if (unreadCounts.projects > 0) {
+                      setUnreadCounts(prev => ({ ...prev, projects: 0 }));
+                      menuIdToReset = "projects";
+                    }
+                  } else if (item.id === "shoots") {
+                    if (unreadCounts.shoots > 0) {
+                      setUnreadCounts(prev => ({ ...prev, shoots: 0 }));
+                      menuIdToReset = "shoots";
+                    }
+                  } else if (item.id === "editor") {
+                    if (unreadCounts.creative > 0 || unreadCounts.editor > 0) {
+                      setUnreadCounts(prev => ({ ...prev, creative: 0, editor: 0 }));
+                      // Reset both if they exist, since they share a menu item
+                      API.post("/api/sidebar-unread/reset", { menuId: "creative" }).catch(() => {});
+                      API.post("/api/sidebar-unread/reset", { menuId: "editor" }).catch(() => {});
+                    }
+                  }
+
+                  if (menuIdToReset) {
+                    API.post("/api/sidebar-unread/reset", { menuId: menuIdToReset }).catch(console.error);
+                  }
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition
 ${active ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
@@ -343,6 +388,34 @@ ${active ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-
                     <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
                       {assignedActionsCount}
                     </span>
+                  )}
+                  
+                {/* UNREAD BADGE SYSTEM */}
+                {(item.id === "project" || item.id === "tasks-emp") &&
+                  unreadCounts.projects > 0 &&
+                  (!collapsed || mobile) && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px]">🔴</span>
+                      <span className="text-white text-xs font-semibold">{unreadCounts.projects}</span>
+                    </div>
+                  )}
+
+                {item.id === "shoots" &&
+                  unreadCounts.shoots > 0 &&
+                  (!collapsed || mobile) && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px]">🔴</span>
+                      <span className="text-white text-xs font-semibold">{unreadCounts.shoots}</span>
+                    </div>
+                  )}
+
+                {item.id === "editor" &&
+                  (unreadCounts.creative > 0 || unreadCounts.editor > 0) &&
+                  (!collapsed || mobile) && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px]">🔴</span>
+                      <span className="text-white text-xs font-semibold">{unreadCounts.creative + unreadCounts.editor}</span>
+                    </div>
                   )}
               </button>
             );
