@@ -22,6 +22,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import API from "../services/api";
 import MainLogo from "../assets/logo.jpeg";
+import { io } from "socket.io-client";
+import { toast } from "react-toastify";
 
 const NAV_CONFIG = [
   {
@@ -36,7 +38,7 @@ const NAV_CONFIG = [
     label: "Projects",
     icon: BriefcaseBusiness,
     path: "/projects",
-    roles: ["ADMIN", "HR", "MANAGER","COORDINATOR"],
+    roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR"],
   },
   {
     id: "shoots",
@@ -144,6 +146,28 @@ export default function ProfessionalSidebar({ children }) {
   const [unreadCounts, setUnreadCounts] = useState({ projects: 0, shoots: 0, creative: 0, editor: 0 });
   const [departmentName, setDepartmentName] = useState("");
 
+  // Connect to socket for toast notifications (e.g. task submissions)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const socketInstance = io(
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"
+    );
+
+    socketInstance.on("connect", () => {
+      socketInstance.emit("join-user", { userId: user.id });
+    });
+
+    socketInstance.on("task-submitted-popup", (data) => {
+      toast.info(`New Task Submission on ${data.projectName} by ${data.employeeName}`);
+    });
+
+    return () => {
+      socketInstance.emit("leave-user", { userId: user.id });
+      socketInstance.disconnect();
+    };
+  }, [user?.id]);
+
   // Fetch or calculate department alignment contexts exactly like the router configuration
   useEffect(() => {
     const checkUserDepartment = async () => {
@@ -187,8 +211,8 @@ export default function ProfessionalSidebar({ children }) {
           const userDeptId =
             typeof assignedDepartmentId === "object"
               ? String(
-                  assignedDepartmentId?.id || assignedDepartmentId?._id || "",
-                )
+                assignedDepartmentId?.id || assignedDepartmentId?._id || "",
+              )
               : String(assignedDepartmentId);
 
           return systemDeptId === userDeptId;
@@ -363,8 +387,8 @@ export default function ProfessionalSidebar({ children }) {
                     if (unreadCounts.creative > 0 || unreadCounts.editor > 0) {
                       setUnreadCounts(prev => ({ ...prev, creative: 0, editor: 0 }));
                       // Reset both if they exist, since they share a menu item
-                      API.post("/api/sidebar-unread/reset", { menuId: "creative" }).catch(() => {});
-                      API.post("/api/sidebar-unread/reset", { menuId: "editor" }).catch(() => {});
+                      API.post("/api/sidebar-unread/reset", { menuId: "creative" }).catch(() => { });
+                      API.post("/api/sidebar-unread/reset", { menuId: "editor" }).catch(() => { });
                     }
                   }
 
