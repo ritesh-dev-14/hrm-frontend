@@ -321,6 +321,43 @@ const EmployeeTaskPage = () => {
                     <RowMetaItem label="Assigner Role" value={selectedTask.taskItem?.task?.createdBy?.role} icon={Briefcase} />
                   </div>
 
+                  {/* REFERENCE AND RAW DATA LINKS */}
+                  {(selectedTask.taskItem?.referenceLink || selectedTask.taskItem?.rawDataLink) && (
+                    <div className="border border-slate-200 rounded-2xl p-5 bg-white shadow-sm">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Task Resources</h3>
+                      <div className="space-y-4">
+                        {selectedTask.taskItem?.referenceLink && (
+                          <div>
+                            <span className="text-xs text-slate-500 block mb-1 font-semibold">Reference Link</span>
+                            <a
+                              href={selectedTask.taskItem.referenceLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-blue-600 inline-flex items-start gap-1.5 hover:underline break-all"
+                            >
+                              <ExternalLink size={14} className="shrink-0 mt-0.5" />
+                              {selectedTask.taskItem.referenceLink}
+                            </a>
+                          </div>
+                        )}
+                        {selectedTask.taskItem?.rawDataLink && (
+                          <div>
+                            <span className="text-xs text-slate-500 block mb-1 font-semibold">Raw Data Link</span>
+                            <a
+                              href={selectedTask.taskItem.rawDataLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-blue-600 inline-flex items-start gap-1.5 hover:underline break-all"
+                            >
+                              <ExternalLink size={14} className="shrink-0 mt-0.5" />
+                              {selectedTask.taskItem.rawDataLink}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* SUBMISSION SUMMARY CONTAINER */}
                   {selectedTask.submission && (
                     <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/40">

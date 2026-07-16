@@ -199,13 +199,35 @@ const TaskDescriptionPage = () => {
                   href={task.referenceLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm text-blue-600 underline break-all"
+                  className="text-sm text-blue-600 underline break-all mb-4 block"
                 >
                   Open Reference Link
                 </a>
               ) : (
+                <p className="text-sm text-slate-600 mb-4">
+                  No Reference link
+                </p>
+              )}
+
+              <div className="flex items-center gap-2 mb-3">
+                <Link2 size={18} />
+                <h3 className="font-semibold text-slate-900">
+                  Raw Data
+                </h3>
+              </div>
+
+              {task.rawDataLink ? (
+                <a
+                  href={task.rawDataLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-blue-600 underline break-all block"
+                >
+                  Open Raw Data Link
+                </a>
+              ) : (
                 <p className="text-sm text-slate-600">
-                  No link
+                  No Raw Data link
                 </p>
               )}
             </div>
