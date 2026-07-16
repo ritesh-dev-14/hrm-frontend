@@ -14,7 +14,8 @@ import {
   Loader2,
   X,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 
 const statusStyles = {
@@ -33,12 +34,14 @@ const EmployeeTaskPage = () => {
 
   // Form Fields
   const [progressValue, setProgressValue] = useState(0);
+  const [driveLink, setDriveLink] = useState("");
   const [remarks, setRemarks] = useState("");
   const [unableReason, setUnableReason] = useState("");
 
   // Action States
   const [savingProgress, setSavingProgress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
 
   const loadTasks = async () => {
@@ -60,9 +63,9 @@ const EmployeeTaskPage = () => {
   const handleOpenTask = (task) => {
     setSelectedTask(task);
     setProgressValue(task.progress || 0);
-    setRemarks(task.submission?.remarks || "");
-    setDriveLink(task.submission?.driveLink || "");
-    setUnableReason(task.submission?.unableToSubmitReason || "");
+    setRemarks("");
+    setDriveLink("");
+    setUnableReason("");
   };
 
   const handleSaveProgress = async () => {
@@ -83,19 +86,36 @@ const EmployeeTaskPage = () => {
 
   const handleSubmitTask = async () => {
     try {
-    
       setSubmitting(true);
       await API.post(
         `/api/task-item-submission/${selectedTask.assignmentId}/submit`,
-        { remarks,  },
+        { remarks, driveLink },
       );
       notifySuccess("Task submitted successfully");
       setSelectedTask(null);
       loadTasks();
     } catch (error) {
-      notifyError("Submission failed");
+      notifyError(error?.response?.data?.message || "Submission failed");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // 🔥 Resubmit after manager rejection
+  const handleResubmitTask = async () => {
+    try {
+      setResubmitting(true);
+      await API.post(
+        `/api/task-item-submission/${selectedTask.assignmentId}/resubmit`,
+        { remarks, driveLink },
+      );
+      notifySuccess("Task resubmitted! Manager has been notified.");
+      setSelectedTask(null);
+      loadTasks();
+    } catch (error) {
+      notifyError(error?.response?.data?.message || "Resubmission failed");
+    } finally {
+      setResubmitting(false);
     }
   };
 
@@ -207,11 +227,16 @@ const EmployeeTaskPage = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {tasks.map((item) => (
-                    <tr key={item.assignmentId} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={item.assignmentId} className={`hover:bg-slate-50/60 transition-colors ${item.status === "REJECTED" ? "bg-red-50/30" : ""}`}>
                       <td className="px-6 py-4 max-w-sm">
                         <span className="font-semibold text-slate-900 block truncate">{item.taskItem?.title}</span>
                         {item.taskItem?.description && (
                           <span className="text-xs text-slate-500 block truncate mt-0.5">{item.taskItem.description}</span>
+                        )}
+                        {item.status === "REJECTED" && item.rejectionReason && (
+                          <span className="text-[11px] text-red-600 block mt-1 truncate">
+                            ⚠ {item.rejectionReason}
+                          </span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
@@ -219,7 +244,7 @@ const EmployeeTaskPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[item.status]}`}>
-                          {item.status}
+                          {item.status === "REJECTED" ? "Rejected — Action Required" : item.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -236,9 +261,17 @@ const EmployeeTaskPage = () => {
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => handleOpenTask(item)}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-900 border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-xl transition-colors"
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold border px-3 py-1.5 rounded-xl transition-colors ${
+                            item.status === "REJECTED"
+                              ? "text-white bg-red-600 border-red-600 hover:bg-red-700"
+                              : "text-slate-900 border-slate-200 hover:bg-slate-50"
+                          }`}
                         >
-                          View Work <ChevronRight size={14} />
+                          {item.status === "REJECTED" ? (
+                            <><RefreshCw size={13} /> Resubmit</>
+                          ) : (
+                            <>View Work <ChevronRight size={14} /></>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -256,10 +289,10 @@ const EmployeeTaskPage = () => {
           <div className="bg-white w-full lg:max-w-6xl h-[100vh] lg:h-[90vh] rounded-t-3xl lg:rounded-3xl border border-slate-200 overflow-hidden flex flex-col">
             
             {/* MODAL HEADER */}
-            <div className="border-b border-slate-200 px-6 py-5 flex items-start justify-between gap-4 shrink-0 bg-slate-50">
+            <div className={`border-b px-6 py-5 flex items-start justify-between gap-4 shrink-0 ${selectedTask.status === "REJECTED" ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
               <div>
                 <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[selectedTask.status]} mb-2`}>
-                  {selectedTask.status}
+                  {selectedTask.status === "REJECTED" ? "❌ Rejected — Resubmission Required" : selectedTask.status}
                 </span>
                 <h2 className="text-xl font-bold text-slate-900">{selectedTask.taskItem?.title}</h2>
                 <p className="text-xs text-slate-500 mt-1 font-medium">Project Group: {selectedTask.taskItem?.task?.projectName}</p>
@@ -286,25 +319,12 @@ const EmployeeTaskPage = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <RowMetaItem label="Assigned by" value={selectedTask.taskItem?.task?.createdBy?.name} icon={User2} />
                     <RowMetaItem label="Assigner Role" value={selectedTask.taskItem?.task?.createdBy?.role} icon={Briefcase} />
-                    {/* <RowMetaItem label="Task ID Reference" value={selectedTask.taskItem?.id} isMono />
-                    <RowMetaItem label="Assignment Reference" value={selectedTask.assignmentId} isMono /> */}
                   </div>
-
-                  {/* TIMELINE METRICS */}
-                  {/* <div className="border border-slate-200 rounded-2xl p-5">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Timeline Logs</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <RowTimelineLog label="Started At" value={formatDate(selectedTask.startedAt)} />
-                      <RowTimelineLog label="Submitted At" value={formatDate(selectedTask.submittedAt)} />
-                      <RowTimelineLog label="Completed At" value={formatDate(selectedTask.completedAt)} />
-                      <RowTimelineLog label="Verified At" value={formatDate(selectedTask.verifiedAt)} />
-                    </div>
-                  </div> */}
 
                   {/* SUBMISSION SUMMARY CONTAINER */}
                   {selectedTask.submission && (
                     <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/40">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Submitted Resource Ledger</h3>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Previous Submission</h3>
                       <div className="space-y-3">
                         {selectedTask.submission.driveLink && (
                           <div>
@@ -325,23 +345,26 @@ const EmployeeTaskPage = () => {
                             <p className="text-sm text-slate-700 mt-0.5">{selectedTask.submission.remarks}</p>
                           </div>
                         )}
-                        {selectedTask.submission.unableToSubmitReason && (
-                          <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
-                            <span className="text-xs font-bold text-red-700 block">Roadblock Context</span>
-                            <p className="text-xs text-red-700 mt-1">{selectedTask.submission.unableToSubmitReason}</p>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
 
+                  {/* 🔥 REJECTION REASON — Prominent Banner */}
                   {selectedTask.status === "REJECTED" && selectedTask.rejectionReason && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-xs text-red-800">
-                      <AlertTriangle size={16} className="shrink-0 text-red-600 mt-0.5" />
+                    <div className="p-4 bg-red-50 border-2 border-red-300 rounded-xl flex items-start gap-3">
+                      <AlertTriangle size={20} className="shrink-0 text-red-600 mt-0.5" />
                       <div>
-                        <span className="font-bold block">Revision Requested by Manager:</span>
-                        <p className="mt-1">{selectedTask.rejectionReason}</p>
+                        <span className="font-bold text-red-900 text-sm block mb-1">Manager's Feedback</span>
+                        <p className="text-red-700 text-sm leading-relaxed">{selectedTask.rejectionReason}</p>
+                        <p className="text-red-500 text-xs mt-2">Please revise your work based on this feedback and resubmit using the form →</p>
                       </div>
+                    </div>
+                  )}
+
+                  {selectedTask.status === "REJECTED" && !selectedTask.rejectionReason && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-xs text-red-700">
+                      <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                      <p>Your submission was rejected. Please resubmit with revised work.</p>
                     </div>
                   )}
                 </div>
@@ -362,19 +385,74 @@ const EmployeeTaskPage = () => {
                       value={progressValue}
                       onChange={(e) => setProgressValue(parseInt(e.target.value))}
                       className="w-full accent-slate-900 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer mt-4"
+                      disabled={selectedTask.status === "VERIFIED"}
                     />
 
                     <button
                       onClick={handleSaveProgress}
-                      disabled={savingProgress}
+                      disabled={savingProgress || selectedTask.status === "VERIFIED"}
                       className="w-full h-10 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold mt-4 transition-colors disabled:opacity-50"
                     >
                       {savingProgress ? "Updating..." : "Save Progress Value"}
                     </button>
                   </div>
 
-                  {/* DISPATCH DELIVERY HANDLER FORMS */}
-                  {!selectedTask.submission && (
+                  {/* 🔥 RESUBMIT FORM — shown only when status is REJECTED */}
+                  {selectedTask.status === "REJECTED" && (
+                    <div className="border-2 border-red-300 rounded-2xl p-5 bg-white shadow-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <RefreshCw size={15} className="text-red-600 shrink-0" />
+                        <h3 className="text-xs font-bold text-red-900 uppercase tracking-wider">Resubmit Revised Work</h3>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mb-4">Address the manager's feedback and submit your revised work.</p>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-600 block mb-1 font-semibold">Drive / Resource Link <span className="font-normal text-slate-400">(optional)</span></label>
+                          <input
+                            type="url"
+                            value={driveLink}
+                            onChange={(e) => setDriveLink(e.target.value)}
+                            placeholder="https://drive.google.com/..."
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 bg-slate-50"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-slate-600 block mb-1 font-semibold">What Changed? <span className="font-normal text-slate-400">(optional)</span></label>
+                          <textarea
+                            rows={3}
+                            value={remarks}
+                            onChange={(e) => setRemarks(e.target.value)}
+                            placeholder="Briefly explain what you revised based on manager's feedback..."
+                            className="w-full rounded-xl border border-slate-200 p-3 text-xs resize-none outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 bg-slate-50"
+                          />
+                        </div>
+
+                        {selectedTask.progress < 100 && (
+                          <div className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
+                            <AlertTriangle size={13} className="shrink-0" />
+                            Progress must be 100% to resubmit. Update progress above first.
+                          </div>
+                        )}
+
+                        <button
+                          onClick={handleResubmitTask}
+                          disabled={resubmitting || selectedTask.progress < 100}
+                          className="w-full h-10 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {resubmitting ? (
+                            <><Loader2 size={13} className="animate-spin" /> Resubmitting...</>
+                          ) : (
+                            <><RefreshCw size={13} /> Resubmit to Manager</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* DISPATCH DELIVERY HANDLER FORMS — shown only when no submission yet and NOT rejected */}
+                  {!selectedTask.submission && selectedTask.status !== "REJECTED" && (
                     <div className="space-y-4">
                       
                       {/* COMMIT FORM */}
@@ -382,14 +460,14 @@ const EmployeeTaskPage = () => {
                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">Submit Your task here</h3>
                         <div className="space-y-3">
                           <div>
-                            {/* <label className="text-xs text-slate-500 block mb-1">Resource Drive URL</label>
+                            <label className="text-xs text-slate-500 block mb-1">Drive / Resource Link <span className="text-slate-400">(optional)</span></label>
                             <input
                               type="url"
                               value={driveLink}
                               onChange={(e) => setDriveLink(e.target.value)}
                               placeholder="https://drive.google.com/..."
                               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-900 bg-slate-50/50"
-                            /> */}
+                            />
                           </div>
 
                           <div>
@@ -418,7 +496,6 @@ const EmployeeTaskPage = () => {
                         <h3 className="text-xs font-bold text-red-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                           <AlertTriangle size={14} className="text-red-600" /> Failed to complete task
                         </h3>
-                        {/* <p className="text-[11px] text-slate-500 mb-3">Use this if systemic issues completely prevent progress execution.</p> */}
                         
                         <div className="space-y-3">
                           <textarea

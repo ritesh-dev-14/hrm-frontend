@@ -376,51 +376,66 @@ export default function ProfessionalSidebar({ children }) {
 ${active ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
               >
                 <div className="flex items-center gap-3">
-                  <item.icon size={18} />
+                  {/* Icon with optional collapsed dot badge */}
+                  <div className="relative shrink-0">
+                    <item.icon size={18} />
+                    {/* Collapsed-mode dot indicators */}
+                    {(collapsed && !mobile) && (
+                      <>
+                        {item.id === "assigned-actions" && assignedActionsCount > 0 && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 block" />
+                        )}
+                        {(item.id === "project" || item.id === "tasks-emp") && unreadCounts.projects > 0 && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 block" />
+                        )}
+                        {item.id === "shoots" && unreadCounts.shoots > 0 && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 block" />
+                        )}
+                        {item.id === "editor" && (unreadCounts.creative > 0 || unreadCounts.editor > 0) && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 block" />
+                        )}
+                      </>
+                    )}
+                  </div>
                   {(!collapsed || mobile) && (
                     <span className="text-sm">{item.label}</span>
                   )}
                 </div>
 
-                {item.id === "assigned-actions" &&
-                  assignedActionsCount > 0 &&
-                  (!collapsed || mobile) && (
-                    <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
-                      {assignedActionsCount}
-                    </span>
-                  )}
-                  
-                {/* UNREAD BADGE SYSTEM */}
-                {(item.id === "project" || item.id === "tasks-emp") &&
-                  unreadCounts.projects > 0 &&
-                  (!collapsed || mobile) && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px]">🔴</span>
-                      <span className="text-white text-xs font-semibold">{unreadCounts.projects}</span>
-                    </div>
-                  )}
+                {/* Expanded-mode count badges */}
+                {(!collapsed || mobile) && (
+                  <>
+                    {item.id === "assigned-actions" && assignedActionsCount > 0 && (
+                      <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                        {assignedActionsCount}
+                      </span>
+                    )}
 
-                {item.id === "shoots" &&
-                  unreadCounts.shoots > 0 &&
-                  (!collapsed || mobile) && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px]">🔴</span>
-                      <span className="text-white text-xs font-semibold">{unreadCounts.shoots}</span>
-                    </div>
-                  )}
+                    {/* UNREAD BADGE SYSTEM */}
+                    {(item.id === "project" || item.id === "tasks-emp") && unreadCounts.projects > 0 && (
+                      <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                        {unreadCounts.projects}
+                      </span>
+                    )}
 
-                {item.id === "editor" &&
-                  (unreadCounts.creative > 0 || unreadCounts.editor > 0) &&
-                  (!collapsed || mobile) && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px]">🔴</span>
-                      <span className="text-white text-xs font-semibold">{unreadCounts.creative + unreadCounts.editor}</span>
-                    </div>
-                  )}
+                    {item.id === "shoots" && unreadCounts.shoots > 0 && (
+                      <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                        {unreadCounts.shoots}
+                      </span>
+                    )}
+
+                    {item.id === "editor" && (unreadCounts.creative > 0 || unreadCounts.editor > 0) && (
+                      <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                        {unreadCounts.creative + unreadCounts.editor}
+                      </span>
+                    )}
+                  </>
+                )}
               </button>
             );
           })}
         </div>
+
 
         {/* FOOTER */}
         <div className="p-3 border-t border-white/5">
