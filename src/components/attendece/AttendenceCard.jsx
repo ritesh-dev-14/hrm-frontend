@@ -8,6 +8,7 @@ import {
   startBreak,
   endBreak,
   stopAttendance,
+  getTodayAttendance,
 } from "../../services/attendanceApi";
 
 export default function AttendanceCard() {
@@ -38,30 +39,81 @@ export default function AttendanceCard() {
     localStorage.removeItem(attendanceKey);
   };
 
-  // RESTORE SESSION
+  // RESTORE SESSION FROM BACKEND
   useEffect(() => {
-    const savedData = getAttendanceData();
+    const fetchBackendAttendance = async () => {
+      try {
+        const response = await getTodayAttendance();
+        const data = response.data?.data;
+        
+        if (!data) {
+          removeAttendanceData();
+          setStatus("idle");
+          setSeconds(0);
+          return;
+        }
 
-    if (!savedData) return;
+        let breakDuration = 0;
+        let activeBreak = null;
 
-    // RESET NEXT DAY
-    if (savedData.date !== today) {
-      removeAttendanceData();
-      return;
-    }
+        if (data.breaks && data.breaks.length > 0) {
+          data.breaks.forEach((b) => {
+            if (b.endTime) {
+              breakDuration += (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 1000;
+            } else {
+              activeBreak = b;
+            }
+          });
+        }
 
-    setStatus(savedData.status || "idle");
+        if (data.endTime) {
+          // COMPLETED DAY
+          const finalSeconds = (new Date(data.endTime).getTime() - new Date(data.startTime).getTime()) / 1000 - breakDuration;
+          const state = {
+            status: "completed",
+            clockedOut: true,
+            endTime: new Date(data.endTime).getTime(),
+            finalSeconds,
+            date: today,
+          };
+          setAttendanceData(state);
+          setStatus("completed");
+          setSeconds(Math.max(finalSeconds, 0));
+          return;
+        }
 
-    // COMPLETED DAY
-    if (savedData.status === "completed") {
-      setSeconds(savedData.finalSeconds || 0);
-      return;
-    }
+        if (data.startTime) {
+          // ACTIVE SESSION
+          const state = {
+            status: activeBreak ? "break" : "working",
+            startTime: new Date(data.startTime).getTime(),
+            breakDuration,
+            breakStartedAt: activeBreak ? new Date(activeBreak.startTime).getTime() : null,
+            date: today,
+            clockedOut: false,
+          };
+          setAttendanceData(state);
+          setStatus(state.status);
+          updateTimer(state);
+        }
+      } catch (error) {
+        console.error("Failed to fetch backend attendance", error);
+        // Fallback to local storage if API fails
+        const savedData = getAttendanceData();
+        if (savedData && savedData.date === today) {
+          setStatus(savedData.status || "idle");
+          if (savedData.status === "completed") {
+            setSeconds(savedData.finalSeconds || 0);
+          } else if (savedData.startTime) {
+            updateTimer(savedData);
+          }
+        } else {
+          removeAttendanceData();
+        }
+      }
+    };
 
-    // ACTIVE SESSION
-    if (savedData.startTime) {
-      updateTimer(savedData);
-    }
+    fetchBackendAttendance();
   }, []);
 
   // LIVE TIMER
@@ -74,10 +126,19 @@ export default function AttendanceCard() {
 
         if (!savedData?.startTime) return;
 
+        // Auto clock-out after 12 hours (12 * 60 * 60 * 1000 ms)
+        const now = Date.now();
+        const twelveHours = 12 * 60 * 60 * 1000;
+        if (now - savedData.startTime >= twelveHours) {
+          handleClockOut();
+          return;
+        }
+
         updateTimer(savedData);
       }, 1000);
     }
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => clearInterval(interval);
   }, [status]);
 
