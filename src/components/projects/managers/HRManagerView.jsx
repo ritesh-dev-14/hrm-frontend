@@ -2,17 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  UploadCloud, 
-  Calendar, 
-  Link as LinkIcon, 
-  MapPin, 
-  Phone, 
-  User, 
-  Eye, 
-  EyeOff, 
+import {
+  UploadCloud,
+  Calendar,
+  Link as LinkIcon,
+  MapPin,
+  Phone,
+  User,
+  Eye,
+  EyeOff,
   Globe,
-  Save, 
+  Save,
   Settings,
   Trash2,
   Edit
@@ -36,6 +36,7 @@ const HRManagerView = ({ projectId }) => {
   const [showTwitterPassword, setShowTwitterPassword] = useState(false);
 
   const logoInputRef = useRef(null);
+  const [managersList, setManagersList] = useState([]);
 
   // Edit Form State
   const [formData, setFormData] = useState({
@@ -49,8 +50,10 @@ const HRManagerView = ({ projectId }) => {
     location: '',
     phone: '',
     projectStartDate: '',
-    referenceLink: '',
-    tasteLink: '',
+    reference: '',
+    taste: '',
+    instaUsername: '',
+    facebookUsername: '',
     fbEmail: '',
     fbPassword: '',
     instaEmail: '',
@@ -73,7 +76,7 @@ const HRManagerView = ({ projectId }) => {
       if (resData && resData.success) {
         const projectData = resData.data;
         setProject(projectData);
-        
+
         setFormData({
           projectName: projectData?.projectName || '',
           description: projectData?.description || '',
@@ -85,8 +88,10 @@ const HRManagerView = ({ projectId }) => {
           location: projectData?.location || '',
           phone: projectData?.phone || '',
           projectStartDate: projectData?.projectStartDate ? projectData.projectStartDate.split('T')[0] : '',
-          referenceLink: projectData?.referenceLink || '',
-          tasteLink: projectData?.tasteLink || '',
+          reference: projectData?.reference ? projectData.reference.join(', ') : '',
+          taste: projectData?.taste ? projectData.taste.join(', ') : '',
+          instaUsername: projectData?.instaUsername || '',
+          facebookUsername: projectData?.facebookUsername || '',
           fbEmail: projectData?.fbEmail || '',
           fbPassword: projectData?.fbPassword || '',
           instaEmail: projectData?.instaEmail || '',
@@ -108,7 +113,17 @@ const HRManagerView = ({ projectId }) => {
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      const res = await API.get("/api/hr/managers");
+      setManagersList(res.data?.data || []);
+    } catch (err) {
+      console.error("Failed to fetch managers", err);
+    }
+  };
+
   useEffect(() => {
+    fetchManagers();
     if (projectId) {
       fetchProjectDetails();
     } else {
@@ -173,8 +188,10 @@ const HRManagerView = ({ projectId }) => {
         clientName: formData.clientName?.trim() || null,
         location: formData.location?.trim() || null,
         phone: formData.phone?.trim() || null,
-        referenceLink: formData.referenceLink?.trim() || null,
-        tasteLink: formData.tasteLink?.trim() || null,
+        reference: formData.reference ? formData.reference.split(',').map(s => s.trim()).filter(Boolean) : [],
+        taste: formData.taste ? formData.taste.split(',').map(s => s.trim()).filter(Boolean) : [],
+        instaUsername: formData.instaUsername?.trim() || null,
+        facebookUsername: formData.facebookUsername?.trim() || null,
         fbEmail: formData.fbEmail?.trim() || null,
         fbPassword: formData.fbPassword || null,
         instaEmail: formData.instaEmail?.trim() || null,
@@ -191,7 +208,7 @@ const HRManagerView = ({ projectId }) => {
 
       await API.patch(`/api/projects/${projectId}`, payload, config);
       setIsEditing(false);
-      fetchProjectDetails(); 
+      fetchProjectDetails();
     } catch (err) {
       alert(err.response?.data?.message || err.message || 'Failed to update project.');
     }
@@ -201,7 +218,7 @@ const HRManagerView = ({ projectId }) => {
     if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
       try {
         await API.delete(`/api/projects/${projectId}`);
-        navigate('/projects'); 
+        navigate('/projects');
       } catch (err) {
         alert(err.response?.data?.message || err.message || 'Failed to delete project.');
       }
@@ -275,7 +292,7 @@ const HRManagerView = ({ projectId }) => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-        
+
         <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -317,22 +334,21 @@ const HRManagerView = ({ projectId }) => {
         </motion.header>
 
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
-          
+
           {isEditing ? (
             <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden p-6 md:p-8">
               <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Settings size={20} className="text-indigo-500" /> Edit Project Configuration</h2>
-              
+
               <form onSubmit={handleUpdate} className="space-y-8">
-                
+
                 <div className="flex flex-col lg:flex-row gap-8">
                   <div className="flex-shrink-0 flex flex-col items-center gap-4 w-full lg:w-64">
                     <label className="text-xs font-bold tracking-wider uppercase text-slate-400 self-start lg:self-center">Client Logo</label>
                     <input type="file" accept="image/*" style={{ display: "none" }} ref={logoInputRef} onChange={handleLogoFileSelected} />
-                    <div 
+                    <div
                       onClick={handleLogoClick}
-                      className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 cursor-pointer transition-all ${
-                        isUploadingLogo ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-400'
-                      }`}
+                      className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 cursor-pointer transition-all ${isUploadingLogo ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-400'
+                        }`}
                     >
                       {project?.logo ? (
                         <img src={project.logo} alt="Client Logo" className="w-full h-full object-contain rounded-xl" />
@@ -369,8 +385,11 @@ const HRManagerView = ({ projectId }) => {
                     <div className="flex flex-col space-y-1.5">
                       <label className="text-xs font-semibold text-slate-600">Assign Managers <span className="text-slate-400 font-normal">(Ctrl/Cmd for multiple)</span></label>
                       <select multiple value={formData.assignTo} onChange={handleAssigneeChange} className="w-full h-24 p-2 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all">
-                        <option value="SM-MGR-001">Lovprit (Social Media)</option>
-                        <option value="CC-MGR-001">Abhijeet (Content & Creative)</option>
+                        {managersList.map((mgr) => (
+                          <option key={mgr.id || mgr.employeeId} value={mgr.employeeId}>
+                            {mgr.name} {mgr.department?.name ? `(${mgr.department.name})` : ''}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -378,52 +397,54 @@ const HRManagerView = ({ projectId }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><User size={14} className="inline text-indigo-500 mr-1"/> Client Name</label>
+                    <label className="text-xs font-semibold text-slate-600"><User size={14} className="inline text-indigo-500 mr-1" /> Client Name</label>
                     <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><MapPin size={14} className="inline text-indigo-500 mr-1"/> Location</label>
+                    <label className="text-xs font-semibold text-slate-600"><MapPin size={14} className="inline text-indigo-500 mr-1" /> Location</label>
                     <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Phone size={14} className="inline text-indigo-500 mr-1"/> Phone Number</label>
+                    <label className="text-xs font-semibold text-slate-600"><Phone size={14} className="inline text-indigo-500 mr-1" /> Phone Number</label>
                     <input type="text" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Project Start Date</label>
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Project Start Date</label>
                     <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Contract Start Date</label>
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Contract Start Date</label>
                     <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Target End Date</label>
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Target End Date</label>
                     <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Renewal Date</label>
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Renewal Date</label>
                     <input type="date" name="renewalDate" value={formData.renewalDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
                   <h3 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-4">Social Media Credentials & Links</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1"/> Reference Link</label>
-                      <input type="url" name="referenceLink" value={formData.referenceLink} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1" /> References</label>
+                      <input type="text" name="reference" value={formData.reference} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" placeholder="Link1, Link2" />
                     </div>
                     <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1"/> Taste Link</label>
-                      <input type="url" name="tasteLink" value={formData.tasteLink} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1" /> Taste</label>
+                      <input type="text" name="taste" value={formData.taste} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" placeholder="Link1, Link2" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
                       <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">Facebook Username</label>
+                        <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none mb-2" />
                         <label className="text-xs font-semibold text-slate-600">Facebook Email</label>
                         <input type="text" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
                       </div>
@@ -431,6 +452,8 @@ const HRManagerView = ({ projectId }) => {
                     </div>
                     <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
                       <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">Instagram Username</label>
+                        <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none mb-2" />
                         <label className="text-xs font-semibold text-slate-600">Instagram Email</label>
                         <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
                       </div>
@@ -471,17 +494,17 @@ const HRManagerView = ({ projectId }) => {
             <>
               {/* DISPLAY MODE */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
+
                 {/* Left Column: Core Info */}
                 <div className="lg:col-span-2 space-y-6">
-                  
+
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
                     <div className="flex items-start gap-6">
                       <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
                         {project?.logo ? <img src={project.logo} alt="Logo" className="w-full h-full object-contain" /> : <User size={32} className="text-slate-400" />}
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Client Identity</h3>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">Client Details</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Client Name</p>
@@ -489,11 +512,11 @@ const HRManagerView = ({ projectId }) => {
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Location</p>
-                            <p className="font-medium text-slate-900 flex items-center gap-1"><MapPin size={14} className="text-indigo-500"/> {project?.location || 'N/A'}</p>
+                            <p className="font-medium text-slate-900 flex items-center gap-1"><MapPin size={14} className="text-indigo-500" /> {project?.location || 'N/A'}</p>
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Contact Phone</p>
-                            <p className="font-medium text-slate-900 flex items-center gap-1"><Phone size={14} className="text-indigo-500"/> {project?.phone || 'N/A'}</p>
+                            <p className="font-medium text-slate-900 flex items-center gap-1"><Phone size={14} className="text-indigo-500" /> {project?.phone || 'N/A'}</p>
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Frequency</p>
@@ -505,7 +528,7 @@ const HRManagerView = ({ projectId }) => {
                   </motion.div>
 
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
-                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Calendar size={20} className="text-indigo-500"/> Key Dates & Milestones</h3>
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Calendar size={20} className="text-indigo-500" /> Key Dates & Milestones</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                       <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-center">
                         <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Project Start</p>
@@ -530,21 +553,34 @@ const HRManagerView = ({ projectId }) => {
                 {/* Right Column: Stakeholders & Links */}
                 <div className="space-y-6">
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6">
-                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><LinkIcon size={16} className="text-indigo-500"/> Campaign Links</h3>
+                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><LinkIcon size={16} className="text-indigo-500" />References and Taste Links</h3>
                     <div className="space-y-3">
-                      <a href={project?.referenceLink || '#'} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
-                        <span className="text-sm font-semibold text-slate-700">Reference Link</span>
-                        <LinkIcon size={14} className="text-slate-400" />
-                      </a>
-                      <a href={project?.tasteLink || '#'} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
-                        <span className="text-sm font-semibold text-slate-700">Taste Link</span>
-                        <LinkIcon size={14} className="text-slate-400" />
-                      </a>
+                      {project?.reference && project.reference.length > 0 ? (
+                        project.reference.map((ref, i) => (
+                          <div key={`ref-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+                            <span className="text-sm font-semibold text-slate-700 max-w-[200px] truncate" title={ref}>{ref}</span>
+                            <LinkIcon size={14} className="text-slate-400" />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-slate-500 italic">No References</div>
+                      )}
+
+                      {project?.taste && project.taste.length > 0 ? (
+                        project.taste.map((t, i) => (
+                          <div key={`taste-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+                            <span className="text-sm font-semibold text-slate-700 max-w-[200px] truncate" title={t}>{t}</span>
+                            <LinkIcon size={14} className="text-slate-400" />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-slate-500 italic mt-2">No Taste Links</div>
+                      )}
                     </div>
                   </motion.div>
 
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6">
-                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><User size={16} className="text-indigo-500"/> Stakeholders</h3>
+                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><User size={16} className="text-indigo-500" /> Assigned Managers</h3>
                     {project?.assignments?.length > 0 ? (
                       <div className="space-y-3">
                         {project.assignments.map(assignment => (
@@ -568,12 +604,12 @@ const HRManagerView = ({ projectId }) => {
 
               {/* Bottom Section: Social Credentials */}
               <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Settings size={20} className="text-indigo-500"/> Social Media Credentials</h3>
-                
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Settings size={20} className="text-indigo-500" /> Social Media Credentials</h3>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                   {[
-                    { name: 'Facebook', email: project?.fbEmail, pass: project?.fbPassword, Icon: Globe, show: showFbPassword, setShow: setShowFbPassword, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { name: 'Instagram', email: project?.instaEmail, pass: project?.instaPassword, Icon: Globe, show: showInstaPassword, setShow: setShowInstaPassword, color: 'text-pink-600', bg: 'bg-pink-50' },
+                    { name: 'Facebook', email: project?.fbEmail, username: project?.facebookUsername, pass: project?.fbPassword, Icon: Globe, show: showFbPassword, setShow: setShowFbPassword, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { name: 'Instagram', email: project?.instaEmail, username: project?.instaUsername, pass: project?.instaPassword, Icon: Globe, show: showInstaPassword, setShow: setShowInstaPassword, color: 'text-pink-600', bg: 'bg-pink-50' },
                     { name: 'YouTube', email: project?.youtubeEmail, pass: project?.youtubePassword, Icon: Globe, show: showYoutubePassword, setShow: setShowYoutubePassword, color: 'text-red-600', bg: 'bg-red-50' },
                     { name: 'LinkedIn', email: project?.linkedinEmail, pass: project?.linkedinPassword, Icon: Globe, show: showLinkedinPassword, setShow: setShowLinkedinPassword, color: 'text-blue-700', bg: 'bg-blue-50' },
                     { name: 'Twitter / X', email: project?.twitterEmail, pass: project?.twitterPassword, Icon: Globe, show: showTwitterPassword, setShow: setShowTwitterPassword, color: 'text-slate-800', bg: 'bg-slate-100' },
@@ -587,8 +623,9 @@ const HRManagerView = ({ projectId }) => {
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Email / Username</p>
-                          <p className="text-xs font-medium text-slate-800 truncate" title={cred.email}>{cred.email || '—'}</p>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Username / Email</p>
+                          <p className="text-xs font-medium text-slate-800 truncate" title={cred.username}>{cred.username || '—'}</p>
+                          <p className="text-xs font-medium text-slate-600 truncate mt-1" title={cred.email}>{cred.email || '—'}</p>
                         </div>
                         <div>
                           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Password</p>
@@ -598,7 +635,7 @@ const HRManagerView = ({ projectId }) => {
                             </p>
                             {cred.pass && (
                               <button onClick={() => cred.setShow(!cred.show)} className="text-slate-400 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {cred.show ? <EyeOff size={14}/> : <Eye size={14}/>}
+                                {cred.show ? <EyeOff size={14} /> : <Eye size={14} />}
                               </button>
                             )}
                           </div>

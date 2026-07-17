@@ -198,8 +198,10 @@ const SMMManagerView = ({ projectId }) => {
     linkedinPassword: "",
     twitterEmail: "",
     twitterPassword: "",
-    referenceLink: "",
-    tasteLink: "",
+    reference: "",
+    taste: "",
+    instaUsername: "",
+    facebookUsername: "",
     projectStartDate: "",
   });
 
@@ -361,8 +363,10 @@ const SMMManagerView = ({ projectId }) => {
           linkedinPassword: projectData?.linkedinPassword || "",
           twitterEmail: projectData?.twitterEmail || "",
           twitterPassword: projectData?.twitterPassword || "",
-          referenceLink: projectData?.referenceLink || "",
-          tasteLink: projectData?.tasteLink || "",
+          reference: arrayToString(projectData?.reference) || "",
+          taste: arrayToString(projectData?.taste) || "",
+          instaUsername: projectData?.instaUsername || "",
+          facebookUsername: projectData?.facebookUsername || "",
           projectStartDate: projectData?.projectStartDate
             ? projectData.projectStartDate.split("T")[0]
             : "",
@@ -439,8 +443,10 @@ const SMMManagerView = ({ projectId }) => {
         linkedinPassword: formData.linkedinPassword || null,
         twitterEmail: formData.twitterEmail.trim() || null,
         twitterPassword: formData.twitterPassword || null,
-        referenceLink: formData.referenceLink.trim() || null,
-        tasteLink: formData.tasteLink.trim() || null,
+        reference: stringToArray(formData.reference),
+        taste: stringToArray(formData.taste),
+        instaUsername: formData.instaUsername.trim() || null,
+        facebookUsername: formData.facebookUsername.trim() || null,
         projectStartDate: formData.projectStartDate
           ? new Date(formData.projectStartDate).toISOString()
           : null,
@@ -462,8 +468,10 @@ const SMMManagerView = ({ projectId }) => {
             clientLocation: formData.location || "",
             contactNumber: formData.phone || "",
             projectExecutionDate: dateStr,
-            referenceLink: formData.referenceLink || "",
-            tasteLink: formData.tasteLink || "",
+            reference: formData.reference || "",
+            taste: formData.taste || "",
+            instaUsername: formData.instaUsername || "",
+            facebookUsername: formData.facebookUsername || "",
             facebookEmail: formData.fbEmail || "",
             facebookPassword: formData.fbPassword || "",
             instagramEmail: formData.instaEmail || "",
@@ -868,23 +876,31 @@ const SMMManagerView = ({ projectId }) => {
           <h4 style={{ ...styles.groupHeading, marginTop: "24px" }}>Reference & Taste Links</h4>
           <div className="smm-form-grid">
             <div style={styles.formGroup}>
-              <label style={styles.label}>Reference Link <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="url" name="referenceLink" value={formData.referenceLink} onChange={handleInputChange} style={styles.input} placeholder="https://..." />
+              <label style={styles.label}>References <span style={styles.optionalTag}>(comma separated)</span></label>
+              <input type="text" name="reference" value={formData.reference} onChange={handleInputChange} style={styles.input} placeholder="Link1, Link2, or text" />
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Taste Link <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="url" name="tasteLink" value={formData.tasteLink} onChange={handleInputChange} style={styles.input} placeholder="https://..." />
+              <label style={styles.label}>Taste <span style={styles.optionalTag}>(comma separated)</span></label>
+              <input type="text" name="taste" value={formData.taste} onChange={handleInputChange} style={styles.input} placeholder="Link1, Link2, or text" />
             </div>
           </div>
 
           <h4 style={{ ...styles.groupHeading, marginTop: "24px" }}>Social Media Credentials</h4>
           <div className="smm-form-grid">
             <div style={styles.formGroup}>
+              <label style={styles.label}>Facebook Username <span style={styles.optionalTag}>(optional)</span></label>
+              <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} style={styles.input} placeholder="fb_username" />
+            </div>
+            <div style={styles.formGroup}>
               <label style={styles.label}>Facebook Email <span style={styles.optionalTag}>(optional)</span></label>
               <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} style={styles.input} placeholder="fb@enterprise-client.com" />
             </div>
             {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "••••••••••••")}
 
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Instagram Username <span style={styles.optionalTag}>(optional)</span></label>
+              <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} style={styles.input} placeholder="insta_username" />
+            </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Instagram Email <span style={styles.optionalTag}>(optional)</span></label>
               <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} style={styles.input} placeholder="insta_handle" />
