@@ -205,6 +205,8 @@ const SMMManagerView = ({ projectId }) => {
     projectStartDate: "",
   });
 
+  const [newReference, setNewReference] = useState("");
+
   // Monthly Tracker Strategy Sheet Form State
   const [sheetMeta, setSheetMeta] = useState({
     month: new Date().getMonth() + 1,
@@ -882,12 +884,62 @@ const SMMManagerView = ({ projectId }) => {
           <h4 style={{ ...styles.groupHeading, marginTop: "24px" }}>Reference & Taste Links</h4>
           <div className="smm-form-grid">
             <div style={styles.formGroup}>
-              <label style={styles.label}>References <span style={styles.optionalTag}>(comma separated)</span></label>
-              <input type="text" name="reference" value={formData.reference} onChange={handleInputChange} style={styles.input} placeholder="Link1, Link2, or text" />
+              <label style={styles.label}>References</label>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                <input
+                  type="text"
+                  value={newReference}
+                  onChange={(e) => setNewReference(e.target.value)}
+                  style={styles.input}
+                  placeholder="Enter a reference link..."
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newReference.trim()) {
+                      const currentRefs = formData.reference ? formData.reference.split(",").map(s=>s.trim()).filter(Boolean) : [];
+                      currentRefs.push(newReference.trim());
+                      setFormData({ ...formData, reference: currentRefs.join(", ") });
+                      setNewReference("");
+                    }
+                  }}
+                  style={{ ...styles.saveBtn, padding: "0 16px", height: "42px", fontSize: "14px" }}
+                >
+                  Add
+                </button>
+              </div>
+              {/* Display added links */}
+              {formData.reference && formData.reference.split(",").map(s=>s.trim()).filter(Boolean).length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+                  {formData.reference.split(",").map(s=>s.trim()).filter(Boolean).map((ref, idx) => (
+                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "6px 12px", borderRadius: "6px", fontSize: "13px", color: "#334155" }}>
+                      <span style={{ wordBreak: "break-all" }}>{ref}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentRefs = formData.reference.split(",").map(s=>s.trim()).filter(Boolean);
+                          currentRefs.splice(idx, 1);
+                          setFormData({ ...formData, reference: currentRefs.join(", ") });
+                        }}
+                        style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0", fontSize: "16px", fontWeight: "bold", lineHeight: "1" }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+            
             <div style={styles.formGroup}>
-              <label style={styles.label}>Taste <span style={styles.optionalTag}>(comma separated)</span></label>
-              <input type="text" name="taste" value={formData.taste} onChange={handleInputChange} style={styles.input} placeholder="Link1, Link2, or text" />
+              <label style={styles.label}>Taste <span style={styles.optionalTag}>(Medium Description)</span></label>
+              <textarea 
+                name="taste" 
+                value={formData.taste} 
+                onChange={handleInputChange} 
+                style={{ ...styles.input, minHeight: "100px", resize: "vertical", paddingTop: "10px", paddingBottom: "10px" }} 
+                placeholder="Medium description of taste/preferences..." 
+              />
             </div>
           </div>
 
