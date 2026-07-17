@@ -1,44 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  UploadCloud, 
+  Calendar, 
+  Link as LinkIcon, 
+  MapPin, 
+  Phone, 
+  User, 
+  Eye, 
+  EyeOff, 
+  Globe,
+  Save, 
+  Settings,
+  Trash2,
+  Edit
+} from 'lucide-react';
 
 const HRManagerView = ({ projectId }) => {
   const navigate = useNavigate();
 
   // State Management
   const [project, setProject] = useState(null);
-  const [monthlySheets, setMonthlySheets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   // Password Visibility States
   const [showFbPassword, setShowFbPassword] = useState(false);
   const [showInstaPassword, setShowInstaPassword] = useState(false);
+  const [showYoutubePassword, setShowYoutubePassword] = useState(false);
+  const [showLinkedinPassword, setShowLinkedinPassword] = useState(false);
+  const [showTwitterPassword, setShowTwitterPassword] = useState(false);
+
+  const logoInputRef = useRef(null);
 
   // Edit Form State
   const [formData, setFormData] = useState({
     projectName: '',
     description: '',
     endDate: '',
-    frequency: '',
+    frequency: 'monthly',
     renewalDate: '',
-    assignTo: [] 
+    assignTo: [],
+    clientName: '',
+    location: '',
+    phone: '',
+    projectStartDate: '',
+    referenceLink: '',
+    tasteLink: '',
+    fbEmail: '',
+    fbPassword: '',
+    instaEmail: '',
+    instaPassword: '',
+    youtubeEmail: '',
+    youtubePassword: '',
+    linkedinEmail: '',
+    linkedinPassword: '',
+    twitterEmail: '',
+    twitterPassword: ''
   });
 
   const fetchProjectDetails = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [response, sheetsRes] = await Promise.all([
-        API.get(`/api/projects/${projectId}`),
-        API.get(`/api/projects/${projectId}/monthly-sheets`).catch(() => ({ data: [] }))
-      ]);
-
+      const response = await API.get(`/api/projects/${projectId}`);
       const resData = response.data ? response.data : response;
-      const sheetsData = sheetsRes.data?.data || sheetsRes.data || [];
-      
-      setMonthlySheets(Array.isArray(sheetsData) ? sheetsData : []);
 
       if (resData && resData.success) {
         const projectData = resData.data;
@@ -50,7 +80,23 @@ const HRManagerView = ({ projectId }) => {
           endDate: projectData?.endDate ? projectData.endDate.split('T')[0] : '',
           frequency: projectData?.frequency || 'monthly',
           renewalDate: projectData?.renewalDate ? projectData.renewalDate.split('T')[0] : '',
-          assignTo: projectData?.assignments?.map(a => a?.manager?.employeeId).filter(Boolean) || []
+          assignTo: projectData?.assignments?.map(a => a?.manager?.employeeId).filter(Boolean) || [],
+          clientName: projectData?.clientName || '',
+          location: projectData?.location || '',
+          phone: projectData?.phone || '',
+          projectStartDate: projectData?.projectStartDate ? projectData.projectStartDate.split('T')[0] : '',
+          referenceLink: projectData?.referenceLink || '',
+          tasteLink: projectData?.tasteLink || '',
+          fbEmail: projectData?.fbEmail || '',
+          fbPassword: projectData?.fbPassword || '',
+          instaEmail: projectData?.instaEmail || '',
+          instaPassword: projectData?.instaPassword || '',
+          youtubeEmail: projectData?.youtubeEmail || '',
+          youtubePassword: projectData?.youtubePassword || '',
+          linkedinEmail: projectData?.linkedinEmail || '',
+          linkedinPassword: projectData?.linkedinPassword || '',
+          twitterEmail: projectData?.twitterEmail || '',
+          twitterPassword: projectData?.twitterPassword || ''
         });
       } else {
         setError(resData?.message || 'Failed to fetch project details.');
@@ -87,37 +133,67 @@ const HRManagerView = ({ projectId }) => {
     setFormData(prev => ({ ...prev, assignTo: selectedValues }));
   };
 
+  const handleLogoClick = () => {
+    if (logoInputRef.current && !isUploadingLogo) {
+      logoInputRef.current.click();
+    }
+  };
+
+  const handleLogoFileSelected = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingLogo(true);
+      const data = new FormData();
+      data.append("logo", file);
+
+      await API.patch(`/api/projects/${projectId}/logo`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      fetchProjectDetails();
+    } catch (err) {
+      alert("Failed to upload logo.");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
       const payload = {
-        projectName: formData.projectName,
-        description: formData.description,
+        projectName: formData.projectName?.trim() || null,
+        description: formData.description?.trim() || null,
         frequency: formData.frequency,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
         renewalDate: formData.renewalDate ? new Date(formData.renewalDate).toISOString() : null,
-        assignTo: formData.assignTo
+        projectStartDate: formData.projectStartDate ? new Date(formData.projectStartDate).toISOString() : null,
+        assignTo: formData.assignTo,
+        clientName: formData.clientName?.trim() || null,
+        location: formData.location?.trim() || null,
+        phone: formData.phone?.trim() || null,
+        referenceLink: formData.referenceLink?.trim() || null,
+        tasteLink: formData.tasteLink?.trim() || null,
+        fbEmail: formData.fbEmail?.trim() || null,
+        fbPassword: formData.fbPassword || null,
+        instaEmail: formData.instaEmail?.trim() || null,
+        instaPassword: formData.instaPassword || null,
+        youtubeEmail: formData.youtubeEmail?.trim() || null,
+        youtubePassword: formData.youtubePassword || null,
+        linkedinEmail: formData.linkedinEmail?.trim() || null,
+        linkedinPassword: formData.linkedinPassword || null,
+        twitterEmail: formData.twitterEmail?.trim() || null,
+        twitterPassword: formData.twitterPassword || null
       };
 
       const config = { headers: { 'Content-Type': 'application/json' } };
 
-      try {
-        await API.put(`/api/projects/${projectId}`, payload, config);
-      } catch (putError) {
-        if (putError.response?.status === 404) {
-          console.warn("PUT route returned 404, attempting fallback to PATCH method...");
-          await API.patch(`/api/projects/${projectId}`, payload, config);
-        } else {
-          throw putError;
-        }
-      }
-      
+      await API.patch(`/api/projects/${projectId}`, payload, config);
       setIsEditing(false);
       fetchProjectDetails(); 
-      alert('Project updated successfully!');
     } catch (err) {
-      console.error("Update request failure diagnostic logs:", err);
-      alert(err.response?.data?.message || err.message || 'Failed to update project. Verify backend route methods.');
+      alert(err.response?.data?.message || err.message || 'Failed to update project.');
     }
   };
 
@@ -125,7 +201,6 @@ const HRManagerView = ({ projectId }) => {
     if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
       try {
         await API.delete(`/api/projects/${projectId}`);
-        alert('Project deleted successfully.');
         navigate('/projects'); 
       } catch (err) {
         alert(err.response?.data?.message || err.message || 'Failed to delete project.');
@@ -133,436 +208,412 @@ const HRManagerView = ({ projectId }) => {
     }
   };
 
+  const renderPasswordField = (label, name, value, visible, setVisible, placeholder, Icon) => (
+    <div className="flex flex-col space-y-1.5">
+      <label className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+        {Icon && <Icon size={14} className="text-indigo-500" />}
+        {label}
+      </label>
+      <div className="relative group">
+        <input
+          type={visible ? "text" : "password"}
+          name={name}
+          value={value}
+          onChange={handleInputChange}
+          className="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors"
+        >
+          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+    </div>
+  );
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   if (loading) {
     return (
-      <div style={styles.centerContainer}>
-        <div style={styles.spinner}></div>
-        <p style={{ color: '#64748b', marginTop: '16px', fontSize: '14px', fontWeight: '500' }}>Loading project details...</p>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin"></div>
+          <p className="text-slate-500 font-medium">Loading HR Project View...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.centerContainer}>
-        <div style={styles.errorCard}>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <svg style={{ width: '20px', height: '20px', color: '#dc2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-            <strong style={{ fontSize: '15px' }}>Error Encountered</strong>
+      <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
+        <div className="bg-red-50 text-red-600 p-6 rounded-2xl max-w-md w-full border border-red-100 flex flex-col items-center text-center">
+          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </div>
-          <p style={{ margin: '8px 0 0 30px', fontSize: '14px', lineHeight: '1.5' }}>{error}</p>
+          <h3 className="font-bold text-lg mb-2">Error Loading Project</h3>
+          <p className="text-sm opacity-90">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      {/* Upper Navigation Metadata Badge */}
-      <div style={styles.metaRow}>
-        <div style={styles.badgeGroup}>
-          <span style={styles.idBadge}>ID: {project?.id}</span>
-          <span style={styles.deptBadge}>{project?.department?.name || 'General'}</span>
-        </div>
-        <div style={styles.actionButtonGroup}>
-          <button 
-            type="button"
-            style={isEditing ? styles.cancelBtn : styles.editBtn} 
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            {isEditing ? 'Cancel' : 'Edit Project'}
-          </button>
-          {!isEditing && (
-            <button type="button" style={styles.deleteBtn} onClick={handleDelete}>
-              Delete
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-20">
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Main Header Action Area */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={styles.title}>{project?.projectName || 'Unnamed Project'}</h1>
-      </div>
-
-      {isEditing ? (
-        /* ================= EDIT MODE FORM ================= */
-        <form onSubmit={handleUpdate} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Project Title / Name</label>
-            <input
-              type="text"
-              name="projectName"
-              required
-              value={formData.projectName}
-              onChange={handleInputChange}
-              style={styles.input}
-              placeholder="e.g. Q3 Social Media Campaign"
-            />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
+        
+        <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold tracking-widest uppercase rounded-full">
+                HR Project View
+              </span>
+              <span className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold uppercase rounded-full">
+                ID: {project?.id?.toUpperCase().slice(0, 8)}
+              </span>
+              <span className="px-3 py-1 bg-teal-100 text-teal-700 text-xs font-bold uppercase rounded-full">
+                {project?.department?.name || 'General'}
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mt-1 flex items-center gap-4">
+              {project?.projectName || "Unnamed Project"}
+            </h1>
+            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl">
+              {project?.description || "No project overview available."}
+            </p>
           </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Project Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              style={styles.textarea}
-              rows="4"
-              placeholder="Provide clear scopes and requirements..."
-            />
-          </div>
-
-          <div style={styles.formGrid}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Frequency</label>
-              <select
-                name="frequency"
-                value={formData.frequency}
-                onChange={handleInputChange}
-                style={styles.input}
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-              </select>
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleInputChange}
-                style={styles.input}
-              />
-            </div>
-
-            <div style={{ ...styles.formGroup, gridColumn: 'span 2' }}>
-              <label style={styles.label}>Renewal Date</label>
-              <input
-                type="date"
-                name="renewalDate"
-                value={formData.renewalDate}
-                onChange={handleInputChange}
-                style={styles.input}
-              />
-            </div>
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>
-              Assign Managers 
-              <span style={{ fontWeight: 'normal', fontSize: '12px', color: '#64748b', marginLeft: '6px' }}>(Hold Ctrl/Cmd to select multiple)</span>
-            </label>
-            <select
-              multiple
-              value={formData.assignTo}
-              onChange={handleAssigneeChange}
-              style={{ ...styles.input, height: '120px', padding: '8px' }}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className={`inline-flex items-center gap-2 h-11 px-5 rounded-xl font-bold transition-all ${isEditing ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25'}`}
             >
-              <option value="SM-MGR-001">Lovprit (Social Media Manager)</option>
-              <option value="CC-MGR-001">Abhijeet (Content & Creative Manager)</option>
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-            <button type="submit" style={styles.saveBtn}>Save Project Details</button>
-          </div>
-        </form>
-      ) : (
-        /* ================= DISPLAY VIEW MODE ================= */
-        <div>
-          {/* Project Overview */}
-          <div style={styles.descriptionBox}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-              <svg style={{ width: '16px', height: '16px', color: '#475569' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              <h4 style={{ margin: 0, color: '#1e293b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Project Overview</h4>
-            </div>
-            <p style={{ margin: 0, color: '#334155', fontSize: '14px', lineHeight: '1.6', fontWeight: '400' }}>{project?.description || 'No descriptive overview provided for this active timeline.'}</p>
-          </div>
-
-          {/* Client & Core Info Section */}
-          <h3 style={styles.sectionHeading}>Client & Contact Information</h3>
-          <div style={styles.detailsGrid}>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Client Name</span>
-                <span style={styles.tileValue}>{project?.clientName || 'N/A'}</span>
-              </div>
-            </div>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2a2.5 2.5 0 002.5-2.5V6.265M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Location / Country</span>
-                <span style={styles.tileValue}>{project?.location || 'N/A'}</span>
-              </div>
-            </div>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Phone Number</span>
-                <span style={styles.tileValue}>{project?.phone || 'N/A'}</span>
-              </div>
-            </div>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.213 6H16" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Update Frequency</span>
-                <span style={styles.tileValue}>{project?.frequency}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline Dates Grid */}
-          <h3 style={{...styles.sectionHeading, marginTop: '32px'}}>Project Milestone Deadlines</h3>
-          <div style={styles.detailsGrid}>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Project Start Date</span>
-                <span style={styles.tileValue}>
-                  {project?.projectStartDate ? new Date(project.projectStartDate).toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}
-                </span>
-              </div>
-            </div>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Contract Start Date</span>
-                <span style={styles.tileValue}>
-                  {project?.startDate ? new Date(project.startDate).toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}
-                </span>
-              </div>
-            </div>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Target End Date</span>
-                <span style={styles.tileValue}>
-                  {project?.endDate ? new Date(project.endDate).toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}
-                </span>
-              </div>
-            </div>
-            <div style={styles.infoTile}>
-              <svg style={styles.tileIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-              <div>
-                <span style={styles.tileLabel}>Renewal Review</span>
-                <span style={styles.tileValue}>
-                  {project?.renewalDate ? new Date(project.renewalDate).toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Social Media Credentials Section */}
-          <h3 style={{...styles.sectionHeading, marginTop: '32px'}}>Social Media Accounts Credentials</h3>
-          <div style={styles.credGrid}>
-            {/* Facebook Card */}
-            <div style={styles.credCard}>
-              <div style={styles.credHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{...styles.platformIconWrapper, backgroundColor: '#e2eafc'}}>
-                    <svg style={{ width: '16px', height: '16px', color: '#1877f2' }} fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                  </div>
-                  <strong style={{ color: '#0f172a', fontSize: '14px', fontWeight: '600' }}>Facebook Channel</strong>
-                </div>
-              </div>
-              <div style={styles.credRow}>
-                <span style={styles.credLabel}>Email / User:</span>
-                <span style={styles.credValue}>{project?.fbEmail || 'Not Provided'}</span>
-              </div>
-              <div style={styles.credRow}>
-                <span style={styles.credLabel}>Password:</span>
-                <div style={styles.passWrapper}>
-                  <span style={styles.credValue}>
-                    {showFbPassword ? project?.fbPassword || 'N/A' : '••••••••••••'}
-                  </span>
-                  {project?.fbPassword && (
-                    <button type="button" onClick={() => setShowFbPassword(!showFbPassword)} style={styles.eyeButton} title={showFbPassword ? "Hide password" : "Show password"}>
-                      {showFbPassword ? (
-                        <svg style={styles.eyeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
-                      ) : (
-                        <svg style={styles.eyeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Instagram Card */}
-            <div style={styles.credCard}>
-              <div style={styles.credHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{...styles.platformIconWrapper, backgroundColor: '#fce8f3'}}>
-                    <svg style={{ width: '16px', height: '16px', color: '#e1306c' }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                  </div>
-                  <strong style={{ color: '#0f172a', fontSize: '14px', fontWeight: '600' }}>Instagram Handle</strong>
-                </div>
-              </div>
-              <div style={styles.credRow}>
-                <span style={styles.credLabel}>Email / User:</span>
-                <span style={styles.credValue}>{project?.instaEmail || 'Not Provided'}</span>
-              </div>
-              <div style={styles.credRow}>
-                <span style={styles.credLabel}>Password:</span>
-                <div style={styles.passWrapper}>
-                  <span style={styles.credValue}>
-                    {showInstaPassword ? project?.instaPassword || 'N/A' : '••••••••••••'}
-                  </span>
-                  {project?.instaPassword && (
-                    <button type="button" onClick={() => setShowInstaPassword(!showInstaPassword)} style={styles.eyeButton} title={showInstaPassword ? "Hide password" : "Show password"}>
-                      {showInstaPassword ? (
-                        <svg style={styles.eyeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
-                      ) : (
-                        <svg style={styles.eyeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* --- MONTHLY SHEETS SECTION --- */}
-          <div style={{ marginTop: '24px' }}>
-            <div style={styles.card}>
-              <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>Monthly Sheets & Targets</h2>
-                <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>
-                  {monthlySheets.length} Logged
-                </span>
-              </div>
-              
-              <div style={{ padding: '24px' }}>
-                {monthlySheets.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '14px', margin: '20px 0' }}>No monthly sheets have been created for this project yet.</p>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                    {monthlySheets.map(sheet => (
-                      <div key={sheet.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', background: '#f8fafc' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                          <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '16px' }}>{sheet.month} / {sheet.year}</span>
-                          {sheet.moodBoardLink && (
-                            <a href={sheet.moodBoardLink} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>
-                              View Moodboard ↗
-                            </a>
-                          )}
-                        </div>
-                        
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                            <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Reels Target</div>
-                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>{sheet.totalReels || 0}</div>
-                          </div>
-                          <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                            <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Posts Target</div>
-                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>{sheet.totalPosts || 0}</div>
-                          </div>
-                        </div>
-                        
-                        <div style={{ fontSize: '13px', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
-                          <span>Logged Days: <strong>{sheet.days?.length || 0}</strong></span>
-                          <span>Created by: <strong>{sheet.createdBy?.name || 'Unknown'}</strong></span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Management Assignments */}
-          <div style={{ marginTop: '32px' }}>
-            <h3 style={styles.sectionHeading}>Assigned Team Managers</h3>
-            {project?.assignments?.length > 0 ? (
-              <div style={styles.managerGrid}>
-                {project.assignments.map((assignment) => (
-                  <div key={assignment.id} style={styles.managerCard}>
-                    <div style={styles.avatar}>{assignment.manager?.name?.charAt(0) || 'M'}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={styles.mgrName}>{assignment.manager?.name}</div>
-                      <div style={styles.mgrRole}>{assignment.manager?.position || 'Project Manager Lead'}</div>
-                      <div style={styles.mgrId}>ID: {assignment.manager?.employeeId}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={styles.emptyState}>No management structures assigned yet.</div>
+              {isEditing ? 'Cancel Edit' : <><Edit size={16} /> Edit Project</>}
+            </button>
+            {!isEditing && (
+              <button
+                onClick={handleDelete}
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-all"
+              >
+                <Trash2 size={16} />
+                Delete Project
+              </button>
             )}
           </div>
+        </motion.header>
 
-          {/* Footer Metadata */}
-          <div style={styles.footerContainer}>
-            <span>Created by: <strong>{project?.createdBy?.name || 'System'}</strong> ({project?.createdBy?.role || 'Admin'})</span>
-            <span>Logs: Updated at {project?.updatedAt ? new Date(project.updatedAt).toLocaleString() : 'N/A'}</span>
-          </div>
-        </div>
-      )}
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
+          
+          {isEditing ? (
+            <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden p-6 md:p-8">
+              <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Settings size={20} className="text-indigo-500" /> Edit Project Configuration</h2>
+              
+              <form onSubmit={handleUpdate} className="space-y-8">
+                
+                <div className="flex flex-col lg:flex-row gap-8">
+                  <div className="flex-shrink-0 flex flex-col items-center gap-4 w-full lg:w-64">
+                    <label className="text-xs font-bold tracking-wider uppercase text-slate-400 self-start lg:self-center">Client Logo</label>
+                    <input type="file" accept="image/*" style={{ display: "none" }} ref={logoInputRef} onChange={handleLogoFileSelected} />
+                    <div 
+                      onClick={handleLogoClick}
+                      className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 cursor-pointer transition-all ${
+                        isUploadingLogo ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-400'
+                      }`}
+                    >
+                      {project?.logo ? (
+                        <img src={project.logo} alt="Client Logo" className="w-full h-full object-contain rounded-xl" />
+                      ) : (
+                        <div className="flex flex-col items-center text-indigo-400 gap-2">
+                          <UploadCloud size={32} />
+                          <span className="text-sm font-semibold">Upload Image</span>
+                        </div>
+                      )}
+                    </div>
+                    <button type="button" onClick={handleLogoClick} disabled={isUploadingLogo} className="text-xs font-semibold px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors w-full">
+                      {isUploadingLogo ? "Uploading..." : project?.logo ? "Replace Logo" : "Select Logo"}
+                    </button>
+                  </div>
+
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col space-y-1.5 md:col-span-2">
+                      <label className="text-xs font-semibold text-slate-600">Project Title / Name</label>
+                      <input type="text" name="projectName" required value={formData.projectName} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" placeholder="e.g. Q3 Social Media Campaign" />
+                    </div>
+                    <div className="flex flex-col space-y-1.5 md:col-span-2">
+                      <label className="text-xs font-semibold text-slate-600">Project Description</label>
+                      <textarea name="description" value={formData.description} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" rows="3" placeholder="Provide clear scopes..." />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Frequency</label>
+                      <select name="frequency" value={formData.frequency} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Assign Managers <span className="text-slate-400 font-normal">(Ctrl/Cmd for multiple)</span></label>
+                      <select multiple value={formData.assignTo} onChange={handleAssigneeChange} className="w-full h-24 p-2 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all">
+                        <option value="SM-MGR-001">Lovprit (Social Media)</option>
+                        <option value="CC-MGR-001">Abhijeet (Content & Creative)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><User size={14} className="inline text-indigo-500 mr-1"/> Client Name</label>
+                    <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><MapPin size={14} className="inline text-indigo-500 mr-1"/> Location</label>
+                    <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><Phone size={14} className="inline text-indigo-500 mr-1"/> Phone Number</label>
+                    <input type="text" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Project Start Date</label>
+                    <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Contract Start Date</label>
+                    <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Target End Date</label>
+                    <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1"/> Renewal Date</label>
+                    <input type="date" name="renewalDate" value={formData.renewalDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <h3 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-4">Social Media Credentials & Links</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1"/> Reference Link</label>
+                      <input type="url" name="referenceLink" value={formData.referenceLink} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1"/> Taste Link</label>
+                      <input type="url" name="tasteLink" value={formData.tasteLink} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">Facebook Email</label>
+                        <input type="text" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
+                      </div>
+                      {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "Password", Globe)}
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">Instagram Email</label>
+                        <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
+                      </div>
+                      {renderPasswordField("Instagram Password", "instaPassword", formData.instaPassword, showInstaPassword, setShowInstaPassword, "Password", Globe)}
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">YouTube Email</label>
+                        <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
+                      </div>
+                      {renderPasswordField("YouTube Password", "youtubePassword", formData.youtubePassword, showYoutubePassword, setShowYoutubePassword, "Password", Globe)}
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">LinkedIn Email</label>
+                        <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
+                      </div>
+                      {renderPasswordField("LinkedIn Password", "linkedinPassword", formData.linkedinPassword, showLinkedinPassword, setShowLinkedinPassword, "Password", Globe)}
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">Twitter Email</label>
+                        <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm outline-none" />
+                      </div>
+                      {renderPasswordField("Twitter Password", "twitterPassword", formData.twitterPassword, showTwitterPassword, setShowTwitterPassword, "Password", Globe)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-6 border-t border-slate-100">
+                  <button type="submit" className="inline-flex items-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all">
+                    <Save size={18} /> Save Project Details
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          ) : (
+            <>
+              {/* DISPLAY MODE */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left Column: Core Info */}
+                <div className="lg:col-span-2 space-y-6">
+                  
+                  <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
+                    <div className="flex items-start gap-6">
+                      <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
+                        {project?.logo ? <img src={project.logo} alt="Logo" className="w-full h-full object-contain" /> : <User size={32} className="text-slate-400" />}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">Client Identity</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Client Name</p>
+                            <p className="font-medium text-slate-900">{project?.clientName || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Location</p>
+                            <p className="font-medium text-slate-900 flex items-center gap-1"><MapPin size={14} className="text-indigo-500"/> {project?.location || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Contact Phone</p>
+                            <p className="font-medium text-slate-900 flex items-center gap-1"><Phone size={14} className="text-indigo-500"/> {project?.phone || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Frequency</p>
+                            <p className="font-medium text-slate-900 capitalize">{project?.frequency || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Calendar size={20} className="text-indigo-500"/> Key Dates & Milestones</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                      <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Project Start</p>
+                        <p className="font-bold text-slate-900">{project?.projectStartDate ? new Date(project.projectStartDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                      <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Contract Start</p>
+                        <p className="font-bold text-slate-900">{project?.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                      <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Contract End</p>
+                        <p className="font-bold text-slate-900">{project?.endDate ? new Date(project.endDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                      <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Renewal</p>
+                        <p className="font-bold text-slate-900 text-indigo-600">{project?.renewalDate ? new Date(project.renewalDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Right Column: Stakeholders & Links */}
+                <div className="space-y-6">
+                  <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6">
+                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><LinkIcon size={16} className="text-indigo-500"/> Campaign Links</h3>
+                    <div className="space-y-3">
+                      <a href={project?.referenceLink || '#'} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+                        <span className="text-sm font-semibold text-slate-700">Reference Link</span>
+                        <LinkIcon size={14} className="text-slate-400" />
+                      </a>
+                      <a href={project?.tasteLink || '#'} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+                        <span className="text-sm font-semibold text-slate-700">Taste Link</span>
+                        <LinkIcon size={14} className="text-slate-400" />
+                      </a>
+                    </div>
+                  </motion.div>
+
+                  <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6">
+                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><User size={16} className="text-indigo-500"/> Stakeholders</h3>
+                    {project?.assignments?.length > 0 ? (
+                      <div className="space-y-3">
+                        {project.assignments.map(assignment => (
+                          <div key={assignment.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                              {assignment.manager?.name?.charAt(0) || 'M'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800 leading-tight">{assignment.manager?.name}</p>
+                              <p className="text-[10px] text-slate-500 uppercase font-semibold">{assignment.manager?.position || 'Manager'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 italic text-center py-4">No managers assigned.</p>
+                    )}
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Bottom Section: Social Credentials */}
+              <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Settings size={20} className="text-indigo-500"/> Social Media Credentials</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+                  {[
+                    { name: 'Facebook', email: project?.fbEmail, pass: project?.fbPassword, Icon: Globe, show: showFbPassword, setShow: setShowFbPassword, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { name: 'Instagram', email: project?.instaEmail, pass: project?.instaPassword, Icon: Globe, show: showInstaPassword, setShow: setShowInstaPassword, color: 'text-pink-600', bg: 'bg-pink-50' },
+                    { name: 'YouTube', email: project?.youtubeEmail, pass: project?.youtubePassword, Icon: Globe, show: showYoutubePassword, setShow: setShowYoutubePassword, color: 'text-red-600', bg: 'bg-red-50' },
+                    { name: 'LinkedIn', email: project?.linkedinEmail, pass: project?.linkedinPassword, Icon: Globe, show: showLinkedinPassword, setShow: setShowLinkedinPassword, color: 'text-blue-700', bg: 'bg-blue-50' },
+                    { name: 'Twitter / X', email: project?.twitterEmail, pass: project?.twitterPassword, Icon: Globe, show: showTwitterPassword, setShow: setShowTwitterPassword, color: 'text-slate-800', bg: 'bg-slate-100' },
+                  ].map((cred, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cred.bg} ${cred.color}`}>
+                          <cred.Icon size={16} />
+                        </div>
+                        <span className="font-bold text-sm text-slate-800">{cred.name}</span>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Email / Username</p>
+                          <p className="text-xs font-medium text-slate-800 truncate" title={cred.email}>{cred.email || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Password</p>
+                          <div className="flex items-center justify-between group">
+                            <p className="text-xs font-medium text-slate-800 font-mono tracking-wider">
+                              {cred.show ? (cred.pass || '—') : '••••••••'}
+                            </p>
+                            {cred.pass && (
+                              <button onClick={() => cred.setShow(!cred.show)} className="text-slate-400 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {cred.show ? <EyeOff size={14}/> : <Eye size={14}/>}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
-};
-
-/* Modern Premium Dashboard Styling */
-const styles = {
-  container: { maxWidth: '1000px', margin: '30px auto', padding: '40px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif', borderRadius: '12px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)' },
-  centerContainer: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', backgroundColor: '#f8fafc' },
-  metaRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '16px' },
-  badgeGroup: { display: 'flex', gap: '10px', alignItems: 'center' },
-  idBadge: { backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', fontFamily: 'SFMono-Regular, Consolas, monospace', border: '1px solid #e2e8f0' },
-  deptBadge: { backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', letterSpacing: '0.03em', textTransform: 'uppercase', border: '1px solid #dbeafe' },
-  title: { fontSize: '32px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.02em', lineHeight: '1.2' },
-  actionButtonGroup: { display: 'flex', gap: '12px' },
-  
-  editBtn: { backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.15s ease' },
-  cancelBtn: { backgroundColor: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
-  deleteBtn: { backgroundColor: '#ffffff', color: '#b91c1c', border: '1px solid #fee2e2', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
-  saveBtn: { backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
-  
-  descriptionBox: { backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '20px', borderRadius: '8px', marginBottom: '32px' },
-  detailsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' },
-  infoTile: { display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' },
-  tileIcon: { width: '18px', height: '18px', color: '#64748b', flexShrink: 0, marginTop: '2px' },
-  tileLabel: { display: 'block', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' },
-  tileValue: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginTop: '4px', wordBreak: 'break-word' },
-  
-  sectionHeading: { fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' },
-  
-  credGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' },
-  credCard: { padding: '24px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' },
-  credHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  platformIconWrapper: { width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  credRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9', fontSize: '13px' },
-  credLabel: { color: '#64748b', fontWeight: '500' },
-  credValue: { color: '#0f172a', fontWeight: '600', fontFamily: 'SFMono-Regular, Consolas, monospace' },
-  passWrapper: { display: 'flex', alignItems: 'center', gap: '10px' },
-  eyeButton: { background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#64748b' },
-  eyeIcon: { width: '16px', height: '16px' },
-
-  managerGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' },
-  managerCard: { display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' },
-  avatar: { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '13px', border: '1px solid #e2e8f0', flexShrink: 0 },
-  mgrName: { fontSize: '14px', fontWeight: '600', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  mgrRole: { fontSize: '12px', color: '#64748b', marginTop: '2px' },
-  mgrId: { fontSize: '11px', color: '#94a3b8', fontFamily: 'SFMono-Regular, Consolas, monospace', marginTop: '4px' },
-  emptyState: { padding: '32px', textAlign: 'center', color: '#64748b', border: '1px dashed #cbd5e1', borderRadius: '8px', fontSize: '13px' },
-  
-  form: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-  formGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  label: { fontSize: '12px', fontWeight: '600', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.02em' },
-  input: { padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', color: '#0f172a', outline: 'none', transition: 'border-color 0.15s ease-in-out' },
-  textarea: { padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', color: '#0f172a', outline: 'none', resize: 'vertical', fontFamily: 'inherit' },
-  
-  footerContainer: { marginTop: '48px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' },
-  errorCard: { padding: '20px 24px', backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', color: '#991b1b', maxWidth: '500px' },
-  spinner: { width: '28px', height: '28px', border: '2px solid #e2e8f0', borderTop: '2px solid #0f172a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }
 };
 
 export default HRManagerView;

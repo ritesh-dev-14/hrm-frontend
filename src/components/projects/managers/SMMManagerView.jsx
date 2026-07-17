@@ -453,10 +453,10 @@ const SMMManagerView = ({ projectId }) => {
 
         // --- Sync to Google Sheet ---
         try {
-          const dateStr = formData.projectStartDate 
-            ? new Date(formData.projectStartDate).toLocaleDateString() 
+          const dateStr = formData.projectStartDate
+            ? new Date(formData.projectStartDate).toLocaleDateString()
             : "";
-            
+
           const sheetPayload = {
             clientName: formData.clientName || "",
             clientLocation: formData.location || "",
