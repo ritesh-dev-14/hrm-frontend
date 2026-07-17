@@ -302,7 +302,9 @@ const SMMManagerView = ({ projectId }) => {
         setMonthlySheets(resData.data || []);
       }
     } catch (err) {
-      console.error("Error pulling history sheets:", err);
+      if (err.response?.status !== 403) {
+        console.error("Error pulling history sheets:", err);
+      }
     } finally {
       setSheetsLoading(false);
     }
@@ -377,11 +379,15 @@ const SMMManagerView = ({ projectId }) => {
         );
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Error communicating with infrastructure.",
-      );
+      if (err.response?.status === 403) {
+        setError("Access Denied: You are not assigned to this project. Please ask HR to assign you.");
+      } else {
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          "Error communicating with infrastructure.",
+        );
+      }
     } finally {
       setLoading(false);
     }
