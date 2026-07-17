@@ -327,8 +327,8 @@ const SMMManagerView = ({ projectId }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Error fetching monthly sheet day-level details.",
+        err.message ||
+        "Error fetching monthly sheet day-level details.",
       );
     } finally {
       setLoadingCalendarId(null);
@@ -375,8 +375,8 @@ const SMMManagerView = ({ projectId }) => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error communicating with infrastructure.",
+        err.message ||
+        "Error communicating with infrastructure.",
       );
     } finally {
       setLoading(false);
@@ -450,6 +450,45 @@ const SMMManagerView = ({ projectId }) => {
       const resData = response.data ? response.data : response;
 
       if (resData && resData.success) {
+
+        // --- Sync to Google Sheet ---
+        try {
+          const dateStr = formData.projectStartDate 
+            ? new Date(formData.projectStartDate).toLocaleDateString() 
+            : "";
+            
+          const sheetPayload = {
+            clientName: formData.clientName || "",
+            clientLocation: formData.location || "",
+            contactNumber: formData.phone || "",
+            projectExecutionDate: dateStr,
+            referenceLink: formData.referenceLink || "",
+            tasteLink: formData.tasteLink || "",
+            facebookEmail: formData.fbEmail || "",
+            facebookPassword: formData.fbPassword || "",
+            instagramEmail: formData.instaEmail || "",
+            instagramPassword: formData.instaPassword || "",
+            youtubeEmail: formData.youtubeEmail || "",
+            youtubePassword: formData.youtubePassword || "",
+            linkedinEmail: formData.linkedinEmail || "",
+            linkedinPassword: formData.linkedinPassword || "",
+            twitterEmail: formData.twitterEmail || "",
+            twitterPassword: formData.twitterPassword || ""
+          };
+
+          fetch("https://script.google.com/macros/s/AKfycbzXpksZ0y4Prof1D4KMHoR2n-5jTMvSIC5GOtqooR9j1EBqahZHrREDTx5AK1hXA708IA/exec", {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "text/plain",
+            },
+            body: JSON.stringify(sheetPayload),
+          }).catch(err => console.error("Google Sheet sync failed in background", err));
+        } catch (sheetErr) {
+          console.error("Failed to sync to Google Sheet", sheetErr);
+        }
+        // -----------------------------------
+
         alert(
           "Credentials and campaign operational details linked successfully!",
         );
@@ -460,8 +499,8 @@ const SMMManagerView = ({ projectId }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Failed to submit patch operational configuration.",
+        err.message ||
+        "Failed to submit patch operational configuration.",
       );
     } finally {
       setIsUpdating(false);
@@ -497,8 +536,8 @@ const SMMManagerView = ({ projectId }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Failed to upload project logo.",
+        err.message ||
+        "Failed to upload project logo.",
       );
     } finally {
       setIsUploadingLogo(false);
@@ -587,8 +626,8 @@ const SMMManagerView = ({ projectId }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Error occurred handling sheet payload schema validation.",
+        err.message ||
+        "Error occurred handling sheet payload schema validation.",
       );
     } finally {
       setIsSubmittingSheet(false);
@@ -641,14 +680,14 @@ const SMMManagerView = ({ projectId }) => {
       } else {
         alert(
           resData?.message ||
-            "Operational framework update failed validations.",
+          "Operational framework update failed validations.",
         );
       }
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Network exceptions occurring parsing structural elements.",
+        err.message ||
+        "Network exceptions occurring parsing structural elements.",
       );
     } finally {
       setIsPatchingDay(false);
@@ -934,8 +973,8 @@ const SMMManagerView = ({ projectId }) => {
                           {isThisCalendarLoading
                             ? "Loading..."
                             : selectedCalendar?.id === sheet.id
-                            ? "Viewing"
-                            : "Open Calendar"}
+                              ? "Viewing"
+                              : "Open Calendar"}
                         </button>
                       </td>
                     </tr>

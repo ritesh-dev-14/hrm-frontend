@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Briefcase, ClipboardList, TrendingUp, Mail, CalendarDays,
@@ -9,6 +10,7 @@ import {
 import API from "../../services/api";
 import { notifyError } from "../../utils/toast";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
+import { useAuth } from "../../context/AuthContext";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -38,6 +40,7 @@ const HrHomePage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedManager, setSelectedManager] = useState(null);
   const [managerSearch, setManagerSearch] = useState("");
+  const { user } = useAuth();
   
   const [activeSegment, setActiveSegment] = useState("EMPLOYEES");
 
@@ -49,9 +52,6 @@ const HrHomePage = () => {
       if (response?.data?.success) {
         const data = response.data.data;
         setDashboardData(data);
-        if (data.managerDetails?.length > 0) {
-          setSelectedManager(data.managerDetails[0]);
-        }
       }
     } catch (error) {
       console.error(error);
@@ -61,16 +61,53 @@ const HrHomePage = () => {
     }
   };
 
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(true);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        setLoadingAttendance(true);
+        const res = await API.get("/api/attendance");
+        const data = res.data || res;
+        if (data.success) {
+          const allRecords = data.data || [];
+          const filteredRecords = allRecords.filter(r => {
+             const rDate = new Date(r.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+             return rDate === selectedDate;
+          });
+          setAttendanceRecords(filteredRecords);
+        }
+      } catch (err) {
+        console.error("Error fetching attendance data:", err);
+      } finally {
+        setLoadingAttendance(false);
+      }
+    };
+    fetchAttendance();
+  }, [selectedDate]);
+
+  const rosterData = useMemo(() => {
+    if (!dashboardData?.allUsers) return [];
+    return dashboardData.allUsers.map(user => {
+      const record = attendanceRecords.find(r => r.userId === user.id || r.user?.employeeId === user.employeeId);
+      return {
+        ...user,
+        attendance: record || null
+      };
+    });
+  }, [dashboardData?.allUsers, attendanceRecords]);
+
   useEffect(() => {
     fetchDashboard();
   }, []);
 
-  const filteredManagers = useMemo(() => {
-    const list = dashboardData?.managerDetails || [];
-    const term = managerSearch.toLowerCase().trim();
-    if (!term) return list;
-    return list.filter((m) => m.manager?.name?.toLowerCase().includes(term));
-  }, [dashboardData, managerSearch]);
+
 
   if (loading) {
     return (
@@ -101,7 +138,7 @@ const HrHomePage = () => {
           <div>
             <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">Overview</span>
             <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-              HR Operations Control
+              Welcome back, {user?.name || "HR"}
             </h1>
           </div>
         </motion.div>
@@ -114,284 +151,137 @@ const HrHomePage = () => {
         </motion.div>
 
         {/* TOP LEVEL GLOBAL DIRECTORY METRICS METADATA */}
-        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsMiniRow title="Total Managers" value={globalStats.totalManagers} icon={Users} color="indigo" />
-          <StatsMiniRow title="Total Employees" value={globalStats.totalEmployees} icon={Users} color="emerald" />
-          <StatsMiniRow title="Active Projects" value={globalStats.totalTasks} icon={Briefcase} color="violet" />
-          <StatsMiniRow title="Assigned Tasks" value={globalStats.totalAssignments} icon={ClipboardList} color="amber" />
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatsMiniRow title="Total Managers" value={globalStats.totalManagers} icon={Users} color="indigo" link="/hr/team?role=MANAGER" />
+          <StatsMiniRow title="Total Employees" value={globalStats.totalEmployees} icon={Users} color="emerald" link="/hr/team?role=EMPLOYEE" />
+          <StatsMiniRow title="Total Projects" value={globalStats.totalTasks} icon={Briefcase} color="violet" link="/projects" />
         </motion.div>
 
-        {/* AGGREGATED STATS METRIC MATRIX */}
-        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatusCountRow label="Completed" value={globalStats.completedAssignments} icon={CheckCircle2} colorClass="text-emerald-500 bg-emerald-50/50 border-emerald-100" />
-          <StatusCountRow label="Submitted" value={globalStats.submittedAssignments} icon={Clock3} colorClass="text-blue-500 bg-blue-50/50 border-blue-100" />
-          <StatusCountRow label="Rejected" value={globalStats.rejectedAssignments} icon={XCircle} colorClass="text-red-500 bg-red-50/50 border-red-100" />
-          <StatusCountRow label="Avg Progress" value={`${globalStats.globalAverageProgress}%`} icon={TrendingUp} colorClass="text-indigo-500 bg-indigo-50/50 border-indigo-100" />
-        </motion.div>
-
-        {/* COHORT WORKSPACE SPLIT BLOCK */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* DEDICATED ATTENDANCE ROSTER SECTION */}
+        <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col min-h-[500px]">
           
-          {/* LEFT PANEL: STABLE NAVIGATION MANAGER LISTING SEARCH */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-white/70 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-6 space-y-6 shadow-sm sticky top-6">
-            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Users size={14} className="text-indigo-400" /> Manager Nodes
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">Select a lead to view their segregated reports.</p>
+          {/* List Header & Date Filter */}
+          <div className="p-6 md:p-8 border-b border-slate-100/70 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/50">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100/50">
+                <Activity size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                  Company Attendance Roster
+                  <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-bold">
+                    {rosterData.length} Users
+                  </span>
+                </h2>
+                <p className="text-slate-500 text-sm mt-1 font-medium">Tracking attendance for all organizational roles</p>
+              </div>
             </div>
-            
-            <div className="relative group">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+
+            {/* Date Filter Input */}
+            <div className="relative flex items-center">
+              <div className="absolute left-3 text-indigo-500 pointer-events-none">
+                <CalendarDays size={18} />
+              </div>
               <input
-                type="text"
-                placeholder="Find manager profile..."
-                value={managerSearch}
-                onChange={(e) => setManagerSearch(e.target.value)}
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="pl-10 pr-4 py-2.5 bg-white border border-indigo-100 rounded-xl text-sm font-semibold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm transition-all cursor-pointer"
               />
             </div>
+          </div>
 
-            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
-              {filteredManagers.length === 0 ? (
-                <div className="text-sm text-slate-400 text-center py-8 font-medium">No matching profiles</div>
-              ) : (
-                filteredManagers.map((node, i) => {
-                  const isSelected = selectedManager?.manager?.id === node.manager.id;
-                  return (
-                    <motion.button
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      key={node.manager.id}
-                      onClick={() => setSelectedManager(node)}
-                      className={`w-full text-left px-4 py-3 rounded-2xl text-sm font-medium border flex items-center justify-between group transition-all duration-300 relative overflow-hidden ${
-                        isSelected
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200"
-                          : "bg-white text-slate-700 border-slate-100 hover:border-indigo-200 hover:shadow-sm"
-                      }`}
-                    >
-                      {isSelected && (
-                        <motion.div 
-                          layoutId="activeManager"
-                          className="absolute inset-0 bg-indigo-600 -z-10"
-                        />
-                      )}
-                      <div className="min-w-0 flex-1 relative z-10">
-                        <span className={`block font-bold truncate ${isSelected ? "text-white" : "text-slate-800"}`}>{node.manager.name}</span>
-                        <span className={`block text-[10px] mt-0.5 font-bold tracking-wider uppercase ${isSelected ? "text-indigo-200" : "text-slate-400"}`}>
-                          {node.manager.employeeId}
-                        </span>
-                      </div>
-                      <ChevronRight size={16} className={`relative z-10 ${isSelected ? "text-white" : "text-slate-300 group-hover:text-indigo-500 transition-colors"}`} />
-                    </motion.button>
-                  );
-                })
-              )}
-            </div>
-          </motion.div>
-
-          {/* RIGHT PANEL: SEGREGATED WORKSPACE CONTEXT VIEW */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 space-y-6">
-            {selectedManager ? (
-              <>
-                {/* ACTIVE BANNER META DATA BAR */}
-                <div className="bg-white/70 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-purple-500/5 rounded-bl-full -z-10" />
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-black text-slate-900">{selectedManager.manager.name}</h2>
-                      <span className="px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold tracking-wider uppercase">
-                        {selectedManager.manager.employeeId}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3 text-sm font-medium text-slate-500">
-                      <span className="inline-flex items-center gap-2"><Mail size={14} className="text-slate-400" /> {selectedManager.manager.email}</span>
-                      <span className="inline-flex items-center gap-2">
-                        <CalendarDays size={14} className="text-slate-400" /> Joined {new Date(selectedManager.manager.createdAt).toLocaleDateString("en-IN")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* MINI PERFORMANCE COUNTERS */}
-                  <div className="flex items-center gap-4 self-start md:self-auto w-full md:w-auto">
-                    <div className="bg-white border border-slate-100 rounded-2xl p-4 min-w-[110px] shadow-sm flex flex-col items-center">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1 tracking-widest">Reportees</span>
-                      <span className="text-2xl font-black text-indigo-600 block">{selectedManager.stats.totalEmployees}</span>
-                    </div>
-                    <div className="bg-white border border-slate-100 rounded-2xl p-4 min-w-[110px] shadow-sm flex flex-col items-center">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1 tracking-widest">Team Avg</span>
-                      <span className="text-2xl font-black text-emerald-500 block">{selectedManager.stats.averageProgress}%</span>
-                    </div>
-                  </div>
+          {/* List Content */}
+          <div className="flex-1 p-6 md:p-8 bg-slate-50/30">
+            {loadingAttendance ? (
+              <div className="flex flex-col items-center justify-center h-64 opacity-50">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                  className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mb-4"
+                />
+                <p className="text-indigo-900 font-semibold text-sm tracking-wide">Fetching Attendance Records...</p>
+              </div>
+            ) : rosterData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center bg-white/50 rounded-3xl border border-dashed border-slate-200">
+                <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                  <Search size={32} />
                 </div>
-
-                {/* SEGREGATION SEGMENTATION NAVIGATION TAB STRIP */}
-                <div className="flex items-center gap-2 bg-slate-200/50 p-1.5 rounded-2xl w-full max-w-md backdrop-blur-md border border-slate-100/50">
-                  <SegmentTab 
-                    label={`Employees (${selectedManager.employees.length})`}
-                    active={activeSegment === "EMPLOYEES"}
-                    onClick={() => setActiveSegment("EMPLOYEES")}
-                    icon={Users}
-                  />
-                  <SegmentTab 
-                    label={`Projects (${selectedManager.tasks.length})`}
-                    active={activeSegment === "PROJECTS"}
-                    onClick={() => setActiveSegment("PROJECTS")}
-                    icon={Layers}
-                  />
-                  <SegmentTab 
-                    label={`Tasks (${selectedManager.recentAssignments.length})`}
-                    active={activeSegment === "TASKS"}
-                    onClick={() => setActiveSegment("TASKS")}
-                    icon={CheckSquare}
-                  />
-                </div>
-
-                {/* CONDITIONAL SEGREGATED MATRIX BOARD VIEWS */}
-                <div className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm">
-                  
-                  {/* SEGMENT BOARD 1: EMPLOYEES ROSTER LIST */}
-                  {activeSegment === "EMPLOYEES" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto p-2">
-                      <table className="w-full min-w-[650px] text-left border-collapse">
-                        <thead>
-                          <tr className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                            <th className="px-6 py-4">Employee Details</th>
-                            <th className="px-6 py-4">Department</th>
-                            <th className="px-6 py-4 text-center">Assigned</th>
-                            <th className="px-6 py-4 text-center">Submitted</th>
-                            <th className="px-6 py-4">Progress Vector</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                          {selectedManager.employees.map((emp) => (
-                            <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
-                              <td className="px-6 py-4 rounded-l-2xl">
-                                <span className="font-bold text-slate-900 block group-hover:text-indigo-600 transition-colors">{emp.name}</span>
-                                <span className="text-slate-400 font-medium text-[11px] block mt-1">{emp.email}</span>
-                              </td>
-                              <td className="px-6 py-4 text-slate-600 font-medium">
-                                {emp.department?.name || "General"}
-                              </td>
-                              <td className="px-6 py-4 text-center font-bold text-slate-800">{emp.assignedTasks}</td>
-                              <td className="px-6 py-4 text-center font-bold text-indigo-600">{emp.submittedTasks}</td>
-                              <td className="px-6 py-4 rounded-r-2xl">
-                                <div className="flex items-center gap-3 w-32">
-                                  <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <motion.div 
-                                      initial={{ width: 0 }}
-                                      animate={{ width: `${emp.averageProgress}%` }}
-                                      transition={{ duration: 1 }}
-                                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" 
-                                    />
-                                  </div>
-                                  <span className="font-bold text-slate-700 shrink-0 text-xs">{emp.averageProgress}%</span>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </motion.div>
-                  )}
-
-                  {/* SEGMENT BOARD 2: BLUEPRINT MANAGEMENT STRIP */}
-                  {activeSegment === "PROJECTS" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto p-2">
-                      <table className="w-full min-w-[650px] text-left border-collapse">
-                        <thead>
-                          <tr className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                            <th className="px-6 py-4">Project Blueprint</th>
-                            <th className="px-6 py-4">Scoped Context</th>
-                            <th className="px-6 py-4">Lifecycle State</th>
-                            <th className="px-6 py-4">Date Configured</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                          {selectedManager.tasks.length === 0 ? (
-                            <tr><td colSpan={4} className="text-center py-12 text-slate-400 font-medium">No projects mapped under management scope.</td></tr>
-                          ) : (
-                            selectedManager.tasks.map((task) => (
-                              <tr key={task.id} className="hover:bg-slate-50/50 transition-colors group">
-                                <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap rounded-l-2xl group-hover:text-indigo-600 transition-colors">{task.projectName}</td>
-                                <td className="px-6 py-4 text-slate-500 max-w-xs truncate font-medium">{task.description || "No specific brief metadata logs available."}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusStyles[task.status]}`}>
-                                    {task.status}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 text-slate-500 font-medium rounded-r-2xl">{new Date(task.createdAt).toLocaleDateString("en-IN")}</td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </motion.div>
-                  )}
-
-                  {/* SEGMENT BOARD 3: TASK ITEM ASSIGNMENTS METRIC BOARD */}
-                  {activeSegment === "TASKS" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto p-2">
-                      <table className="w-full min-w-[700px] text-left border-collapse">
-                        <thead>
-                          <tr className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                            <th className="px-6 py-4">Assigned Owner</th>
-                            <th className="px-6 py-4">Task Deliverable</th>
-                            <th className="px-6 py-4">System Status</th>
-                            <th className="px-6 py-4">Completion Matrix</th>
-                            <th className="px-6 py-4">Submission Record</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                          {selectedManager.recentAssignments.length === 0 ? (
-                            <tr><td colSpan={5} className="text-center py-12 text-slate-400 font-medium">No transactional line task tracking entries recorded.</td></tr>
-                          ) : (
-                            selectedManager.recentAssignments.map((assignment) => (
-                              <tr key={assignment.id} className="hover:bg-slate-50/50 transition-colors group">
-                                <td className="px-6 py-4 font-bold text-slate-900 rounded-l-2xl group-hover:text-indigo-600 transition-colors">{assignment.employee?.name || "Unassigned Operations"}</td>
-                                <td className="px-6 py-4 text-slate-600 font-medium max-w-xs truncate">{assignment.taskItem?.title}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusStyles[assignment.status]}`}>
-                                    {assignment.status}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="flex items-center gap-3 w-28">
-                                    <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-                                      <motion.div 
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${assignment.progress}%` }}
-                                        transition={{ duration: 1 }}
-                                        className="h-full bg-slate-900 rounded-full" 
-                                      />
-                                    </div>
-                                    <span className="font-bold text-slate-700 text-xs shrink-0">{assignment.progress}%</span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-slate-500 font-medium rounded-r-2xl">
-                                  {assignment.submittedAt ? new Date(assignment.submittedAt).toLocaleDateString("en-IN") : "-"}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </motion.div>
-                  )}
-
-                </div>
-              </>
+                <h3 className="text-lg font-bold text-slate-700 mb-1">No Records Found</h3>
+                <p className="text-slate-500 text-sm max-w-sm">No employees found in the system for this date.</p>
+              </div>
             ) : (
-              <div className="border border-dashed border-slate-200 bg-white/50 backdrop-blur-sm rounded-[2rem] py-24 text-center text-sm text-slate-400 font-medium shadow-sm flex flex-col items-center">
-                <UserCheck size={32} className="mb-4 text-slate-300" />
-                Select an active managing node from the left panel to load segregated reports.
+              <div className="bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        <th className="py-4 px-6 font-semibold">Employee</th>
+                        <th className="py-4 px-6 font-semibold">Role & Dept</th>
+                        <th className="py-4 px-6 font-semibold">Status</th>
+                        <th className="py-4 px-6 font-semibold">Punch In</th>
+                        <th className="py-4 px-6 font-semibold">Punch Out</th>
+                        <th className="py-4 px-6 font-semibold">Total Work Done</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {rosterData.map((user, i) => {
+                        const status = user.attendance?.status || "ABSENT";
+                        const inTime = user.attendance?.startTime ? new Date(user.attendance.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
+                        const outTime = user.attendance?.endTime ? new Date(user.attendance.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
+                        const totalWork = user.attendance?.totalHours ? `${user.attendance.totalHours} hrs` : "--";
+                        
+                        let statusBadge = "";
+                        if (status === "PRESENT") statusBadge = "bg-emerald-50 text-emerald-600 border-emerald-200";
+                        else if (status === "HALF_DAY") statusBadge = "bg-amber-50 text-amber-600 border-amber-200";
+                        else statusBadge = "bg-red-50 text-red-600 border-red-200";
+
+                        return (
+                          <motion.tr 
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.02 }}
+                            key={user.id} 
+                            className="hover:bg-slate-50/50 transition-colors"
+                          >
+                            <td className="py-4 px-6">
+                              <div className="font-bold text-slate-900">{user.name}</div>
+                              <div className="text-xs text-indigo-500 font-semibold">{user.employeeId}</div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="text-sm font-medium text-slate-700">{user.role}</div>
+                              <div className="text-xs text-slate-400">{user.department?.name || user.department || "N/A"}</div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider ${statusBadge}`}>
+                                {status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2 text-slate-600 font-semibold">
+                                <Clock3 size={14} className="text-slate-400" /> {inTime}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2 text-slate-600 font-semibold">
+                                <Clock3 size={14} className="text-slate-400" /> {outTime}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="font-bold text-slate-800">
+                                {totalWork}
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-          </motion.div>
-
-        </div>
+          </div>
+        </motion.div>
 
       </div>
     </div>
@@ -423,7 +313,7 @@ const SegmentTab = ({ label, active, onClick, icon: Icon }) => {
 };
 
 /* HEADER TOP MINI STAT ROWS */
-const StatsMiniRow = ({ title, value, icon: Icon, color = "indigo" }) => {
+const StatsMiniRow = ({ title, value, icon: Icon, color = "indigo", link = "#" }) => {
   const colorMap = {
     indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
     emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
@@ -432,30 +322,17 @@ const StatsMiniRow = ({ title, value, icon: Icon, color = "indigo" }) => {
   };
   
   return (
-    <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-5 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.04)] cursor-pointer group">
-      <div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{title}</span>
-        <span className="text-3xl font-black text-slate-900 block">{value}</span>
-      </div>
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${colorMap[color]}`}>
-        <Icon size={20} />
-      </div>
-    </motion.div>
-  );
-};
-
-/* STRIP CELL METRIC BADGES COUNTS */
-const StatusCountRow = ({ label, value, icon: Icon, colorClass }) => {
-  return (
-    <motion.div variants={itemVariants} whileHover={{ y: -4 }} className={`border rounded-[2rem] p-5 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.04)] cursor-pointer group ${colorClass}`}>
-      <div>
-        <span className="text-[10px] font-bold uppercase tracking-widest block opacity-75 mb-1">{label}</span>
-        <span className="text-3xl font-black block">{value}</span>
-      </div>
-      <div className="opacity-80 shrink-0 transition-transform group-hover:scale-110 group-hover:rotate-6">
-        <Icon size={32} strokeWidth={1.5} />
-      </div>
-    </motion.div>
+    <Link to={link} className="block h-full">
+      <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-5 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.04)] cursor-pointer group h-full">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{title}</span>
+          <span className="text-3xl font-black text-slate-900 block">{value}</span>
+        </div>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${colorMap[color]}`}>
+          <Icon size={20} />
+        </div>
+      </motion.div>
+    </Link>
   );
 };
 
