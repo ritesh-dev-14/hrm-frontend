@@ -14,7 +14,7 @@ export const useEscalationNotifications = (userId, isLoggedIn) => {
 
     // Connect to socket server
     const socketInstance = io(
-      process.env.REACT_APP_API_URL || "http://localhost:8000",
+      import.meta.env.VITE_API_URL || "http://localhost:8000",
       {
         reconnection: true,
         reconnectionDelay: 1000,

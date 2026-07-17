@@ -147,7 +147,7 @@ export default function ProfessionalSidebar({ children }) {
     if (!user?.id) return;
 
     const socketInstance = io(
-      import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"
+      import.meta.env.VITE_API_URL || "http://localhost:8000"
     );
 
     socketInstance.on("connect", () => {
