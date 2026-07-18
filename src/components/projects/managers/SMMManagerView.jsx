@@ -183,6 +183,7 @@ const SMMManagerView = ({ projectId }) => {
 
   // UI Control States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isEditingCredentials, setIsEditingCredentials] = useState(false);
 
   // Secure Credentials Form State
   const [formData, setFormData] = useState({
@@ -510,6 +511,7 @@ const SMMManagerView = ({ projectId }) => {
           "Credentials and campaign operational details linked successfully!",
         );
         fetchProjectDetails();
+        setIsEditingCredentials(false);
       } else {
         alert(resData?.message || "Update request failed validation rules.");
       }
@@ -749,7 +751,8 @@ const SMMManagerView = ({ projectId }) => {
           name={name}
           value={value}
           onChange={handleInputChange}
-          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm pr-16"
+          disabled={!isEditingCredentials}
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm pr-16 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
           placeholder={placeholder}
         />
         <button
@@ -884,19 +887,19 @@ const SMMManagerView = ({ projectId }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client's Name</label>
-              <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" placeholder="e.g. Acme Corporation" />
+              <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="e.g. Acme Corporation" />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client's Location</label>
-              <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" placeholder="e.g. New York, NY" />
+              <input type="text" name="location" value={formData.location} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="e.g. New York, NY" />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Contact Number</label>
-              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" placeholder="e.g. 1234567890" />
+              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="e.g. 1234567890" />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Execution Date</label>
-              <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" />
+              <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" />
             </div>
           </div>
 
@@ -905,46 +908,50 @@ const SMMManagerView = ({ projectId }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">References</label>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newReference}
-                    onChange={(e) => setNewReference(e.target.value)}
-                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700"
-                    placeholder="Enter a reference link..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (newReference.trim()) {
-                        const currentRefs = formData.reference ? formData.reference.split(",").map(s=>s.trim()).filter(Boolean) : [];
-                        currentRefs.push(newReference.trim());
-                        setFormData({ ...formData, reference: currentRefs.join(", ") });
-                        setNewReference("");
-                      }
-                    }}
-                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-sm transition-colors whitespace-nowrap"
-                  >
-                    Add
-                  </button>
-                </div>
+                {isEditingCredentials && (
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={newReference}
+                      onChange={(e) => setNewReference(e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700"
+                      placeholder="Enter a reference link..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newReference.trim()) {
+                          const currentRefs = formData.reference ? formData.reference.split(",").map(s=>s.trim()).filter(Boolean) : [];
+                          currentRefs.push(newReference.trim());
+                          setFormData({ ...formData, reference: currentRefs.join(", ") });
+                          setNewReference("");
+                        }
+                      }}
+                      className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-sm transition-colors whitespace-nowrap"
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
                 {/* Display added links */}
                 {formData.reference && formData.reference.split(",").map(s=>s.trim()).filter(Boolean).length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {formData.reference.split(",").map(s=>s.trim()).filter(Boolean).map((ref, idx) => (
                       <div key={idx} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100">
                         <span className="break-all line-clamp-1 max-w-[200px]">{ref}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const currentRefs = formData.reference.split(",").map(s=>s.trim()).filter(Boolean);
-                            currentRefs.splice(idx, 1);
-                            setFormData({ ...formData, reference: currentRefs.join(", ") });
-                          }}
-                          className="text-indigo-400 hover:text-indigo-600 font-bold ml-1 transition-colors"
-                        >
-                          ×
-                        </button>
+                        {isEditingCredentials && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentRefs = formData.reference.split(",").map(s=>s.trim()).filter(Boolean);
+                              currentRefs.splice(idx, 1);
+                              setFormData({ ...formData, reference: currentRefs.join(", ") });
+                            }}
+                            className="text-indigo-400 hover:text-indigo-600 font-bold ml-1 transition-colors"
+                          >
+                            ×
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -957,7 +964,8 @@ const SMMManagerView = ({ projectId }) => {
                   name="taste" 
                   value={formData.taste} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 min-h-[100px] resize-y" 
+                  disabled={!isEditingCredentials}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 min-h-[100px] resize-y disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" 
                   placeholder="Medium description of taste/preferences..." 
                 />
               </div>
@@ -971,11 +979,11 @@ const SMMManagerView = ({ projectId }) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Username</label>
-                  <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="fb_username" />
+                  <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="fb_username" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Email</label>
-                  <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="fb@enterprise.com" />
+                  <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="fb@enterprise.com" />
                 </div>
                 {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "••••••••••••")}
               </div>
@@ -983,11 +991,11 @@ const SMMManagerView = ({ projectId }) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Username</label>
-                  <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="insta_username" />
+                  <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="insta_username" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Email</label>
-                  <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="insta_handle" />
+                  <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="insta_handle" />
                 </div>
                 {renderPasswordField("Instagram Password", "instaPassword", formData.instaPassword, showInstaPassword, setShowInstaPassword, "••••••••••••")}
               </div>
@@ -995,13 +1003,13 @@ const SMMManagerView = ({ projectId }) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">YouTube Email</label>
-                  <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="youtube@channel.com" />
+                  <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="youtube@channel.com" />
                 </div>
                 {renderPasswordField("YouTube Password", "youtubePassword", formData.youtubePassword, showYoutubePassword, setShowYoutubePassword, "••••••••••••")}
 
                 <div className="space-y-2 mt-4 pt-4 border-t border-slate-200">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">LinkedIn Email</label>
-                  <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="linkedin@company.com" />
+                  <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="linkedin@company.com" />
                 </div>
                 {renderPasswordField("LinkedIn Password", "linkedinPassword", formData.linkedinPassword, showLinkedinPassword, setShowLinkedinPassword, "••••••••••••")}
               </div>
@@ -1010,7 +1018,7 @@ const SMMManagerView = ({ projectId }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Twitter / X Email</label>
-                    <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="twitter_handle" />
+                    <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="twitter_handle" />
                   </div>
                   {renderPasswordField("Twitter / X Password", "twitterPassword", formData.twitterPassword, showTwitterPassword, setShowTwitterPassword, "••••••••••••")}
                 </div>
@@ -1018,10 +1026,36 @@ const SMMManagerView = ({ projectId }) => {
             </div>
           </div>
 
-          <div className="flex justify-end pt-6 border-t border-slate-100">
-            <button type="submit" disabled={isUpdating} className={`px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isUpdating ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-md'}`}>
-              {isUpdating ? "Updating Details..." : "Update Project Details"}
-            </button>
+          <div className="flex justify-end pt-6 border-t border-slate-100 gap-3">
+            {!isEditingCredentials ? (
+              <button 
+                type="button" 
+                onClick={() => setIsEditingCredentials(true)} 
+                className="px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md"
+              >
+                Edit Credentials
+              </button>
+            ) : (
+              <>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsEditingCredentials(false);
+                    fetchProjectDetails(); // Reset modifications
+                  }} 
+                  className="px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all bg-slate-100 hover:bg-slate-200 text-slate-700"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isUpdating} 
+                  className={`px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isUpdating ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-md'}`}
+                >
+                  {isUpdating ? "Updating Details..." : "Save Credentials"}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </motion.div>

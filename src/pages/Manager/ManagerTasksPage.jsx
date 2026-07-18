@@ -7,7 +7,8 @@ import {
   CalendarDays,
   User2,
   ChevronRight,
-  Briefcase
+  Briefcase,
+  Search
 } from "lucide-react";
 
 import TaskStats from "../../components/taskCreation/TaskStats";
@@ -38,6 +39,7 @@ const ManagerTaskPage = () => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
 
@@ -77,6 +79,11 @@ const ManagerTaskPage = () => {
     });
   };
 
+  const filteredTasks = tasks.filter((task) =>
+    (task.projectName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (task.description || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
       {/* Background ambient glows */}
@@ -112,13 +119,25 @@ const ManagerTaskPage = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8 bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
           
           {/* TOP */}
-          <div className="px-6 sm:px-8 py-6 border-b border-slate-100/60 flex items-center justify-between bg-slate-50/50">
+          <div className="px-6 sm:px-8 py-6 border-b border-slate-100/60 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <ClipboardList size={20} className="text-indigo-500" />
               All Projects
             </h2>
-            <div className="px-3 py-1 bg-white border border-slate-200 text-xs font-bold text-indigo-600 rounded-full shadow-sm">
-              {tasks.length} Records
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="relative w-full md:w-64">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search projects..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+                />
+              </div>
+              <div className="px-3 py-2 bg-white border border-slate-200 text-xs font-bold text-indigo-600 rounded-xl shadow-sm whitespace-nowrap">
+                {filteredTasks.length} Records
+              </div>
             </div>
           </div>
 
@@ -130,7 +149,7 @@ const ManagerTaskPage = () => {
                 Loading projects...
               </p>
             </div>
-          ) : tasks.length === 0 ? (
+          ) : filteredTasks.length === 0 ? (
             <div className="py-32 flex flex-col items-center justify-center text-center">
               <div className="w-20 h-20 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-6 shadow-inner">
                 <ClipboardList size={40} />
@@ -139,7 +158,7 @@ const ManagerTaskPage = () => {
                 No Projects Found
               </h3>
               <p className="text-sm font-medium text-slate-500 max-w-sm">
-                Any assigned projects will appear here for your management.
+                No matching projects found. Try modifying your search criteria.
               </p>
             </div>
           ) : (
@@ -154,7 +173,7 @@ const ManagerTaskPage = () => {
               {/* ROWS */}
               <motion.div variants={containerVariants} initial="hidden" animate="show" className="divide-y divide-slate-100/60">
                 <AnimatePresence>
-                  {tasks.map((task) => (
+                  {filteredTasks.map((task) => (
                     <motion.div
                       variants={itemVariants}
                       key={task.id}
