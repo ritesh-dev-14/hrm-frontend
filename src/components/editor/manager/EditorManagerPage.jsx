@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import API from '../../../services/api'
-import { 
-  FolderPlus, 
-  Calendar, 
-  Layers, 
-  Clock, 
-  Loader2, 
-  Plus, 
-  ChevronRight, 
-  Briefcase, 
-  AlertCircle, 
+import {
+  FolderPlus,
+  Calendar,
+  Layers,
+  Clock,
+  Loader2,
+  Plus,
+  ChevronRight,
+  Briefcase,
+  AlertCircle,
   FileText,
   Search,
   Filter,
@@ -27,7 +27,7 @@ const EditorManagerPage = () => {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  
+
   // Assigned Projects Catalogs for Dropdown
   const [assignedProjects, setAssignedProjects] = useState([])
   const [loadingProjects, setLoadingProjects] = useState(false)
@@ -87,7 +87,7 @@ const EditorManagerPage = () => {
   const handleProjectSelectChange = (e) => {
     const projId = e.target.value
     setSelectedProjectId(projId)
-    
+
     if (!projId) {
       setFormData({ projectName: '', description: '', startDate: '', endDate: '' })
       return
@@ -111,9 +111,9 @@ const EditorManagerPage = () => {
       alert('Please select a valid assigned project option from the dropdown sequence.')
       return
     }
-    
+
     setSubmitting(true)
-    
+
     // Transform input structures into standard ISO strings expected by backend repositories
     const payload = {
       ...formData,
@@ -138,8 +138,8 @@ const EditorManagerPage = () => {
 
   // Filter Logic Matrix
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = task.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -162,7 +162,7 @@ const EditorManagerPage = () => {
       transition: { staggerChildren: 0.1 }
     }
   }
-  
+
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
@@ -189,9 +189,9 @@ const EditorManagerPage = () => {
       </div>
 
       <div className="relative z-10 p-6 md:p-10 max-w-7xl mx-auto space-y-8">
-        
+
         {/* Top Banner Control Framework */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/60 backdrop-blur-xl border border-white/80 p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-200/50"
@@ -220,7 +220,7 @@ const EditorManagerPage = () => {
         </motion.div>
 
         {/* Overview Analytics Metrics Row */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
@@ -250,15 +250,15 @@ const EditorManagerPage = () => {
         </motion.div>
 
         {/* Filtering Control Matrix Bar */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[1.5rem] p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4"
         >
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search matching projects, descriptions..."
               className="w-full bg-slate-50/50 hover:bg-slate-50 focus:bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder-slate-400"
               value={searchTerm}
@@ -292,7 +292,7 @@ const EditorManagerPage = () => {
               <button onClick={fetchTasks} className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm">Retry Connection</button>
             </motion.div>
           ) : filteredTasks.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white/60 backdrop-blur-xl border border-dashed border-indigo-200 rounded-[2rem] py-24 text-center shadow-sm"
@@ -304,61 +304,61 @@ const EditorManagerPage = () => {
               <p className="text-sm font-medium text-slate-500 max-w-sm mx-auto mt-2">Adjust your search filters or hit the Create Production button to start a new workspace.</p>
             </motion.div>
           ) : (
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <motion.table variants={containerVariants} initial="hidden" animate="show" className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    <th className="py-4 px-6">Project Metadata / Blueprint</th>
-                    <th className="py-4 px-6">Lifecycle Status</th>
-                    <th className="py-4 px-6">Timeline Duration</th>
-                    <th className="py-4 px-6 text-center">Subtasks Count</th>
-                    <th className="py-4 px-6 text-right">Actions Matrix</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {filteredTasks.map((task) => (
-                    <motion.tr 
-                      variants={itemVariants}
-                      key={task.id}
-                      onClick={() => navigate(`/editor/${task.id}`)} 
-                      className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
-                    >
-                      <td className="py-4 px-6 max-w-sm">
-                        <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm tracking-tight">{task.projectName}</div>
-                        <div className="text-slate-400 truncate mt-0.5 font-medium">{task.description || 'No descriptive tags specified.'}</div>
-                      </td>
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold tracking-widest border rounded-md uppercase ${getStatusStyle(task.status)}`}>
-                          {task.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-slate-600 font-medium whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>
-                            {task.startDate ? new Date(task.startDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : '—'}
-                            <span className="text-slate-300 mx-1">→</span>
-                            {task.endDate ? new Date(task.endDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '—'}
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <motion.table variants={containerVariants} initial="hidden" animate="show" className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <th className="py-4 px-6">Project Metadata / Blueprint</th>
+                      <th className="py-4 px-6">Lifecycle Status</th>
+                      <th className="py-4 px-6">Timeline Duration</th>
+                      <th className="py-4 px-6 text-center">Subtasks Count</th>
+                      <th className="py-4 px-6 text-right">Actions Matrix</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {filteredTasks.map((task) => (
+                      <motion.tr
+                        variants={itemVariants}
+                        key={task.id}
+                        onClick={() => navigate(`/editor/${task.id}`)}
+                        className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
+                      >
+                        <td className="py-4 px-6 max-w-sm">
+                          <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm tracking-tight">{task.projectName}</div>
+                          <div className="text-slate-400 truncate mt-0.5 font-medium">{task.description || 'No descriptive tags specified.'}</div>
+                        </td>
+                        <td className="py-4 px-6 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold tracking-widest border rounded-md uppercase ${getStatusStyle(task.status)}`}>
+                            {task.status}
                           </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
-                        <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-bold">
-                          {task.totalItems ?? 0}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
-                          Enter Workspace <ChevronRight className="w-3.5 h-3.5" />
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </motion.table>
+                        </td>
+                        <td className="py-4 px-6 text-slate-600 font-medium whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>
+                              {task.startDate ? new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                              <span className="text-slate-300 mx-1">→</span>
+                              {task.endDate ? new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
+                          <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-bold">
+                            {task.totalItems ?? 0}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
+                            Enter Workspace <ChevronRight className="w-3.5 h-3.5" />
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </motion.table>
+              </div>
             </div>
-          </div>
           )}
         </div>
 
@@ -366,15 +366,15 @@ const EditorManagerPage = () => {
         <AnimatePresence>
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }} 
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                 onClick={() => !submitting && setIsModalOpen(false)}
               />
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -385,7 +385,7 @@ const EditorManagerPage = () => {
                     <span className="text-[10px] font-black text-indigo-600 tracking-widest uppercase block mb-1">INITIALIZATION</span>
                     <h3 className="text-xl font-black text-slate-900">Configure Workspace</h3>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       setIsModalOpen(false)
                       setSelectedProjectId('')
@@ -429,9 +429,9 @@ const EditorManagerPage = () => {
                   {/* Immutable Context Review Blocks */}
                   <AnimatePresence>
                     {selectedProjectId && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }} 
-                        animate={{ opacity: 1, height: 'auto' }} 
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         className="bg-indigo-50/50 border border-indigo-100/50 rounded-2xl p-5 space-y-4 overflow-hidden"
                       >
