@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Loader2,
@@ -381,7 +382,7 @@ const ManagerTaskDetailPage = () => {
   const stats = useMemo(() => {
     return [
       {
-        title: "Total Tasks",
+        title: "Total Tas",
         value: summary?.totalItems || 0,
         icon: ListTodo,
       },
@@ -405,8 +406,11 @@ const ManagerTaskDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 size={30} className="animate-spin text-slate-500" />
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <Loader2 size={36} className="animate-spin text-indigo-500 mb-4" />
+        <p className="text-sm font-semibold text-indigo-900 tracking-wide">Loading project details...</p>
       </div>
     );
   }
@@ -417,40 +421,47 @@ const ManagerTaskDetailPage = () => {
     task.createdBy?.employeeId === currentUser?.employeeId;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
+      {/* Background ambient glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
         {/* TOP BAR */}
-        <div className="flex items-center justify-between mb-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between mb-2">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-black transition"
+            className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors"
           >
-            <ArrowLeft size={16} />
-            Back
+            <ArrowLeft size={18} />
+            Back to Projects
           </button>
-        </div>
+        </motion.div>
 
         {/* HEADER */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm">
-          <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-8">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 md:p-10 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+             <Building2 size={200} />
+          </div>
+          <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-8 relative z-10">
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-5">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyles[task.status]}`}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${statusStyles[task.status]}`}
                 >
                   {task.status}
                 </span>
 
-                <span className="text-sm font-medium text-slate-500">
+                <span className="text-sm font-bold text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100">
                   {task.progress || 0}% Progress
                 </span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
                 {task.projectName}
               </h1>
 
-              <p className="mt-4 text-slate-600 leading-7 max-w-4xl">
+              <p className="mt-5 text-slate-600 font-medium leading-relaxed max-w-4xl text-base">
                 {task.description}
               </p>
             </div>
@@ -458,71 +469,71 @@ const ManagerTaskDetailPage = () => {
             <button
               onClick={handleAssignToMe}
               disabled={assigningToMe || isMainTaskAssignedToMe}
-              className={`h-12 px-5 rounded-2xl text-sm font-semibold flex items-center gap-2 transition-all ${
-                isMainTaskAssignedToMe
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-black text-white hover:bg-slate-800"
-              }`}
+              className={`h-14 px-8 rounded-2xl text-sm font-bold flex items-center gap-3 transition-all shadow-sm ${isMainTaskAssignedToMe
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                  : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5"
+                }`}
             >
-              <UserPlus size={16} />
+              {isMainTaskAssignedToMe ? <Check size={18} /> : <UserPlus size={18} />}
 
               {isMainTaskAssignedToMe
-                ? "Assigned "
+                ? "Assigned to You"
                 : assigningToMe
                   ? "Assigning..."
                   : "Assign To Me"}
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* STATS */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-5 mt-6">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-2 xl:grid-cols-4 gap-5">
           {stats.map((item, index) => (
             <div
               key={index}
-              className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm"
+              className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-shadow group"
             >
               <div className="flex items-start justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                  <item.icon size={22} className="text-slate-700" />
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                  <item.icon size={24} className="text-indigo-500 group-hover:text-white transition-colors" />
                 </div>
 
-                <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">
                   Live
                 </span>
               </div>
 
-              <h2 className="text-3xl font-bold text-slate-900 mt-5">
+              <h2 className="text-4xl font-black text-slate-900 mt-6 tracking-tight">
                 {item.value}
               </h2>
 
-              <p className="text-sm text-slate-500 mt-1">{item.title}</p>
+              <p className="text-sm font-semibold text-slate-500 mt-1 uppercase tracking-wider">{item.title}</p>
             </div>
           ))}
-        </div>
-          
+        </motion.div>
+
         {/* ACTION BAR */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm mt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 md:p-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                <ListTodo size={24} className="text-indigo-500" />
                 Task Management
               </h2>
 
-              <p className="text-sm text-slate-500 mt-1">
-                Manage assignments and review submissions
+              <p className="text-sm font-medium text-slate-500 mt-1">
+                Manage assignments, review submissions, and track subtask progress.
               </p>
             </div>
 
             <button
               onClick={() => setShowSubtaskForm(!showSubtaskForm)}
-              className="h-11 px-5 rounded-2xl bg-black text-white text-sm font-medium flex items-center gap-2 hover:bg-slate-800 transition"
+              className="h-12 px-6 rounded-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:bg-black hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
-              <Plus size={16} />
+              <Plus size={18} />
               Create Task
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* CREATE SUBTASK FORM */}
         {showSubtaskForm && (
@@ -627,11 +638,10 @@ const ManagerTaskDetailPage = () => {
                           await handleLoadMyEmployees();
                         }
                       }}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                        !selectedDepartment
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${!selectedDepartment
                           ? "bg-black text-white"
                           : "text-slate-600 hover:bg-slate-100"
-                      }`}
+                        }`}
                     >
                       My Employees
                     </button>
@@ -647,11 +657,10 @@ const ManagerTaskDetailPage = () => {
                           setSelectedDepartment(departmentEmployees[0]);
                         }
                       }}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                        selectedDepartment
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${selectedDepartment
                           ? "bg-black text-white"
                           : "text-slate-600 hover:bg-slate-100"
-                      }`}
+                        }`}
                     >
                       Other Department
                     </button>
@@ -665,11 +674,10 @@ const ManagerTaskDetailPage = () => {
                           key={department.id}
                           type="button"
                           onClick={() => setSelectedDepartment(department)}
-                          className={`px-3 py-2 rounded-lg text-sm transition ${
-                            selectedDepartment.id === department.id
+                          className={`px-3 py-2 rounded-lg text-sm transition ${selectedDepartment.id === department.id
                               ? "bg-black text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           {department.name}
                         </button>
@@ -696,9 +704,8 @@ const ManagerTaskDetailPage = () => {
                                   employeeId: emp.employeeId,
                                 }));
                               }}
-                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${
-                                selected ? "bg-slate-100" : "hover:bg-slate-50"
-                              }`}
+                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${selected ? "bg-slate-100" : "hover:bg-slate-50"
+                                }`}
                             >
                               <div className="text-left">
                                 <p className="text-sm font-medium text-slate-900">
@@ -741,9 +748,8 @@ const ManagerTaskDetailPage = () => {
                                   employeeId: emp.employeeId,
                                 }));
                               }}
-                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${
-                                selected ? "bg-slate-100" : "hover:bg-slate-50"
-                              }`}
+                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${selected ? "bg-slate-100" : "hover:bg-slate-50"
+                                }`}
                             >
                               <div className="text-left">
                                 <p className="text-sm font-medium text-slate-900">
@@ -846,11 +852,10 @@ const ManagerTaskDetailPage = () => {
                           priority: level,
                         })
                       }
-                      className={`h-11 px-5 rounded-xl border text-sm font-medium transition ${
-                        subtaskForm.priority === level
+                      className={`h-11 px-5 rounded-xl border text-sm font-medium transition ${subtaskForm.priority === level
                           ? "bg-black text-white border-black"
                           : "border-slate-300 hover:border-black text-slate-700"
-                      }`}
+                        }`}
                     >
                       {level}
                     </button>
@@ -887,42 +892,42 @@ const ManagerTaskDetailPage = () => {
         )}
 
         {/* TABLE */}
-        <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden mt-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1200px]">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50/80 border-b border-slate-100/60 backdrop-blur-sm">
                 <tr>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
-                    Task
+                  <th className="text-left px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Task Details
                   </th>
 
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  <th className="text-left px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Status
                   </th>
 
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  <th className="text-left px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Priority
                   </th>
 
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
-                    Due
+                  <th className="text-left px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Deadline
                   </th>
 
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
-                    Members
+                  <th className="text-left px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Assignees
                   </th>
 
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
-                    Submission Remarks
+                  <th className="text-left px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Submissions
                   </th>
 
-                  <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  <th className="text-right px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100/60">
                 {subtasks.length > 0 ? (
                   subtasks.map((item) => (
                     <tr
@@ -1080,7 +1085,7 @@ const ManagerTaskDetailPage = () => {
                                   className="p-1.5 bg-white text-emerald-600 hover:bg-emerald-50 rounded-lg border border-slate-200 shadow-sm transition"
                                 >
                                   {actionLoadingId ===
-                                  assignment.assignmentId ? (
+                                    assignment.assignmentId ? (
                                     <Loader2
                                       size={13}
                                       className="animate-spin"
@@ -1123,7 +1128,7 @@ const ManagerTaskDetailPage = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* ASSIGN MODAL */}
@@ -1156,11 +1161,10 @@ const ManagerTaskDetailPage = () => {
                 return (
                   <label
                     key={employee.id}
-                    className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer bg-white transition-all ${
-                      checked
+                    className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer bg-white transition-all ${checked
                         ? "border-black ring-1 ring-black"
                         : "border-slate-200"
-                    }`}
+                      }`}
                   >
                     <input
                       type="checkbox"

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ClipboardList,
   Loader2,
   CalendarDays,
   User2,
   ChevronRight,
+  Briefcase
 } from "lucide-react";
 
 import TaskStats from "../../components/taskCreation/TaskStats";
@@ -14,12 +16,24 @@ import CreateTaskModal from "../../components/taskCreation/CreateTaskModal";
 import API from "../../services/api";
 
 const statusStyles = {
-  DRAFT: "text-slate-500",
-  ASSIGNED: "text-blue-600",
-  COMPLETED: "text-emerald-600",
-  PENDING: "text-orange-500",
+  DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
+  ASSIGNED: "bg-indigo-50 text-indigo-600 border-indigo-200",
+  COMPLETED: "bg-emerald-50 text-emerald-600 border-emerald-200",
+  PENDING: "bg-orange-50 text-orange-600 border-orange-200",
 };
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 const ManagerTaskPage = () => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +64,7 @@ const ManagerTaskPage = () => {
 
   // Redirecting click events seamlessly to the project detail view
   const handleTaskClick = (task) => {
-navigate(`/project/${task.id}`);
+    navigate(`/project/${task.id}`);
   };
 
   const formatDate = (date) => {
@@ -64,16 +78,21 @@ navigate(`/project/${task.id}`);
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 mb-8">
-          <div>
-            <p className="text-sm text-slate-500 mb-2">
-              Project Management
-            </p>
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
+      {/* Background ambient glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
+        
+        {/* HEADER */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 mb-2">
+          <div>
+            <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">
+              Workspace Overview
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+              <Briefcase size={32} className="text-indigo-600" />
               Assigned Projects
             </h1>
           </div>
@@ -82,210 +101,173 @@ navigate(`/project/${task.id}`);
             title="Create Project"
             onClick={() => setOpenModal(true)}
           /> */}
-        </div>
+        </motion.div>
 
         {/* STATS */}
-        <TaskStats tasks={tasks} />
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <TaskStats tasks={tasks} />
+        </motion.div>
 
-        {/* TABLE SECTION */}
-        <div className="mt-8 bg-white border border-slate-200 rounded-3xl overflow-hidden">
+        {/* LIST SECTION */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8 bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
+          
           {/* TOP */}
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                All Projects
-              </h2>
-            </div>
-
-            <div className="text-sm text-slate-400">
+          <div className="px-6 sm:px-8 py-6 border-b border-slate-100/60 flex items-center justify-between bg-slate-50/50">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <ClipboardList size={20} className="text-indigo-500" />
+              All Projects
+            </h2>
+            <div className="px-3 py-1 bg-white border border-slate-200 text-xs font-bold text-indigo-600 rounded-full shadow-sm">
               {tasks.length} Records
             </div>
           </div>
 
           {/* LOADING */}
           {isLoading ? (
-            <div className="py-24 flex flex-col items-center justify-center">
-              <Loader2
-                size={28}
-                className="animate-spin text-slate-400"
-              />
-
-              <p className="text-sm text-slate-400 mt-3">
-                Loading tasks...
+            <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
+              <Loader2 size={36} className="animate-spin text-indigo-500 mb-4" />
+              <p className="text-sm font-semibold text-indigo-900 tracking-wide">
+                Loading projects...
               </p>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="py-24 text-center">
-              <ClipboardList
-                size={34}
-                className="mx-auto text-slate-300"
-              />
-
-              <h3 className="mt-4 text-lg font-medium text-slate-800">
-                No Tasks Found
+            <div className="py-32 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <ClipboardList size={40} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-700 mb-2">
+                No Projects Found
               </h3>
-
-              <p className="text-sm text-slate-400 mt-1">
-                Created projects will appear here
+              <p className="text-sm font-medium text-slate-500 max-w-sm">
+                Any assigned projects will appear here for your management.
               </p>
             </div>
           ) : (
             <div>
-              {/* TABLE HEADER */}
-              <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 border-b border-slate-100 text-xs font-medium uppercase tracking-wider text-slate-400">
-                <div className="col-span-4">Projects</div>
-                <div className="col-span-2">Start</div>
-                <div className="col-span-2">End</div>
-                <div className="col-span-2">Created By</div>
+              {/* TABLE HEADER - DESKTOP */}
+              <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-4 bg-slate-50/50 border-b border-slate-100/60 text-xs font-bold uppercase tracking-wider text-slate-400">
+                <div className="col-span-5">Project Details</div>
+                <div className="col-span-2">Start Date</div>
+                <div className="col-span-2">End Date</div>
+                <div className="col-span-3">Assigned User</div>
               </div>
-
               {/* ROWS */}
-              <div>
-                {tasks.map((task, index) => (
-                  <div
-                    key={task.id}
-                    onClick={() => handleTaskClick(task)}
-                    className={`group px-6 py-5 cursor-pointer transition hover:bg-slate-50 ${
-                      index !== tasks.length - 1
-                        ? "border-b border-slate-100"
-                        : ""
-                    }`}
-                  >
-                    {/* DESKTOP */}
-                    <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
-                      {/* TASK */}
-                      <div className="col-span-4">
-                        <h3 className="text-[15px] font-semibold text-slate-900 group-hover:text-black">
-                          {task.projectName}
-                        </h3>
-
-                        <p className="text-sm text-slate-500 mt-1 line-clamp-1">
-                          {task.description || "No description"}
-                        </p>
-                      </div>
-
-                      {/* STATUS */}
-                      {/* <div className="col-span-2">
-                        <span
-                          className={`text-sm font-medium ${
-                            statusStyles[task.status]
-                          }`}
-                        >
-                          {task.status}
-                        </span>
-                      </div> */}
-
-                      {/* START */}
-                      <div className="col-span-2 flex items-center gap-2 text-sm text-slate-600">
-                        <CalendarDays size={15} />
-                        {formatDate(task.startDate)}
-                      </div>
-
-                      {/* END */}
-                      <div className="col-span-2 flex items-center gap-2 text-sm text-slate-600">
-                        <CalendarDays size={15} />
-                        {formatDate(task.endDate)}
-                      </div>
-
-                      {/* USER */}
-                      <div className="col-span-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                            <User2
-                              size={14}
-                              className="text-slate-500"
-                            />
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-800 truncate">
-                              {task.createdBy?.name || "-"}
-                            </p>
-
-                            <p className="text-xs text-slate-400 truncate">
-                              {task.createdBy?.employeeId}
-                            </p>
-                          </div>
-                        </div>
-
-                        <ChevronRight
-                          size={18}
-                          className="text-slate-300 group-hover:text-slate-500 transition"
-                        />
-                      </div>
-                    </div>
-
-                    {/* MOBILE */}
-                    <div className="lg:hidden">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-base font-semibold text-slate-900">
+              <motion.div variants={containerVariants} initial="hidden" animate="show" className="divide-y divide-slate-100/60">
+                <AnimatePresence>
+                  {tasks.map((task) => (
+                    <motion.div
+                      variants={itemVariants}
+                      key={task.id}
+                      onClick={() => handleTaskClick(task)}
+                      className="group px-6 sm:px-8 py-6 cursor-pointer hover:bg-indigo-50/30 transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      {/* DESKTOP VIEW */}
+                      <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
+                        <div className="col-span-5 pr-4">
+                          <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                             {task.projectName}
                           </h3>
-
-                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                            {task.description}
+                          <p className="text-sm font-medium text-slate-500 mt-1 line-clamp-1">
+                            {task.description || "No description provided"}
                           </p>
                         </div>
 
-                        <span
-                          className={`text-xs font-medium whitespace-nowrap ${
-                            statusStyles[task.status]
-                          }`}
-                        >
-                          {task.status}
-                        </span>
-                      </div>
-
-                      <div className="mt-5 grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-slate-400 mb-1">
-                            Start Date
-                          </p>
-
-                          <p className="text-sm text-slate-700">
-                            {formatDate(task.startDate)}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-400 mb-1">
-                            End Date
-                          </p>
-
-                          <p className="text-sm text-slate-700">
-                            {formatDate(task.endDate)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {task.createdBy && (
-                        <div className="mt-5 flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
-                            <User2
-                              size={14}
-                              className="text-slate-500"
-                            />
+                        <div className="col-span-2 flex items-center gap-2 text-sm font-medium text-slate-600">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-indigo-500 group-hover:shadow-sm transition-all">
+                            <CalendarDays size={16} />
                           </div>
+                          {formatDate(task.startDate)}
+                        </div>
 
+                        <div className="col-span-2 flex items-center gap-2 text-sm font-medium text-slate-600">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-violet-500 group-hover:shadow-sm transition-all">
+                            <CalendarDays size={16} />
+                          </div>
+                          {formatDate(task.endDate)}
+                        </div>
+
+                        <div className="col-span-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 border border-indigo-200 flex items-center justify-center shrink-0">
+                              <User2 size={16} className="text-indigo-600" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-800 truncate group-hover:text-indigo-900">
+                                {task.createdBy?.name || "Unassigned"}
+                              </p>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate mt-0.5">
+                                {task.createdBy?.employeeId || "—"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                            <ChevronRight size={16} className="text-indigo-600" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* MOBILE VIEW */}
+                      <div className="lg:hidden flex flex-col gap-4">
+                        <div className="flex justify-between items-start gap-4">
                           <div>
-                            <p className="text-sm font-medium text-slate-800">
-                              {task.createdBy.name}
+                            <h3 className="text-lg font-bold text-slate-900 mb-1">
+                              {task.projectName}
+                            </h3>
+                            <p className="text-sm font-medium text-slate-500 line-clamp-2">
+                              {task.description || "No description"}
                             </p>
+                          </div>
+                          <div className="w-8 h-8 shrink-0 rounded-full bg-slate-50 flex items-center justify-center shadow-sm">
+                            <ChevronRight size={16} className="text-indigo-500" />
+                          </div>
+                        </div>
 
-                            <p className="text-xs text-slate-400">
-                              {task.createdBy.employeeId}
+                        <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                              Start Date
+                            </p>
+                            <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                              <CalendarDays size={14} className="text-indigo-400" />
+                              {formatDate(task.startDate)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                              End Date
+                            </p>
+                            <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                              <CalendarDays size={14} className="text-violet-400" />
+                              {formatDate(task.endDate)}
                             </p>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+
+                        {task.createdBy && (
+                          <div className="flex items-center gap-3 pt-2">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 border border-indigo-200 flex items-center justify-center">
+                              <User2 size={18} className="text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">
+                                {task.createdBy.name}
+                              </p>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                {task.createdBy.employeeId}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* MODAL */}
         <CreateTaskModal

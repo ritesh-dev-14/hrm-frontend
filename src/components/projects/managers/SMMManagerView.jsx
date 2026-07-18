@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import API from "../../../services/api";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
@@ -681,7 +682,12 @@ const SMMManagerView = ({ projectId }) => {
         return dayObj;
       });
 
-      const payload = { days: cleanedDays };
+      const payload = { 
+        days: cleanedDays,
+        totalReelsUploaded: selectedCalendar.totalReelsUploaded ? parseInt(selectedCalendar.totalReelsUploaded, 10) : 0,
+        totalPostsUploaded: selectedCalendar.totalPostsUploaded ? parseInt(selectedCalendar.totalPostsUploaded, 10) : 0,
+      };
+      
       const response = await API.patch(
         `/api/projects/${projectId}/monthly-sheets/${selectedCalendar.id}`,
         payload
@@ -735,21 +741,21 @@ const SMMManagerView = ({ projectId }) => {
   }
 
   const renderPasswordField = (label, name, value, visible, setVisible, placeholder) => (
-    <div style={styles.formGroup}>
-      <label style={styles.label}>{label} <span style={styles.optionalTag}>(optional)</span></label>
-      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{label} <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-400">Optional</span></label>
+      <div className="relative flex items-center">
         <input
           type={visible ? "text" : "password"}
           name={name}
           value={value}
           onChange={handleInputChange}
-          style={{ ...styles.input, paddingRight: "45px" }}
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm pr-16"
           placeholder={placeholder}
         />
         <button
           type="button"
           onClick={() => setVisible(!visible)}
-          style={styles.eyeToggleBtn}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
         >
           {visible ? "Hide" : "View"}
         </button>
@@ -758,583 +764,665 @@ const SMMManagerView = ({ projectId }) => {
   );
 
   return (
-    <div className="smm-container" style={styles.container}>
-      <style>{RESPONSIVE_CSS}</style>
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
+      {/* Background ambient glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Workspace Header Block */}
-      <div style={styles.metaRow}>
-        <span style={styles.idBadge}>
-          PROJECT ID: {project?.id?.toUpperCase().slice(0, 8)}
-        </span>
-        <span style={styles.deptBadge}>
-          {project?.department?.name || "Social Media"}
-        </span>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
 
-      <input
-        type="file"
-        accept="image/*"
-        ref={logoInputRef}
-        onChange={handleLogoFileSelected}
-        style={{ display: "none" }}
-      />
+        <input
+          type="file"
+          accept="image/*"
+          ref={logoInputRef}
+          onChange={handleLogoFileSelected}
+          style={{ display: "none" }}
+        />
 
-      <div className="smm-header">
-        <h1 style={styles.title}>
-          {project?.projectName || "Social Media Project Profile"}
-        </h1>
+        {/* HEADER */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 mb-2">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-bold tracking-widest uppercase bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">
+                PROJECT ID: {project?.id?.toUpperCase().slice(0, 8)}
+              </span>
+              <span className="text-[10px] font-bold tracking-widest uppercase bg-violet-50 text-violet-600 px-3 py-1 rounded-full border border-violet-100">
+                {project?.department?.name || "Social Media"}
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+              {project?.projectName || "Social Media Project"}
+            </h1>
+          </div>
 
-        <button
-          onClick={() => setIsDrawerOpen(true)}
-          style={styles.openDrawerBtn}
-        >
-          <svg style={{ width: "18px", height: "18px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Create Content Calendar
-        </button>
-      </div>
-
-      {/* Project Logo Block */}
-      <div className="smm-logo-section">
-        <div style={styles.logoBox} onClick={handleLogoClick}>
-          {project?.logo ? (
-            <img src={project.logo} alt="Client logo" style={styles.logoImageLarge} />
-          ) : (
-            <span style={styles.logoPlaceholderLarge}>No logo uploaded</span>
-          )}
-        </div>
-        <div className="smm-logo-meta" style={styles.logoMeta}>
-          <span style={styles.logoLabel}>Client Logo</span>
-          <p style={styles.logoHint}>PNG or JPG, click the tile to update.</p>
           <button
-            type="button"
-            onClick={handleLogoClick}
-            disabled={isUploadingLogo}
-            style={isUploadingLogo ? styles.saveBtnDisabled : styles.logoUploadBtn}
+            onClick={() => setIsDrawerOpen(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all whitespace-nowrap"
           >
-            {isUploadingLogo ? "Uploading..." : project?.logo ? "Replace Logo" : "Upload Logo"}
+            <svg style={{ width: "18px", height: "18px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Create Content Calendar
           </button>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Strategy Summary */}
-      <div style={styles.descriptionBox}>
-        <h4 style={styles.sectionSub}>Project Description</h4>
-        <p style={{ margin: 0, color: "#334155", lineHeight: "1.6", fontSize: "14px" }}>
-          {project?.description || "No strategic summary available."}
-        </p>
-      </div>
+        {/* TOP SECTION: LOGO, SUMMARY, METRICS */}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-8 md:p-10">
+              <div className="flex flex-col sm:flex-row items-start gap-8">
+                <div 
+                  onClick={handleLogoClick}
+                  className="group relative flex-shrink-0 w-32 h-32 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-400 flex flex-col items-center justify-center overflow-hidden cursor-pointer transition-colors"
+                >
+                  {project?.logo ? (
+                    <>
+                      <img src={project.logo} alt="Client logo" className="w-full h-full object-contain p-2" />
+                      <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs font-bold">Change Logo</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <svg className="w-8 h-8 text-slate-300 mb-2 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center px-4">Upload Logo</span>
+                    </div>
+                  )}
+                  {isUploadingLogo && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 w-full">
+                  <h3 className="text-2xl font-black text-slate-900 mb-4">Project Description</h3>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    {project?.description || "No strategic summary available."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Metrics Grid */}
-      <div className="smm-details-grid" style={{ marginBottom: "32px" }}>
-        <div style={styles.infoTile}>
-          <span style={styles.tileLabel}>Execution Cycle</span>
-          <span style={styles.tileValue}>{project?.frequency || "N/A"}</span>
-        </div>
-        <div style={styles.infoTile}>
-          <span style={styles.tileLabel}>Project Start</span>
-          <span style={styles.tileValue}>
-            {project?.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { dateStyle: "medium" }) : "N/A"}
-          </span>
-        </div>
-        <div style={styles.infoTile}>
-          <span style={styles.tileLabel}>Project End</span>
-          <span style={styles.tileValue}>
-            {project?.endDate ? new Date(project.endDate).toLocaleDateString(undefined, { dateStyle: "medium" }) : "N/A"}
-          </span>
-        </div>
-        <div style={styles.infoTile}>
-          <span style={styles.tileLabel}>Renewal Review</span>
-          <span style={styles.tileValue}>
-            {project?.renewalDate ? new Date(project.renewalDate).toLocaleDateString(undefined, { dateStyle: "medium" }) : "N/A"}
-          </span>
-        </div>
-      </div>
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-8 md:p-10 flex flex-col justify-center gap-6">
+            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2"><svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Timeline & Execution</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 text-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Cycle</p>
+                <p className="font-bold text-slate-800 text-sm">{project?.frequency || "N/A"}</p>
+              </div>
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 text-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Start</p>
+                <p className="font-bold text-slate-800 text-sm">{project?.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { dateStyle: "medium" }) : "N/A"}</p>
+              </div>
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 text-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">End</p>
+                <p className="font-bold text-slate-800 text-sm">{project?.endDate ? new Date(project.endDate).toLocaleDateString(undefined, { dateStyle: "medium" }) : "N/A"}</p>
+              </div>
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 text-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Renewal</p>
+                <p className="font-bold text-indigo-600 text-sm">{project?.renewalDate ? new Date(project.renewalDate).toLocaleDateString(undefined, { dateStyle: "medium" }) : "N/A"}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
       {/* Credentials Sub-Form */}
-      <div style={styles.formCardContainer}>
-        <h3 style={styles.formSectionHeading}>
-          <svg style={{ width: "20px", height: "20px", color: "#4f46e5" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-8 md:p-10">
+        <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
+            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
           Client's Key Information
         </h3>
 
-        <form onSubmit={handlePatchDetails} style={styles.form}>
-          <div className="smm-form-grid">
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Client's Name</label>
-              <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} style={styles.input} placeholder="e.g. Acme Corporation" />
+        <form onSubmit={handlePatchDetails} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client's Name</label>
+              <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" placeholder="e.g. Acme Corporation" />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Client's Location</label>
-              <input type="text" name="location" value={formData.location} onChange={handleInputChange} style={styles.input} placeholder="e.g. New York, NY" />
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client's Location</label>
+              <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" placeholder="e.g. New York, NY" />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Contact Number</label>
-              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} style={styles.input} placeholder="e.g. 1234567890" />
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Contact Number</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" placeholder="e.g. 1234567890" />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Project Execution Date</label>
-              <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} style={styles.input} />
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Execution Date</label>
+              <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700" />
             </div>
           </div>
 
-          <h4 style={{ ...styles.groupHeading, marginTop: "24px" }}>Reference & Taste Links</h4>
-          <div className="smm-form-grid">
-            <div style={styles.formGroup}>
-              <label style={styles.label}>References</label>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                <input
-                  type="text"
-                  value={newReference}
-                  onChange={(e) => setNewReference(e.target.value)}
-                  style={styles.input}
-                  placeholder="Enter a reference link..."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (newReference.trim()) {
-                      const currentRefs = formData.reference ? formData.reference.split(",").map(s=>s.trim()).filter(Boolean) : [];
-                      currentRefs.push(newReference.trim());
-                      setFormData({ ...formData, reference: currentRefs.join(", ") });
-                      setNewReference("");
-                    }
-                  }}
-                  style={{ ...styles.saveBtn, padding: "0 16px", height: "42px", fontSize: "14px" }}
-                >
-                  Add
-                </button>
-              </div>
-              {/* Display added links */}
-              {formData.reference && formData.reference.split(",").map(s=>s.trim()).filter(Boolean).length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
-                  {formData.reference.split(",").map(s=>s.trim()).filter(Boolean).map((ref, idx) => (
-                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "6px 12px", borderRadius: "6px", fontSize: "13px", color: "#334155" }}>
-                      <span style={{ wordBreak: "break-all" }}>{ref}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentRefs = formData.reference.split(",").map(s=>s.trim()).filter(Boolean);
-                          currentRefs.splice(idx, 1);
-                          setFormData({ ...formData, reference: currentRefs.join(", ") });
-                        }}
-                        style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0", fontSize: "16px", fontWeight: "bold", lineHeight: "1" }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+          <div className="pt-6 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6">Reference & Taste Links</h4>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">References</label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={newReference}
+                    onChange={(e) => setNewReference(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700"
+                    placeholder="Enter a reference link..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newReference.trim()) {
+                        const currentRefs = formData.reference ? formData.reference.split(",").map(s=>s.trim()).filter(Boolean) : [];
+                        currentRefs.push(newReference.trim());
+                        setFormData({ ...formData, reference: currentRefs.join(", ") });
+                        setNewReference("");
+                      }
+                    }}
+                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-sm transition-colors whitespace-nowrap"
+                  >
+                    Add
+                  </button>
                 </div>
-              )}
-            </div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Taste <span style={styles.optionalTag}>(Medium Description)</span></label>
-              <textarea 
-                name="taste" 
-                value={formData.taste} 
-                onChange={handleInputChange} 
-                style={{ ...styles.input, minHeight: "100px", resize: "vertical", paddingTop: "10px", paddingBottom: "10px" }} 
-                placeholder="Medium description of taste/preferences..." 
-              />
+                {/* Display added links */}
+                {formData.reference && formData.reference.split(",").map(s=>s.trim()).filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.reference.split(",").map(s=>s.trim()).filter(Boolean).map((ref, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100">
+                        <span className="break-all line-clamp-1 max-w-[200px]">{ref}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentRefs = formData.reference.split(",").map(s=>s.trim()).filter(Boolean);
+                            currentRefs.splice(idx, 1);
+                            setFormData({ ...formData, reference: currentRefs.join(", ") });
+                          }}
+                          className="text-indigo-400 hover:text-indigo-600 font-bold ml-1 transition-colors"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">Taste <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-400">Medium Description</span></label>
+                <textarea 
+                  name="taste" 
+                  value={formData.taste} 
+                  onChange={handleInputChange} 
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 min-h-[100px] resize-y" 
+                  placeholder="Medium description of taste/preferences..." 
+                />
+              </div>
             </div>
           </div>
 
-          <h4 style={{ ...styles.groupHeading, marginTop: "24px" }}>Social Media Credentials</h4>
-          <div className="smm-form-grid">
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Facebook Username <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} style={styles.input} placeholder="fb_username" />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Facebook Email <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} style={styles.input} placeholder="fb@enterprise-client.com" />
-            </div>
-            {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "••••••••••••")}
+          <div className="pt-6 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-violet-500"></div> Social Media Credentials</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Username</label>
+                  <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="fb_username" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Email</label>
+                  <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="fb@enterprise.com" />
+                </div>
+                {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "••••••••••••")}
+              </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Instagram Username <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} style={styles.input} placeholder="insta_username" />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Instagram Email <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} style={styles.input} placeholder="insta_handle" />
-            </div>
-            {renderPasswordField("Instagram Password", "instaPassword", formData.instaPassword, showInstaPassword, setShowInstaPassword, "••••••••••••")}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Username</label>
+                  <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="insta_username" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Email</label>
+                  <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="insta_handle" />
+                </div>
+                {renderPasswordField("Instagram Password", "instaPassword", formData.instaPassword, showInstaPassword, setShowInstaPassword, "••••••••••••")}
+              </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>YouTube Email <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} style={styles.input} placeholder="youtube@channel.com" />
-            </div>
-            {renderPasswordField("YouTube Password", "youtubePassword", formData.youtubePassword, showYoutubePassword, setShowYoutubePassword, "••••••••••••")}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">YouTube Email</label>
+                  <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="youtube@channel.com" />
+                </div>
+                {renderPasswordField("YouTube Password", "youtubePassword", formData.youtubePassword, showYoutubePassword, setShowYoutubePassword, "••••••••••••")}
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>LinkedIn Email <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} style={styles.input} placeholder="linkedin@company.com" />
-            </div>
-            {renderPasswordField("LinkedIn Password", "linkedinPassword", formData.linkedinPassword, showLinkedinPassword, setShowLinkedinPassword, "••••••••••••")}
+                <div className="space-y-2 mt-4 pt-4 border-t border-slate-200">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">LinkedIn Email</label>
+                  <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="linkedin@company.com" />
+                </div>
+                {renderPasswordField("LinkedIn Password", "linkedinPassword", formData.linkedinPassword, showLinkedinPassword, setShowLinkedinPassword, "••••••••••••")}
+              </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Twitter / X Email <span style={styles.optionalTag}>(optional)</span></label>
-              <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} style={styles.input} placeholder="twitter_handle" />
+              <div className="space-y-4 md:col-span-2 lg:col-span-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Twitter / X Email</label>
+                    <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm" placeholder="twitter_handle" />
+                  </div>
+                  {renderPasswordField("Twitter / X Password", "twitterPassword", formData.twitterPassword, showTwitterPassword, setShowTwitterPassword, "••••••••••••")}
+                </div>
+              </div>
             </div>
-            {renderPasswordField("Twitter / X Password", "twitterPassword", formData.twitterPassword, showTwitterPassword, setShowTwitterPassword, "••••••••••••")}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-            <button type="submit" disabled={isUpdating} style={isUpdating ? styles.saveBtnDisabled : styles.saveBtn}>
-              {isUpdating ? "Updating Details..." : "Update Details"}
+          <div className="flex justify-end pt-6 border-t border-slate-100">
+            <button type="submit" disabled={isUpdating} className={`px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isUpdating ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-md'}`}>
+              {isUpdating ? "Updating Details..." : "Update Project Details"}
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
 
       {/* ================= MASTER HISTORICAL CALENDARS LIST ================= */}
-      <div style={{ marginTop: "40px" }}>
-        <h3 style={styles.sectionHeading}>Monthly Content Calendars</h3>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-8">
+        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </div>
+          Monthly Content Calendars
+        </h3>
         {sheetsLoading ? (
-          <p style={{ fontSize: "14px", color: "#64748b" }}>Re-indexing calendar collection tree...</p>
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-12 text-center">
+            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Re-indexing calendar collection tree...</p>
+          </div>
         ) : monthlySheets.length > 0 ? (
-          <div className="smm-table-wrapper">
-            <table className="smm-table">
-              <thead>
-                <tr style={styles.thRow}>
-                  <th style={styles.thCell}>Month</th>
-                  <th style={styles.thCell}>Content Planned</th>
-                  <th style={styles.thCell}>Content Uploaded</th>
-                  <th style={styles.thCell}>Assigned By</th>
-                  <th style={styles.thCell}>Logo &amp; Moodboard</th>
-                  <th style={{ ...styles.thCell, textAlign: "right" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthlySheets.map((sheet) => {
-                  const isThisCalendarLoading = loadingCalendarId === sheet.id;
-                  return (
-                    <tr key={sheet.id} style={{ ...styles.tableRow, backgroundColor: selectedCalendar?.id === sheet.id ? "#f0fdf4" : "transparent" }}>
-                      <td style={{ ...styles.tdCell, fontWeight: "600" }}>
-                        {new Date(0, sheet.month - 1).toLocaleString(undefined, { month: "long" })} {sheet.year}
-                      </td>
-                      <td style={styles.tdCell}>🎬 {sheet.totalReels} R / 📝 {sheet.totalPosts} P</td>
-                      <td style={styles.tdCell}>🚀 {sheet.totalReelsUploaded} R / ✨ {sheet.totalPostsUploaded} P</td>
-                      <td style={styles.tdCell}>
-                        <span style={{ fontSize: "13px", fontWeight: "500", color: "#1e293b" }}>{sheet.createdBy?.name || "System Agent"}</span>
-                        <div style={{ fontSize: "11px", color: "#64748b" }}>{sheet.createdBy?.employeeId}</div>
-                      </td>
-                      <td style={styles.tdCell}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          {sheet.projectLogo || project?.logo ? (
-                            <img src={sheet.projectLogo || project.logo} alt="Project logo" style={styles.logoImageSmall} />
-                          ) : (
-                            <div style={styles.logoPlaceholderSmall}>—</div>
-                          )}
-                          {sheet.moodBoardLink ? (
-                            <a href={sheet.moodBoardLink} target="_blank" rel="noreferrer" style={styles.tableLink}>Blueprint 🔗</a>
-                          ) : (
-                            <span style={{ color: "#94a3b8" }}>No moodboard</span>
-                          )}
-                        </div>
-                      </td>
-                      <td style={{ ...styles.tdCell, textAlign: "right" }}>
-                        <button
-                          onClick={() => fetchMonthlySheetDetail(sheet.id)}
-                          disabled={isThisCalendarLoading}
-                          style={selectedCalendar?.id === sheet.id ? styles.viewBtnActive : styles.viewBtn}
-                        >
-                          {isThisCalendarLoading
-                            ? "Loading..."
-                            : selectedCalendar?.id === sheet.id
-                              ? "Viewing"
-                              : "Open Calendar"}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-100/60">
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Month</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Content Planned</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Content Uploaded</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Assigned By</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Logo &amp; Moodboard</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/60">
+                  {monthlySheets.map((sheet) => {
+                    const isThisCalendarLoading = loadingCalendarId === sheet.id;
+                    return (
+                      <tr key={sheet.id} className={`group transition-colors hover:bg-slate-50/50 ${selectedCalendar?.id === sheet.id ? "bg-indigo-50/30" : ""}`}>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <p className="text-sm font-bold text-slate-900">{new Date(0, sheet.month - 1).toLocaleString(undefined, { month: "long" })} {sheet.year}</p>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">🎬 {sheet.totalReels} R</span>
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">📝 {sheet.totalPosts} P</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-md">🚀 {sheet.totalReelsUploaded} R</span>
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-1 rounded-md">✨ {sheet.totalPostsUploaded} P</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                              {sheet.createdBy?.name?.charAt(0) || "S"}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{sheet.createdBy?.name || "System Agent"}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{sheet.createdBy?.employeeId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-4">
+                            {sheet.projectLogo || project?.logo ? (
+                              <img src={sheet.projectLogo || project.logo} alt="Project logo" className="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-sm" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs">—</div>
+                            )}
+                            {sheet.moodBoardLink ? (
+                              <a href={sheet.moodBoardLink} target="_blank" rel="noreferrer" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                                Blueprint <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                              </a>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">No moodboard</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-right">
+                          <button
+                            onClick={() => fetchMonthlySheetDetail(sheet.id)}
+                            disabled={isThisCalendarLoading}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${selectedCalendar?.id === sheet.id ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}
+                          >
+                            {isThisCalendarLoading
+                              ? "Loading..."
+                              : selectedCalendar?.id === sheet.id
+                                ? "Viewing Layout"
+                                : "Open Calendar"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
-          <div style={styles.emptyState}>No monthly strategy planning manifests initialized yet.</div>
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-12 text-center">
+            <svg className="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No monthly strategy planning manifests initialized yet.</p>
+          </div>
         )}
-      </div>
+      </motion.div>
 
       {/* ================= DRILLDOWN VIEW: SINGLE CALENDAR EDITING ================= */}
       {selectedCalendar && (
-        <div style={{ ...styles.formCardContainer, marginTop: "32px", borderColor: "#10b981", backgroundColor: "#ffffff" }}>
-          <div style={{ display: "flex", justifyBetween: "center", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "20px", justifyContent: "space-between" }}>
-            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-emerald-500/30 p-8 mt-8">
+          <div className="flex flex-wrap items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              </div>
               Calendar Workspace Layout — {new Date(0, selectedCalendar.month - 1).toLocaleString(undefined, { month: "long" })} {selectedCalendar.year}
             </h3>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={handleUpdateExistingCalendar} disabled={isPatchingDay} style={isPatchingDay ? styles.saveBtnDisabled : styles.saveBtn}>
-                {isPatchingDay ? "Saving..." : "Save Changes"}
+            <div className="flex gap-3">
+              <button onClick={() => setSelectedCalendar(null)} className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Close Workspace</button>
+              <button onClick={handleUpdateExistingCalendar} disabled={isPatchingDay} className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all ${isPatchingDay ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
+                {isPatchingDay ? "Saving Layout..." : "Save Changes"}
               </button>
-              <button onClick={() => setSelectedCalendar(null)} style={styles.cancelBtn}>Close</button>
             </div>
           </div>
 
-          <div className="smm-table-wrapper" style={{ maxHeight: "500px", overflowY: "auto" }}>
-            <table className="smm-table">
-              <thead>
-                <tr style={styles.thRow}>
-                  <th style={{ ...styles.thCell, position: "sticky", left: 0, background: "#f8fafc", zIndex: 11 }}>Day</th>
-                  <th style={styles.thCell}>Reel Type</th>
-                  <th style={styles.thCell}>Post Type</th>
-                  <th style={styles.thCell}>Title</th>
-                  <th style={styles.thCell}>Video Type</th>
-                  <th style={styles.thCell}>Script</th>
-                  <th style={styles.thCell}>Description</th>
-                  <th style={styles.thCell}>References</th>
-                  <th style={styles.thCell}>Submissions</th>
-                  <th style={styles.thCell}>Status</th>
-                  <th style={styles.thCell}>Reviewed At</th>
-                  <th style={styles.thCell}>Rejection Feedback</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedCalendar.days?.map((dayItem, index) => (
-                  <tr key={dayItem.id || index} style={styles.tableRow}>
-                    <td style={{ ...styles.tdCell, fontWeight: "600", position: "sticky", left: 0, background: "#ffffff", zIndex: 9, borderRight: "1px solid #e2e8f0" }}>
-                      {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
-                    </td>
-                    <td style={styles.tdCell}>
-                      <select value={dayItem.reelType} onChange={(e) => handleSelectedDayChange(index, "reelType", e.target.value)} style={styles.tableSelect}>
-                        <option value="NONE">NONE</option>
-                        <option value="SHOOT">SHOOT</option>
-                        <option value="AI">AI</option>
-                      </select>
-                    </td>
-                    <td style={styles.tdCell}>
-                      <select value={dayItem.postType} onChange={(e) => handleSelectedDayChange(index, "postType", e.target.value)} style={styles.tableSelect}>
-                        <option value="NONE">NONE</option>
-                        <option value="SHOOT">SHOOT</option>
-                        <option value="AI">AI</option>
-                      </select>
-                    </td>
-                    <td style={styles.tdCell}>
-                      <input type="text" value={dayItem.title || ""} onChange={(e) => handleSelectedDayChange(index, "title", e.target.value)} style={styles.tableInput} placeholder="Title..." />
-                    </td>
-                    <td style={styles.tdCell}>
-                      <select value={dayItem.videoType || "HORIZONTAL"} onChange={(e) => handleSelectedDayChange(index, "videoType", e.target.value)} style={styles.tableSelect}>
-                        <option value="HORIZONTAL">HORIZONTAL</option>
-                        <option value="VERTICAL">VERTICAL</option>
-                      </select>
-                    </td>
-                    <td style={styles.tdCell}>
-                      <input type="text" value={dayItem.script || ""} onChange={(e) => handleSelectedDayChange(index, "script", e.target.value)} style={styles.tableInput} placeholder="Script lines..." />
-                    </td>
-                    <td style={styles.tdCell}>
-                      <input type="text" value={dayItem.description || ""} onChange={(e) => handleSelectedDayChange(index, "description", e.target.value)} style={styles.tableInput} placeholder="Frames..." />
-                    </td>
-                    <td style={styles.tdCell}>
-                      <input type="text" value={arrayToString(dayItem.referenceLinks)} onChange={(e) => handleSelectedDayChange(index, "referenceLinks", stringToArray(e.target.value))} style={styles.tableInput} placeholder="Links..." />
-                    </td>
-                    <td style={styles.tdCell}>
-                      {/* --- RENDER SUBMISSIONS TRACKER LOGIC ---
-                          These values now come straight from the day-level detail
-                          endpoint (GET /monthly-sheets/:id), so submissionLinks (and
-                          any creative/content submission links) reflect real, current
-                          values instead of the stale list-endpoint copy. */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        {/* 1. Shoot Submission Links */}
-                        {dayItem.submissionLinks?.length > 0 && dayItem.submissionLinks.map((link, i) => (
-                          <a key={`shoot-${i}`} href={link} target="_blank" rel="noreferrer" style={styles.tableLink}>Shoot Asset {i + 1} 🔗</a>
-                        ))}
-
-                        {/* 2. Content Creative Shared Array Assets */}
-                        {dayItem.contentCreativeSubmissionLinks?.length > 0 && dayItem.contentCreativeSubmissionLinks.map((link, i) => (
-                          <a key={`creative-arr-${i}`} href={link} target="_blank" rel="noreferrer" style={{ ...styles.tableLink, color: "#10b981" }}>Creative Asset {i + 1} 🔗</a>
-                        ))}
-
-                        {/* 3. Base Single Creative Asset Vector Link Anchor */}
-                        {dayItem.creativeSubmissionLink && (
-                          <a href={dayItem.creativeSubmissionLink} target="_blank" rel="noreferrer" style={{ ...styles.tableLink, color: "#d946ef" }}>Design Asset 🔗</a>
-                        )}
-
-                        {/* Fallback empty view template layout indicator */}
-                        {(!dayItem.submissionLinks?.length && !dayItem.contentCreativeSubmissionLinks?.length && !dayItem.creativeSubmissionLink) && (
-                          <span style={{ color: "#94a3b8" }}>—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td style={styles.tdCell}>
-                      {dayItem.submissionStatus ? (
-                        <span style={styles.statusBadge(dayItem.submissionStatus)}>
-                          {dayItem.submissionStatus}
-                        </span>
-                      ) : <span style={{ color: "#94a3b8" }}>—</span>}
-                    </td>
-                    <td style={{ ...styles.tdCell, color: "#64748b", whiteSpace: "nowrap" }}>
-                      {formatDateTime(dayItem.reviewedAt)}
-                    </td>
-                    <td style={{ ...styles.tdCell, color: "#ef4444" }}>
-                      {dayItem.rejectionReason || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-wrap gap-6 mb-6 px-4">
+            <div className="flex-1 min-w-[200px] space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reels Uploaded</label>
+              <input type="number" name="totalReelsUploaded" min="0" value={selectedCalendar.totalReelsUploaded || ""} onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCalendar(prev => ({...prev, totalReelsUploaded: val}))
+                }} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 5" />
+            </div>
+            <div className="flex-1 min-w-[200px] space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Posts Uploaded</label>
+              <input type="number" name="totalPostsUploaded" min="0" value={selectedCalendar.totalPostsUploaded || ""} onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCalendar(prev => ({...prev, totalPostsUploaded: val}))
+                }} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 3" />
+            </div>
           </div>
-        </div>
+
+          <div className="overflow-hidden border border-slate-200 rounded-2xl bg-slate-50/50">
+            <div className="overflow-x-auto max-h-[500px]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100/80 sticky top-0 z-20 border-b border-slate-200 shadow-sm">
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-100/90 backdrop-blur-md z-30 border-r border-slate-200">Day</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Post Type</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Title</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Video Type</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Script</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Description</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">References</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Submissions</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Status</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
+                    <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Feedback</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {selectedCalendar.days?.map((dayItem, index) => (
+                    <tr key={dayItem.id || index} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="px-5 py-3 whitespace-nowrap font-bold text-slate-700 text-sm sticky left-0 bg-white group-hover:bg-slate-50/80 z-10 border-r border-slate-100 transition-colors">
+                        {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <select value={dayItem.reelType} onChange={(e) => handleSelectedDayChange(index, "reelType", e.target.value)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                          <option value="NONE">NONE</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
+                        </select>
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <select value={dayItem.postType} onChange={(e) => handleSelectedDayChange(index, "postType", e.target.value)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                          <option value="NONE">NONE</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
+                        </select>
+                      </td>
+                      <td className="px-5 py-3 min-w-[180px]">
+                        <input type="text" value={dayItem.title || ""} onChange={(e) => handleSelectedDayChange(index, "title", e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Title..." />
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <select value={dayItem.videoType || "HORIZONTAL"} onChange={(e) => handleSelectedDayChange(index, "videoType", e.target.value)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                          <option value="HORIZONTAL">HORIZONTAL</option><option value="VERTICAL">VERTICAL</option>
+                        </select>
+                      </td>
+                      <td className="px-5 py-3 min-w-[200px]">
+                        <input type="text" value={dayItem.script || ""} onChange={(e) => handleSelectedDayChange(index, "script", e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Script lines..." />
+                      </td>
+                      <td className="px-5 py-3 min-w-[200px]">
+                        <input type="text" value={dayItem.description || ""} onChange={(e) => handleSelectedDayChange(index, "description", e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Frames..." />
+                      </td>
+                      <td className="px-5 py-3 min-w-[180px]">
+                        <input type="text" value={arrayToString(dayItem.referenceLinks)} onChange={(e) => handleSelectedDayChange(index, "referenceLinks", stringToArray(e.target.value))} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Links..." />
+                      </td>
+                      <td className="px-5 py-3 min-w-[180px]">
+                        <div className="flex flex-col gap-2">
+                          {dayItem.submissionLinks?.length > 0 && dayItem.submissionLinks.map((link, i) => (
+                            <a key={`shoot-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 break-all">Shoot Asset {i + 1} 🔗</a>
+                          ))}
+                          {dayItem.contentCreativeSubmissionLinks?.length > 0 && dayItem.contentCreativeSubmissionLinks.map((link, i) => (
+                            <a key={`creative-arr-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:text-emerald-800 break-all">Creative Asset {i + 1} 🔗</a>
+                          ))}
+                          {dayItem.creativeSubmissionLink && (
+                            <a href={dayItem.creativeSubmissionLink} target="_blank" rel="noreferrer" className="text-xs font-bold text-fuchsia-600 hover:text-fuchsia-800 break-all">Design Asset 🔗</a>
+                          )}
+                          {(!dayItem.submissionLinks?.length && !dayItem.contentCreativeSubmissionLinks?.length && !dayItem.creativeSubmissionLink) && (
+                            <span className="text-slate-400 text-xs">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        {dayItem.submissionStatus ? (
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${
+                            dayItem.submissionStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                            dayItem.submissionStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                            dayItem.submissionStatus === 'SUBMITTED' ? 'bg-blue-100 text-blue-800' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {dayItem.submissionStatus}
+                          </span>
+                        ) : <span className="text-slate-400 text-xs">—</span>}
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap text-xs text-slate-500">
+                        {formatDateTime(dayItem.reviewedAt)}
+                      </td>
+                      <td className="px-5 py-3 min-w-[150px] text-xs text-red-600 font-medium">
+                        {dayItem.rejectionReason || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       {/* Co-Assigned Managers */}
-      <div style={{ marginTop: "40px" }}>
-        <h3 style={styles.sectionHeading}>Co-Assigned Project Stakeholders</h3>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-8 mb-12">
+        <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100">
+            <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          </div>
+          Co-Assigned Project Stakeholders
+        </h3>
         {project?.assignments?.length > 0 ? (
-          <div className="smm-manager-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {project.assignments.map((assignment) => (
-              <div key={assignment.id} style={styles.managerCard}>
-                <div style={styles.avatar}>{assignment.manager?.name?.charAt(0) || "M"}</div>
+              <div key={assignment.id} className="bg-white/60 backdrop-blur-xl border border-slate-200/60 p-4 rounded-2xl flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-700 font-black text-lg border border-indigo-200/50">
+                  {assignment.manager?.name?.charAt(0) || "M"}
+                </div>
                 <div>
-                  <div style={styles.mgrName}>{assignment.manager?.name}</div>
-                  <div style={styles.mgrRole}>{assignment.manager?.position || "Manager"}</div>
-                  <div style={styles.mgrId}>ID: {assignment.manager?.employeeId}</div>
+                  <div className="text-sm font-bold text-slate-900">{assignment.manager?.name}</div>
+                  <div className="text-xs font-medium text-slate-500">{assignment.manager?.position || "Manager"}</div>
+                  <div className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">ID: {assignment.manager?.employeeId}</div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div style={styles.emptyState}>No other management stakeholders assigned.</div>
+          <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 text-center">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">No other management stakeholders assigned.</p>
+          </div>
         )}
-      </div>
+      </motion.div>
 
-      {/* ================= CREATE NEW STRATEGY WORKSPACE (DRAWER SIDE-MODAL) ================= */}
+      {/* ================= CREATE NEW STRATEGY WORKSPACE (MODAL) ================= */}
       {isDrawerOpen && (
-        <div className="smm-drawer-overlay">
-          <div className="smm-drawer-sheet">
-            <div style={styles.drawerHeader}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6 transition-opacity">
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }} className="w-full max-w-5xl max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
-                <span style={styles.drawerSubtitle}>WORKSPACE ENGINE</span>
-                <h2 style={styles.drawerTitle}>Deploy Strategy Manifest</h2>
+                <span className="text-[10px] font-black text-emerald-600 tracking-widest uppercase">WORKSPACE ENGINE</span>
+                <h2 className="text-xl font-black text-slate-900 mt-1">Deploy Strategy Manifest</h2>
               </div>
-              <button onClick={() => setIsDrawerOpen(false)} style={styles.closeDrawerBtn}>
-                <svg style={{ width: "20px", height: "20px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button onClick={() => setIsDrawerOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <form onSubmit={handlePostMonthlySheet} className="smm-drawer-form-body" style={styles.drawerFormBody}>
-              <div className="smm-drawer-config-grid">
-                <div style={{ ...styles.formCardContainer, backgroundColor: "#ffffff" }}>
-                  <h4 style={styles.groupHeading}>Target Calendar Window</h4>
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={styles.label}>Month</label>
-                      <select name="month" value={sheetMeta.month} onChange={handleMetaChange} style={styles.input}>
+            <form onSubmit={handlePostMonthlySheet} className="flex-1 overflow-y-auto p-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Target Calendar Window</h4>
+                  <div className="flex gap-4">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Month</label>
+                      <select name="month" value={sheetMeta.month} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700">
                         {Array.from({ length: 12 }, (_, i) => (
                           <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString(undefined, { month: "long" })}</option>
                         ))}
                       </select>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={styles.label}>Year</label>
-                      <select name="year" value={sheetMeta.year} onChange={handleMetaChange} style={styles.input}>
+                    <div className="flex-1 space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Year</label>
+                      <select name="year" value={sheetMeta.year} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700">
                         {[2025, 2026, 2027, 2028].map((y) => <option key={y} value={y}>{y}</option>)}
                       </select>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ ...styles.formCardContainer, backgroundColor: "#ffffff" }}>
-                  <h4 style={styles.groupHeading}>Target Deliverable Milestones</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <div>
-                      <label style={styles.label}>Planned Reels</label>
-                      <input type="number" name="totalReels" min="0" value={sheetMeta.totalReels} onChange={handleMetaChange} style={styles.input} placeholder="e.g. 15" required />
+                <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Target Deliverables</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Reels</label>
+                      <input type="number" name="totalReels" min="0" value={sheetMeta.totalReels} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 15" required />
                     </div>
-                    <div>
-                      <label style={styles.label}>Planned Posts</label>
-                      <input type="number" name="totalPosts" min="0" value={sheetMeta.totalPosts} onChange={handleMetaChange} style={styles.input} placeholder="e.g. 10" required />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Posts</label>
+                      <input type="number" name="totalPosts" min="0" value={sheetMeta.totalPosts} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 10" required />
+                    </div>
+                    <div className="space-y-2 mt-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Reels</label>
+                      <input type="number" name="totalReelsUploaded" min="0" value={sheetMeta.totalReelsUploaded} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 1" />
+                    </div>
+                    <div className="space-y-2 mt-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Posts</label>
+                      <input type="number" name="totalPostsUploaded" min="0" value={sheetMeta.totalPostsUploaded} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 1" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
-                <div style={{ ...styles.formGroup, flex: 1 }}>
-                  <label style={styles.label}>Shared Blueprint Moodboard Asset URL Link</label>
-                  <input type="url" name="moodBoardLink" value={sheetMeta.moodBoardLink} onChange={handleMetaChange} style={styles.input} placeholder="https://figma.com/... or Pinterest space links" />
-                </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Shared Blueprint Moodboard Asset URL Link</label>
+                <input type="url" name="moodBoardLink" value={sheetMeta.moodBoardLink} onChange={handleMetaChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="https://figma.com/... or Pinterest space links" />
               </div>
 
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "260px" }}>
-                <h4 style={styles.groupHeading}>Daily Tactical Matrix Breakdown</h4>
-                <div className="smm-table-wrapper" style={{ flex: 1, maxHeight: "340px", overflowY: "auto" }}>
-                  <table className="smm-table">
-                    <thead>
-                      <tr style={styles.thRow}>
-                        <th style={{ ...styles.thCell, position: "sticky", left: 0, background: "#f8fafc", zIndex: 11 }}>Day</th>
-                        <th style={styles.thCell}>Reel Type</th>
-                        <th style={styles.thCell}>Post Type</th>
-                        <th style={styles.thCell}>Title</th>
-                        <th style={styles.thCell}>Video Type</th>
-                        <th style={styles.thCell}>Script Concept</th>
-                        <th style={styles.thCell}>Frame Details</th>
-                        <th style={styles.thCell}>Visual References</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sheetDays.map((dayItem, idx) => (
-                        <tr key={idx} style={styles.tableRow}>
-                          <td style={{ ...styles.tdCell, fontWeight: "600", position: "sticky", left: 0, background: "#ffffff", zIndex: 9, borderRight: "1px solid #e2e8f0" }}>
-                            {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
-                          </td>
-                          <td style={styles.tdCell}>
-                            <select value={dayItem.reelType} onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)} style={styles.tableSelect}>
-                              <option value="NONE">null</option>
-                              <option value="SHOOT">SHOOT</option>
-                              <option value="AI">AI</option>
-                            </select>
-                          </td>
-                          <td style={styles.tdCell}>
-                            <select value={dayItem.postType} onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)} style={styles.tableSelect}>
-                              <option value="NONE">null</option>
-                              <option value="SHOOT">SHOOT</option>
-                              <option value="AI">AI</option>
-                            </select>
-                          </td>
-                          <td style={styles.tdCell}>
-                            <input type="text" value={dayItem.title || ""} onChange={(e) => handleDayFieldChange(idx, "title", e.target.value)} style={styles.tableInput} placeholder="Title..." />
-                          </td>
-                          <td style={styles.tdCell}>
-                            <select value={dayItem.videoType || "HORIZONTAL"} onChange={(e) => handleDayFieldChange(idx, "videoType", e.target.value)} style={styles.tableSelect}>
-                              <option value="HORIZONTAL">HORIZONTAL</option>
-                              <option value="VERTICAL">VERTICAL</option>
-                              <option value="SQUARE">SQUARE</option>
-                            </select>
-                          </td>
-                          <td style={styles.tdCell}>
-                            <input type="text" value={dayItem.script} onChange={(e) => handleDayFieldChange(idx, "script", e.target.value)} style={styles.tableInput} placeholder="Scripts..." />
-                          </td>
-                          <td style={styles.tdCell}>
-                            <input type="text" value={dayItem.description} onChange={(e) => handleDayFieldChange(idx, "description", e.target.value)} style={styles.tableInput} placeholder="Directives..." />
-                          </td>
-                          <td style={styles.tdCell}>
-                            <input type="text" value={arrayToString(dayItem.referenceLinks)} onChange={(e) => handleDayFieldChange(idx, "referenceLinks", stringToArray(e.target.value))} style={styles.tableInput} placeholder="https://..." />
-                          </td>
+              <div className="flex flex-col min-h-[300px]">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Daily Tactical Matrix Breakdown</h4>
+                <div className="overflow-hidden border border-slate-200 rounded-2xl bg-white flex-1 flex flex-col">
+                  <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-50 z-30 border-r border-slate-200">Day</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Post Type</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Title</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Video Type</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Script Concept</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Frame Details</th>
+                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Visual References</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {sheetDays.map((dayItem, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50 group">
+                            <td className="px-4 py-2.5 whitespace-nowrap font-bold text-slate-700 text-sm sticky left-0 bg-white group-hover:bg-slate-50/50 z-10 border-r border-slate-100 transition-colors">
+                              {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <select value={dayItem.reelType} onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)} className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                                <option value="NONE">null</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <select value={dayItem.postType} onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)} className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                                <option value="NONE">null</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-2.5 min-w-[150px]">
+                              <input type="text" value={dayItem.title || ""} onChange={(e) => handleDayFieldChange(idx, "title", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Title..." />
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <select value={dayItem.videoType || "HORIZONTAL"} onChange={(e) => handleDayFieldChange(idx, "videoType", e.target.value)} className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                                <option value="HORIZONTAL">HORIZONTAL</option><option value="VERTICAL">VERTICAL</option><option value="SQUARE">SQUARE</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-2.5 min-w-[180px]">
+                              <input type="text" value={dayItem.script} onChange={(e) => handleDayFieldChange(idx, "script", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Scripts..." />
+                            </td>
+                            <td className="px-4 py-2.5 min-w-[180px]">
+                              <input type="text" value={dayItem.description} onChange={(e) => handleDayFieldChange(idx, "description", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Directives..." />
+                            </td>
+                            <td className="px-4 py-2.5 min-w-[150px]">
+                              <input type="text" value={arrayToString(dayItem.referenceLinks)} onChange={(e) => handleDayFieldChange(idx, "referenceLinks", stringToArray(e.target.value))} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="https://..." />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
 
-              <div className="smm-drawer-footer">
-                <button type="button" onClick={() => setIsDrawerOpen(false)} style={styles.cancelBtn}>Cancel</button>
-                <button type="submit" disabled={isSubmittingSheet} style={isSubmittingSheet ? styles.sheetBtnDisabled : styles.sheetBtn}>
+              <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-4 mt-auto">
+                <button type="button" onClick={() => setIsDrawerOpen(false)} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="submit" disabled={isSubmittingSheet} className={`px-6 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isSubmittingSheet ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
                   {isSubmittingSheet ? "Compiling Matrix..." : "Deploy Strategy Manifest"}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
+      </div>
     </div>
   );
 };

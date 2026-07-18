@@ -80,8 +80,8 @@ const HrTaskCreation = () => {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      return task.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-             task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      return task.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase());
     });
   }, [tasks, searchQuery]);
 
@@ -92,13 +92,13 @@ const HrTaskCreation = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-        
+
         {/* HEADER */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
             <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">Project Management</span>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
-              Company Projects
+              Projects
             </h1>
           </div>
           <CreateTaskButton title="Create Project" onClick={() => setOpenModal(true)} />
