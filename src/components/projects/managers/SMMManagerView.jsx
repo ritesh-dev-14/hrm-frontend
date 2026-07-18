@@ -948,8 +948,30 @@ const SMMManagerView = ({ projectId }) => {
                   {formData.reference && formData.reference.split(",").map(s => s.trim()).filter(Boolean).length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {formData.reference.split(",").map(s => s.trim()).filter(Boolean).map((ref, idx) => (
-                        <div key={idx} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100">
+                        <div key={idx} className="group relative flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100 cursor-pointer">
                           <span className="break-all line-clamp-1 max-w-[200px]">{ref}</span>
+                          
+                          {/* Copy Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(ref);
+                            }}
+                            className="text-indigo-400 hover:text-indigo-600 transition-colors"
+                            title="Copy Link"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                          </button>
+
+                          {/* Beautiful Instant Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-xs md:max-w-md p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-50 break-all">
+                            {ref}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-900"></div>
+                          </div>
+
                           {isEditingCredentials && (
                             <button
                               type="button"
