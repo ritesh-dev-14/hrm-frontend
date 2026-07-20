@@ -43,7 +43,7 @@ export default function HrEmployeeDetailedAttendance() {
   const fetchEmployeeAttendance = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/api/attendance/employee/${employeeId}`);
+      const res = await api.get(`/api/attendance/${employeeId}`);
       if (res.data?.data) {
         setEmployee(res.data.data.employee);
         setRecords(res.data.data.records || []);

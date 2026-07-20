@@ -108,23 +108,70 @@ export default function HrAttendance() {
     return filtered;
   }, [attendance, search, selectedFilter]);
 
-  // DYNAMIC MONTHLY STATS WHEN SEARCHING
+  // DYNAMIC DASHBOARD STATS
+  const dynamicStats = useMemo(() => {
+    if (!attendance.length && !dashboard) return null;
+
+    let present = 0;
+    let halfDay = 0;
+    let absent = 0;
+
+    const totalEmployees = dashboard?.totalEmployees || 0;
+
+    if (selectedFilter === "all" || selectedFilter === "day") {
+      // For a single day (or all, which doesn't make much sense but we fallback to today), count unique users
+      const uniqueUsersPresent = new Set();
+      const uniqueUsersHalf = new Set();
+      
+      filteredAttendance.forEach(r => {
+        if (r.status === "PRESENT") uniqueUsersPresent.add(r.userId);
+        if (r.status === "HALF_DAY") uniqueUsersHalf.add(r.userId);
+      });
+
+      present = uniqueUsersPresent.size;
+      halfDay = uniqueUsersHalf.size;
+      absent = Math.max(0, totalEmployees - (present + halfDay));
+    } else {
+      // For week/month, tally total occurrences
+      filteredAttendance.forEach(r => {
+        if (r.status === "PRESENT") present++;
+        else if (r.status === "HALF_DAY") halfDay++;
+      });
+      
+      // Calculate workdays in the period to estimate absences
+      let workdays = 0;
+      const now = new Date();
+      if (selectedFilter === "week") {
+        const weekAgo = new Date();
+        weekAgo.setDate(now.getDate() - 7);
+        for (let d = weekAgo; d <= now; d.setDate(d.getDate() + 1)) {
+          if (d.getDay() !== 0 && d.getDay() !== 6) workdays++;
+        }
+      } else if (selectedFilter === "month") {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        for (let d = firstDay; d <= now; d.setDate(d.getDate() + 1)) {
+          if (d.getDay() !== 0 && d.getDay() !== 6) workdays++;
+        }
+      }
+      
+      const expectedTotalRecords = workdays * totalEmployees;
+      absent = Math.max(0, expectedTotalRecords - (present + halfDay));
+    }
+
+    return { totalEmployees, present, halfDay, absent };
+  }, [filteredAttendance, dashboard, selectedFilter]);
+
+  // SEARCH STATS (Mini badge)
   const searchStats = useMemo(() => {
     if (!search.trim()) return null;
 
-    const now = new Date();
-    // Get only records from the current month from the already filtered list
-    const currentMonthRecords = filteredAttendance.filter(item => {
-      const itemDate = new Date(item.date);
-      return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
-    });
-
-    const present = currentMonthRecords.filter(r => r.status === "PRESENT").length;
-    const halfDay = currentMonthRecords.filter(r => r.status === "HALF_DAY").length;
-    const absent = currentMonthRecords.filter(r => r.status === "ABSENT").length;
+    const present = filteredAttendance.filter(r => r.status === "PRESENT").length;
+    const halfDay = filteredAttendance.filter(r => r.status === "HALF_DAY").length;
+    // Just show raw missing records based on the filter timeframe
+    const absent = Math.max(0, (dynamicStats?.absent || 0));
 
     return { present, halfDay, absent };
-  }, [filteredAttendance, search]);
+  }, [filteredAttendance, search, dynamicStats]);
 
   // FORMAT TIME
   const formatTime = (time) => {
@@ -187,10 +234,10 @@ export default function HrAttendance() {
         {/* STATS */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
           {[
-            { label: "Total Employees", value: dashboard?.totalEmployees || 0, icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
-            { label: "Present Today", value: dashboard?.present || 0, icon: CalendarDays, color: "text-emerald-500", bg: "bg-emerald-50" },
-            { label: "Half Day", value: dashboard?.halfDay || 0, icon: TimerReset, color: "text-amber-500", bg: "bg-amber-50" },
-            { label: "Absent", value: dashboard?.absent || 0, icon: Clock3, color: "text-rose-500", bg: "bg-rose-50" },
+            { label: "Total Employees", value: dynamicStats?.totalEmployees || 0, icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
+            { label: selectedFilter === 'day' || selectedFilter === 'all' ? "Present Today" : "Total Present", value: dynamicStats?.present || 0, icon: CalendarDays, color: "text-emerald-500", bg: "bg-emerald-50" },
+            { label: selectedFilter === 'day' || selectedFilter === 'all' ? "Half Day Today" : "Total Half Days", value: dynamicStats?.halfDay || 0, icon: TimerReset, color: "text-amber-500", bg: "bg-amber-50" },
+            { label: selectedFilter === 'day' || selectedFilter === 'all' ? "Absent Today" : "Total Absences", value: dynamicStats?.absent || 0, icon: Clock3, color: "text-rose-500", bg: "bg-rose-50" },
           ].map((item, index) => (
             <motion.div
               key={index}
@@ -222,7 +269,7 @@ export default function HrAttendance() {
               {searchStats && (
                 <div className="flex gap-3 mt-3">
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                    This Month: {searchStats.present} Present
+                    {searchStats.present} Present
                   </span>
                   <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
                     {searchStats.halfDay} Half Day
