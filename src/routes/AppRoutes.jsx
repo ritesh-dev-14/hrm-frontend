@@ -22,6 +22,8 @@ import HrAttendance from "../pages/HR/HrAttendance.jsx";
 import HrLeaves from "../pages/HR/HrLeaves.jsx";
 import HrAllEmployeeAttendence from "../pages/HR/HrAllEmployeeAttendence.jsx";
 import HrTaskCreation from "../pages/HR/HrTaskCreation";
+import HrReports from "../pages/HR/HrReports";
+import HrEmployeeProjectReport from "../pages/HR/HrEmployeeProjectReport";
 
 import EmployeeDetails from "../pages/HR/employeeDetailsHr/EmployeeDetails";
 import EmployeHomePage from "../pages/Employee/EmployeeHomePage";
@@ -31,6 +33,7 @@ import EmployeePayslips from "../pages/Employee/EmployeePayslips";
 import EmployeeSettings from "../pages/Employee/EmployeeSettings";
 import EmployeeTaskPage from "../pages/Employee/EmployeeTaskPage.jsx";
 import EmployeeTaskDetailsPage from "../pages/Employee/tasks/EmployeeTaskDetailsPage.jsx";
+import EmployeeReports from "../pages/Employee/EmployeeReports";
 
 import ManagerHomePage from "../pages/Manager/ManagerHomePage";
 import ManagerAttendence from "../pages/Manager/ManagerAttendence";
@@ -350,6 +353,8 @@ export const AppRoutes = () => {
                 element={<HrLeaveManagement />}
               />
               <Route path="/hr/team" element={<HrTeamPage />} />
+              <Route path="/reports/hr" element={<HrReports />} />
+              <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
             </>
           )}
 
@@ -365,6 +370,14 @@ export const AppRoutes = () => {
                 element={<HrLeaveManagement />}
               />
               <Route path="/hr/team" element={<HrTeamPage />} />
+              <Route path="/reports/hr" element={<HrReports />} />
+              <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
+            </>
+          )}
+
+          {role === "EMPLOYEE" && (
+            <>
+              <Route path="/reports/employee" element={<EmployeeReports />} />
             </>
           )}
 

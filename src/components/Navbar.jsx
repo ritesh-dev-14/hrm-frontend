@@ -34,6 +34,20 @@ const NAV_CONFIG = [
     roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
   },
   {
+    id: "reports-hr",
+    label: "Reports",
+    icon: FileText,
+    path: "/reports/hr",
+    roles: ["ADMIN", "HR"],
+  },
+  {
+    id: "reports-emp",
+    label: "Reports",
+    icon: FileText,
+    path: "/reports/employee",
+    roles: ["EMPLOYEE"],
+  },
+  {
     id: "project",
     label: "Projects",
     icon: BriefcaseBusiness,
@@ -155,7 +169,31 @@ export default function ProfessionalSidebar({ children }) {
     });
 
     socketInstance.on("task-submitted-popup", (data) => {
-      toast.info(`New Task Submission on ${data.projectName} by ${data.employeeName}`);
+      toast.info(`New Task Submission on Project: ${data.projectName} by ${data.employeeName}`);
+    });
+
+    socketInstance.on("task-rejected-popup", (data) => {
+      toast.error(
+        <div>
+          <strong>Task Rejected!</strong><br />
+          Project: {data.projectName}<br />
+          Task: {data.taskTitle}<br />
+          Reason: {data.reason}
+        </div>,
+        { autoClose: false }
+      );
+    });
+
+    socketInstance.on("task-resubmitted-popup", (data) => {
+      toast.info(
+        <div>
+          <strong>Task Resubmitted!</strong><br />
+          Project: {data.projectName}<br />
+          Task: {data.taskTitle}<br />
+          By: {data.employeeName}
+        </div>,
+        { autoClose: false }
+      );
     });
 
     return () => {
