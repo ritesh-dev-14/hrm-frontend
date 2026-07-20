@@ -24,6 +24,7 @@ import HrAllEmployeeAttendence from "../pages/HR/HrAllEmployeeAttendence.jsx";
 import HrTaskCreation from "../pages/HR/HrTaskCreation";
 import HrReports from "../pages/HR/HrReports";
 import HrEmployeeProjectReport from "../pages/HR/HrEmployeeProjectReport";
+import HrEmployeeDetailedAttendance from "../pages/HR/HrEmployeeDetailedAttendance";
 
 import EmployeeDetails from "../pages/HR/employeeDetailsHr/EmployeeDetails";
 import EmployeHomePage from "../pages/Employee/EmployeeHomePage";
@@ -347,6 +348,7 @@ export const AppRoutes = () => {
                 path="/hr/employees-attendance"
                 element={<HrAllEmployeeAttendence />}
               />
+              <Route path="/hr/employee-attendance/:employeeId" element={<HrEmployeeDetailedAttendance />} />
               <Route path="/hr/team/:id" element={<EmployeeDetails />} />
               <Route
                 path="/hr/employees-leaves"
@@ -364,6 +366,7 @@ export const AppRoutes = () => {
                 path="/hr/employees-attendance"
                 element={<HrAllEmployeeAttendence />}
               />
+              <Route path="/hr/employee-attendance/:employeeId" element={<HrEmployeeDetailedAttendance />} />
               <Route path="/hr/team/:id" element={<EmployeeDetails />} />
               <Route
                 path="/hr/employees-leaves"

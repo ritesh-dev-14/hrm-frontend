@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
-  Search,
-  Users,
   CalendarDays,
+  Clock,
   Clock3,
   TimerReset,
   Filter,
+  ArrowLeft,
   CircleDot,
-  Clock
+  User,
+  Briefcase
 } from "lucide-react";
 import { motion } from "framer-motion";
-
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 const containerVariants = {
@@ -27,57 +27,39 @@ const itemVariants = {
   show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
-export default function HrAttendance() {
+export default function HrEmployeeDetailedAttendance() {
+  const { employeeId } = useParams();
   const navigate = useNavigate();
-  const [attendance, setAttendance] = useState([]);
-  const [dashboard, setDashboard] = useState(null);
+  
+  const [employee, setEmployee] = useState(null);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [search, setSearch] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedFilter, setSelectedFilter] = useState("month");
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    fetchEmployeeAttendance();
+  }, [employeeId]);
 
-  const fetchAllData = async () => {
+  const fetchEmployeeAttendance = async () => {
     try {
       setLoading(true);
-      const [attendanceRes, dashboardRes] = await Promise.all([
-        api.get("/api/attendance"),
-        api.get("/api/attendance/dashboard"),
-      ]);
-      setAttendance(attendanceRes.data?.data || []);
-      setDashboard(dashboardRes.data?.data || {});
+      const res = await api.get(`/api/attendance/employee/${employeeId}`);
+      if (res.data?.data) {
+        setEmployee(res.data.data.employee);
+        setRecords(res.data.data.records || []);
+      }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   // FILTERED DATA
-  const filteredAttendance = useMemo(() => {
-    let filtered = [...attendance];
-    const searchValue = search.toLowerCase();
-
-    // SEARCH FILTER
-    filtered = filtered.filter((item) => {
-      const employeeName = item.user?.name?.toLowerCase?.() || "";
-      const employeeId = item.user?.employeeId?.toLowerCase?.() || "";
-      const department = item.user?.department?.name?.toLowerCase?.() || "";
-      const position = item.user?.position?.toLowerCase?.() || "";
-
-      return (
-        employeeName.includes(searchValue) ||
-        employeeId.includes(searchValue) ||
-        department.includes(searchValue) ||
-        position.includes(searchValue)
-      );
-    });
-
-    // DATE FILTER
+  const filteredRecords = useMemo(() => {
+    let filtered = [...records];
     const now = new Date();
+    
     if (selectedFilter !== "all") {
       filtered = filtered.filter((item) => {
         const itemDate = new Date(item.date);
@@ -106,25 +88,61 @@ export default function HrAttendance() {
     }
 
     return filtered;
-  }, [attendance, search, selectedFilter]);
+  }, [records, selectedFilter]);
 
-  // DYNAMIC MONTHLY STATS WHEN SEARCHING
-  const searchStats = useMemo(() => {
-    if (!search.trim()) return null;
+  // CALCULATE STATS
+  const stats = useMemo(() => {
+    let totalHours = 0;
+    let present = 0;
+    let halfDay = 0;
 
-    const now = new Date();
-    // Get only records from the current month from the already filtered list
-    const currentMonthRecords = filteredAttendance.filter(item => {
-      const itemDate = new Date(item.date);
-      return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+    filteredRecords.forEach(r => {
+      totalHours += r.totalHours || 0;
+      if (r.status === "PRESENT") present++;
+      if (r.status === "HALF_DAY") halfDay++;
     });
 
-    const present = currentMonthRecords.filter(r => r.status === "PRESENT").length;
-    const halfDay = currentMonthRecords.filter(r => r.status === "HALF_DAY").length;
-    const absent = currentMonthRecords.filter(r => r.status === "ABSENT").length;
+    // Calculate absent days based on elapsed workdays in the selected timeframe
+    let absent = 0;
+    const now = new Date();
+    
+    // Simple logic for elapsed days:
+    // If 'month', how many workdays have elapsed this month?
+    // If 'week', how many workdays have elapsed this week?
+    // For simplicity, we just count unique days in the records. But since absent means NO record,
+    // we approximate: Elapsed Days - (Present + HalfDay). 
+    // A better approach is to calculate actual workdays (Mon-Fri) in the filter period.
+    
+    let workdaysInPeriod = 0;
+    
+    if (selectedFilter === "month") {
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      for (let d = firstDayOfMonth; d <= now; d.setDate(d.getDate() + 1)) {
+        if (d.getDay() !== 0 && d.getDay() !== 6) workdaysInPeriod++; // Exclude weekends
+      }
+    } else if (selectedFilter === "week") {
+      const weekAgo = new Date();
+      weekAgo.setDate(now.getDate() - 7);
+      for (let d = weekAgo; d <= now; d.setDate(d.getDate() + 1)) {
+        if (d.getDay() !== 0 && d.getDay() !== 6) workdaysInPeriod++;
+      }
+    } else if (selectedFilter === "day") {
+      workdaysInPeriod = (now.getDay() !== 0 && now.getDay() !== 6) ? 1 : 0;
+    } else {
+      // For 'all', we don't have a specific timeframe, so absent is hard to determine precisely without hire date.
+      // We'll just show N/A or 0 for 'all'.
+      workdaysInPeriod = present + halfDay; // Fallback
+    }
 
-    return { present, halfDay, absent };
-  }, [filteredAttendance, search]);
+    absent = Math.max(0, workdaysInPeriod - (present + halfDay));
+
+    return {
+      totalHours: totalHours.toFixed(1),
+      present,
+      halfDay,
+      absent: selectedFilter === 'all' ? '--' : absent
+    };
+  }, [filteredRecords, selectedFilter]);
 
   // FORMAT TIME
   const formatTime = (time) => {
@@ -135,16 +153,11 @@ export default function HrAttendance() {
     });
   };
 
-  // FORMAT HOURS
-  const formatHours = (hours) => {
-    if (hours === null || hours === undefined) return "--";
-    return `${Number(hours).toFixed(1)} hrs`;
-  };
-
   // FORMAT DATE
   const formatDate = (date) => {
     if (!date) return "--";
     return new Date(date).toLocaleDateString("en-IN", {
+      weekday: 'short',
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -160,37 +173,49 @@ export default function HrAttendance() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
         
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
-          <div>
-            <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">HR Management</span>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
-              Attendance Dashboard
-            </h1>
-            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl">
-              Monitor employee attendance, track daily/monthly work sessions, and filter records instantly.
-            </p>
-          </div>
-
-          {/* SEARCH */}
-          <div className="relative w-full lg:w-[320px] group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search by name, ID, or position..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
-            />
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6">
+          <button 
+            onClick={() => navigate('/hr/employees-attendance')}
+            className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors max-w-fit px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200"
+          >
+            <ArrowLeft size={16} />
+            Back to All Employees
+          </button>
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/60 backdrop-blur-xl p-8 rounded-[2rem] border border-slate-200/60 shadow-sm">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <User size={40} />
+              </div>
+              <div>
+                <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">Employee Profile</span>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+                  {employee?.name || "Loading..."}
+                </h1>
+                <div className="flex flex-wrap items-center gap-4 mt-3">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                    <Briefcase size={14} className="text-slate-400" />
+                    {employee?.employeeId || "--"}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                    {employee?.department?.name || "Department"}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                    {employee?.position || "Position"}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
         {/* STATS */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
           {[
-            { label: "Total Employees", value: dashboard?.totalEmployees || 0, icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
-            { label: "Present Today", value: dashboard?.present || 0, icon: CalendarDays, color: "text-emerald-500", bg: "bg-emerald-50" },
-            { label: "Half Day", value: dashboard?.halfDay || 0, icon: TimerReset, color: "text-amber-500", bg: "bg-amber-50" },
-            { label: "Absent", value: dashboard?.absent || 0, icon: Clock3, color: "text-rose-500", bg: "bg-rose-50" },
+            { label: "Total Hours", value: stats.totalHours, icon: Clock, color: "text-blue-500", bg: "bg-blue-50", suffix: "hrs" },
+            { label: "Days Present", value: stats.present, icon: CalendarDays, color: "text-emerald-500", bg: "bg-emerald-50", suffix: "days" },
+            { label: "Half Days", value: stats.halfDay, icon: TimerReset, color: "text-amber-500", bg: "bg-amber-50", suffix: "days" },
+            { label: "Days Absent", value: stats.absent, icon: Clock3, color: "text-rose-500", bg: "bg-rose-50", suffix: "days" },
           ].map((item, index) => (
             <motion.div
               key={index}
@@ -204,7 +229,10 @@ export default function HrAttendance() {
                 </div>
               </div>
               <p className="text-[11px] uppercase tracking-widest font-bold text-slate-400 mb-1">{item.label}</p>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">{item.value}</h2>
+              <div className="flex items-baseline gap-1.5">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">{item.value}</h2>
+                {item.value !== '--' && <span className="text-sm font-bold text-slate-400">{item.suffix}</span>}
+              </div>
             </motion.div>
           ))}
         </motion.div>
@@ -216,22 +244,10 @@ export default function HrAttendance() {
           <div className="p-6 md:p-8 border-b border-slate-100/70 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/50">
             <div>
               <h2 className="text-2xl font-black text-slate-800 tracking-tight flex flex-wrap items-center gap-3">
-                All Records
-                <span className="text-sm font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{filteredAttendance.length} matches</span>
+                Attendance Log
+                <span className="text-sm font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{filteredRecords.length} records</span>
               </h2>
-              {searchStats && (
-                <div className="flex gap-3 mt-3">
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                    This Month: {searchStats.present} Present
-                  </span>
-                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
-                    {searchStats.halfDay} Half Day
-                  </span>
-                  <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100">
-                    {searchStats.absent} Absent
-                  </span>
-                </div>
-              )}
+              <p className="text-sm text-slate-500 mt-2 font-medium">Detailed daily log of check-ins and working hours.</p>
             </div>
 
             <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full xl:w-auto">
@@ -261,29 +277,29 @@ export default function HrAttendance() {
               <div className="py-24 flex flex-col items-center justify-center">
                 <p className="text-indigo-900 font-semibold text-sm tracking-wide animate-pulse">Loading employee records...</p>
               </div>
-            ) : filteredAttendance.length === 0 ? (
+            ) : filteredRecords.length === 0 ? (
               <div className="py-24 flex flex-col items-center justify-center text-center px-4">
                 <CircleDot size={40} className="text-slate-300 mb-4" />
                 <h3 className="text-xl font-bold text-slate-700 mb-2">No Records Found</h3>
                 <p className="text-sm font-medium text-slate-500 max-w-sm">
-                  We couldn't find any attendance records matching your search or filters.
+                  There are no attendance records for this period.
                 </p>
               </div>
             ) : (
-              <div className="min-w-[1000px] w-full">
+              <div className="min-w-[800px] w-full">
                 {/* TABLE HEADER */}
                 <div className="grid grid-cols-12 gap-4 px-8 py-5 border-b border-slate-200 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
-                  <div className="col-span-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Employee</div>
-                  <div className="col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Date</div>
+                  <div className="col-span-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Date</div>
                   <div className="col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Check In</div>
                   <div className="col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Check Out</div>
-                  <div className="col-span-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Hours</div>
+                  <div className="col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Break Hours</div>
+                  <div className="col-span-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Total</div>
                   <div className="col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 text-right">Status</div>
                 </div>
 
                 {/* TABLE ROWS */}
                 <div className="divide-y divide-slate-100">
-                  {filteredAttendance.map((item, index) => {
+                  {filteredRecords.map((item, index) => {
                     let statusBadge = "";
                     if (item.status === "PRESENT") statusBadge = "bg-emerald-50 text-emerald-600 border-emerald-200";
                     else if (item.status === "HALF_DAY") statusBadge = "bg-amber-50 text-amber-600 border-amber-200";
@@ -295,27 +311,10 @@ export default function HrAttendance() {
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.02 }}
-                        onClick={() => navigate(`/hr/employee-attendance/${item.user?.employeeId}`)}
-                        className="grid grid-cols-12 gap-4 items-center px-8 py-4 hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                        className="grid grid-cols-12 gap-4 items-center px-8 py-4 hover:bg-slate-50/80 transition-colors group"
                       >
-                        {/* EMPLOYEE INFO */}
-                        <div className="col-span-3 flex flex-col justify-center pr-4">
-                          <h3 className="text-sm font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
-                            {item.user?.name || "Unknown"}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 truncate">
-                              {item.user?.employeeId || "No ID"}
-                            </span>
-                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 truncate">
-                              {item.user?.department?.name || "Dept"}
-                            </span>
-                          </div>
-                        </div>
-
                         {/* DATE */}
-                        <div className="col-span-2 flex items-center text-sm font-bold text-slate-700">
+                        <div className="col-span-3 flex items-center text-sm font-bold text-slate-700">
                           {formatDate(item.date)}
                         </div>
 
@@ -331,9 +330,14 @@ export default function HrAttendance() {
                           {formatTime(item.endTime)}
                         </div>
 
+                        {/* BREAK HOURS */}
+                        <div className="col-span-2 flex items-center text-sm font-semibold text-slate-500">
+                          {item.breakHours ? `${item.breakHours.toFixed(1)} hrs` : "--"}
+                        </div>
+
                         {/* HOURS */}
                         <div className="col-span-1 flex items-center text-sm font-black text-slate-800">
-                          {formatHours(item.totalHours)}
+                          {item.totalHours ? `${item.totalHours.toFixed(1)} hrs` : "--"}
                         </div>
 
                         {/* STATUS */}
