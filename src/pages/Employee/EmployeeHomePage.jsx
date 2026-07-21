@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
 import { employeeActions, employeeStats } from "../../components/dashboard/dashboardData.js";
+import API from "../../services/api";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -26,6 +27,43 @@ const EmployeeHomePage = () => {
     if (label.includes("Leave")) navigate("/leave");
     else if (label.includes("Attendance")) navigate("/attendance");
   };
+
+  const [summaryData, setSummaryData] = useState({
+    thisWeekHours: 0,
+    completed: 0,
+    performanceScore: 0,
+  });
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const res = await API.get("/api/employee-dashboard/summary");
+        if (res.data?.success) {
+          setSummaryData({
+            thisWeekHours: res.data.data.thisWeekHours || 0,
+            completed: res.data.data.completed || 0,
+            performanceScore: res.data.data.performanceScore || 0,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard summary", err);
+      }
+    };
+    fetchSummary();
+  }, []);
+
+  const realEmployeeStats = employeeStats.map((stat) => {
+    if (stat.label === "This Week Hours") {
+      return { ...stat, value: `${summaryData.thisWeekHours}h` };
+    }
+    if (stat.label === "Tasks Completed") {
+      return { ...stat, value: `${summaryData.completed}` };
+    }
+    if (stat.label === "Performance Score") {
+      return { ...stat, value: `${summaryData.performanceScore}%` };
+    }
+    return stat;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-4 lg:p-8 font-sans relative overflow-hidden">
@@ -63,7 +101,7 @@ const EmployeeHomePage = () => {
 
         {/* STATS ROW */}
         <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {employeeStats.map((stat, i) => (
+          {realEmployeeStats.map((stat, i) => (
             <motion.div 
               key={i} 
               variants={itemVariants} 
