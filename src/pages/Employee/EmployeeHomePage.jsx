@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ChevronRight, ArrowRight, Activity
+  ChevronRight, ArrowRight, Activity, Clock, ClipboardList, CheckCircle2, Hourglass
 } from "lucide-react";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
+import API from "../../services/api";
 import { employeeActions } from "../../components/dashboard/dashboardData.js";
 
 const containerVariants = {
@@ -17,6 +18,18 @@ const itemVariants = {
   show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
+const StatCard = ({ icon: Icon, label, value, color, bg }) => (
+  <div className="bg-white/60 backdrop-blur-xl border border-slate-100 p-5 rounded-[2rem] shadow-sm flex flex-col justify-center gap-3 transition-all hover:-translate-y-1 hover:shadow-md">
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
+      <Icon size={22} className={color} />
+    </div>
+    <div>
+      <h3 className="text-2xl font-black text-slate-800">{value}</h3>
+      <p className="text-xs font-semibold text-slate-500 mt-1">{label}</p>
+    </div>
+  </div>
+);
+
 const EmployeeHomePage = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user")) || { name: "User" };
@@ -26,6 +39,67 @@ const EmployeeHomePage = () => {
     if (label.includes("Leave")) navigate("/leave");
     else if (label.includes("Attendance")) navigate("/attendance");
   };
+
+  const [stats, setStats] = useState({
+    totalHours: 0,
+    totalTasks: 0,
+    completed: 0,
+    pending: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        let totalHours = 0;
+        let totalTasks = 0;
+        let completed = 0;
+        let pending = 0;
+
+        // Fetch Tasks
+        try {
+          const tasksRes = await API.get("/api/employee-dashboard/items");
+          if (tasksRes?.data?.success) {
+            const tasks = tasksRes.data.data || [];
+            totalTasks = tasks.length;
+            completed = tasks.filter(t => t.status === "COMPLETED" || t.status === "VERIFIED").length;
+            pending = tasks.filter(t => !["COMPLETED", "VERIFIED"].includes(t.status)).length;
+          }
+        } catch (err) {
+          console.error("Error fetching tasks:", err);
+        }
+
+        // Fetch Attendance
+        try {
+          const attRes = await API.get("/api/attendance/history");
+          if (attRes?.data?.success) {
+            const records = attRes.data.data || [];
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const thisMonthRecords = records.filter(r => {
+              if (!r.date) return false;
+              const d = new Date(r.date);
+              return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            });
+            
+            totalHours = thisMonthRecords.reduce((sum, r) => sum + (r.totalHours || 0), 0);
+            totalHours = parseFloat(totalHours.toFixed(1));
+          }
+        } catch (err) {
+          console.error("Error fetching attendance:", err);
+        }
+
+        setStats({ totalHours, totalTasks, completed, pending });
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-4 lg:p-8 font-sans relative overflow-hidden">
@@ -60,6 +134,16 @@ const EmployeeHomePage = () => {
             Open Attendance
           </button>
         </motion.div>
+
+        {/* STATS */}
+        {!loading && (
+          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <StatCard icon={Clock} label="TOTAL HOURS (THIS MONTH)" value={`${stats.totalHours}h`} color="text-blue-600" bg="bg-blue-100" />
+            <StatCard icon={ClipboardList} label="TOTAL TASKS" value={stats.totalTasks} color="text-indigo-600" bg="bg-indigo-100" />
+            <StatCard icon={CheckCircle2} label="TASKS COMPLETED" value={stats.completed} color="text-emerald-600" bg="bg-emerald-100" />
+            <StatCard icon={Hourglass} label="TASKS PENDING" value={stats.pending} color="text-amber-600" bg="bg-amber-100" />
+          </motion.div>
+        )}
 
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
