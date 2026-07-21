@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ChevronRight, ArrowRight, Activity
 } from "lucide-react";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
-import { employeeActions, employeeStats } from "../../components/dashboard/dashboardData.js";
-import API from "../../services/api";
+import { employeeActions } from "../../components/dashboard/dashboardData.js";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,45 +26,6 @@ const EmployeeHomePage = () => {
     if (label.includes("Leave")) navigate("/leave");
     else if (label.includes("Attendance")) navigate("/attendance");
   };
-
-  const [summaryData, setSummaryData] = useState({
-    thisMonthHours: 0,
-    completed: 0,
-    performanceScore: 0,
-  });
-
-  useEffect(() => {
-    const fetchSummary = async () => {
-      let thisMonthHours = 0;
-      let completed = 0;
-      let performanceScore = 0;
-
-      try {
-        const dashboardRes = await API.get("/api/employee-dashboard/summary");
-        completed = dashboardRes.data?.data?.completed || 0;
-        thisMonthHours = dashboardRes.data?.data?.thisMonthHours || 0;
-        performanceScore = dashboardRes.data?.data?.performanceScore || 0;
-      } catch (err) {
-        console.error("Failed to fetch dashboard summary", err);
-      }
-
-      setSummaryData({ thisMonthHours, completed, performanceScore });
-    };
-    fetchSummary();
-  }, []);
-
-  const realEmployeeStats = employeeStats.map((stat) => {
-    if (stat.label === "This Month Hours") {
-      return { ...stat, value: `${summaryData.thisMonthHours}h` };
-    }
-    if (stat.label === "Tasks Completed") {
-      return { ...stat, value: `${summaryData.completed}` };
-    }
-    if (stat.label === "Performance Score") {
-      return { ...stat, value: `${summaryData.performanceScore}%` };
-    }
-    return stat;
-  });
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-4 lg:p-8 font-sans relative overflow-hidden">
@@ -99,39 +59,6 @@ const EmployeeHomePage = () => {
             <Activity size={18} />
             Open Attendance
           </button>
-        </motion.div>
-
-        {/* STATS ROW */}
-        <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-          {realEmployeeStats.map((stat, i) => (
-            <motion.div
-              key={i}
-              variants={itemVariants}
-              whileHover={{ y: -4 }}
-              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-sm border border-slate-100 transition-all group relative overflow-hidden"
-            >
-              <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.accent} rounded-bl-full -z-10 transition-transform group-hover:scale-110`} />
-
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-2xl bg-slate-50 ${stat.iconColor} border border-slate-100/50`}>
-                  <stat.icon size={22} />
-                </div>
-              </div>
-
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-black text-slate-800 mb-3">{stat.value}</h3>
-
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  whileInView={{ width: "70%" }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  viewport={{ once: true }}
-                  className={`h-full rounded-full ${stat.progress}`}
-                />
-              </div>
-            </motion.div>
-          ))}
         </motion.div>
 
         {/* MAIN GRID */}
