@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
-import API from "../services/api";
+import API, { API_URL } from "../services/api";
 import MainLogo from "../assets/logo.jpeg";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
@@ -160,9 +160,7 @@ export default function ProfessionalSidebar({ children }) {
   useEffect(() => {
     if (!user?.id) return;
 
-    const socketInstance = io(
-      import.meta.env.VITE_API_URL || "http://localhost:8000"
-    );
+    const socketInstance = io(API_URL);
 
     socketInstance.on("connect", () => {
       socketInstance.emit("join-user", { userId: user.id });

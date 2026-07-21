@@ -29,40 +29,40 @@ const EmployeeHomePage = () => {
   };
 
   const [summaryData, setSummaryData] = useState({
-    totalHours: 0,
+    thisMonthHours: 0,
     completed: 0,
+    performanceScore: 0,
   });
 
   useEffect(() => {
     const fetchSummary = async () => {
-      let totalHours = 0;
+      let thisMonthHours = 0;
       let completed = 0;
+      let performanceScore = 0;
 
       try {
         const dashboardRes = await API.get("/api/employee-dashboard/summary");
         completed = dashboardRes.data?.data?.completed || 0;
+        thisMonthHours = dashboardRes.data?.data?.thisMonthHours || 0;
+        performanceScore = dashboardRes.data?.data?.performanceScore || 0;
       } catch (err) {
-        console.error("Failed to fetch dashboard summary (Make sure backend is deployed)", err);
+        console.error("Failed to fetch dashboard summary", err);
       }
 
-      try {
-        const attendanceRes = await API.get("/api/attendance/summary");
-        totalHours = attendanceRes.data?.data?.totalHours || 0;
-      } catch (err) {
-        console.error("Failed to fetch attendance summary", err);
-      }
-
-      setSummaryData({ totalHours, completed });
+      setSummaryData({ thisMonthHours, completed, performanceScore });
     };
     fetchSummary();
   }, []);
 
   const realEmployeeStats = employeeStats.map((stat) => {
-    if (stat.label === "Total Hours") {
-      return { ...stat, value: `${summaryData.totalHours}h` };
+    if (stat.label === "This Month Hours") {
+      return { ...stat, value: `${summaryData.thisMonthHours}h` };
     }
     if (stat.label === "Tasks Completed") {
       return { ...stat, value: `${summaryData.completed}` };
+    }
+    if (stat.label === "Performance Score") {
+      return { ...stat, value: `${summaryData.performanceScore}%` };
     }
     return stat;
   });

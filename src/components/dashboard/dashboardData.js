@@ -6,8 +6,8 @@ import {
 
 export const employeeStats = [
   {
-    label: "This Week Hours",
-    value: "42h",
+    label: "This Month Hours",
+    value: "0h",
     icon: Calendar,
     accent: "from-violet-500/10 to-violet-500/0",
     iconColor: "text-violet-600",

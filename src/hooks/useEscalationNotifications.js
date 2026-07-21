@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
+import { API_URL } from "../services/api";
+
 //
 // 🔥 CUSTOM HOOK FOR ESCALATION NOTIFICATIONS
 //
@@ -14,7 +16,7 @@ export const useEscalationNotifications = (userId, isLoggedIn) => {
 
     // Connect to socket server
     const socketInstance = io(
-      import.meta.env.VITE_API_URL || "http://localhost:8000",
+      API_URL,
       {
         reconnection: true,
         reconnectionDelay: 1000,

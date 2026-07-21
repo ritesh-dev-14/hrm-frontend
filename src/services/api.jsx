@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export const API_URL = import.meta.env.PROD 
+  ? (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== "http://localhost:8000" ? import.meta.env.VITE_API_URL : "https://hrm-oepc.onrender.com")
+  : (import.meta.env.VITE_API_URL || "http://localhost:8000");
+
 const API = axios.create({
   baseURL: API_URL,
   headers: {
