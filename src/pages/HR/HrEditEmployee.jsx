@@ -25,6 +25,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
     position: "",
     managerIds: [], // Array of manager IDs (UUID strings)
     password: "",
+    probationPeriod: true,
   });
 
   // Fetch corporate departments structural units
@@ -88,6 +89,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
         position: employeeData.position || "",
         managerIds: initialMgrIds,
         password: "",
+        probationPeriod: employeeData.probationPeriod !== undefined ? employeeData.probationPeriod : true,
       });
       
       setError(null);
@@ -162,6 +164,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           name: form.name.trim(),
           email: form.email.trim(),
           department: form.department,
+          probationPeriod: form.probationPeriod,
           ...(form.password && { password: form.password }),
         };
       } else {
@@ -172,6 +175,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           department: form.department,
           position: form.position.trim(),
           managerIds: form.managerIds, // Array of manager UUID strings
+          probationPeriod: form.probationPeriod,
           ...(form.password && { password: form.password }),
         };
       }
@@ -420,6 +424,22 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-xl mt-4">
+            <div>
+              <h4 className="text-sm font-semibold text-slate-800">Probation Period</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">While on probation, users cannot apply for leave.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={form.probationPeriod}
+                onChange={(e) => setForm(prev => ({ ...prev, probationPeriod: e.target.checked }))}
+              />
+              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
           </div>
         </form>
 

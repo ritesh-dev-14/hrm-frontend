@@ -25,6 +25,14 @@ export default function LeaveModal({ onClose, onSubmit }) {
     }));
   };
 
+  const handleDateChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      startDate: e.target.value,
+      endDate: e.target.value,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -111,42 +119,21 @@ export default function LeaveModal({ onClose, onSubmit }) {
               </select>
             </div>
 
-            {/* DURATION */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 flex items-center gap-2 text-[13px] font-bold text-[#475569] uppercase tracking-wide">
+            {/* DATE */}
+            <div>
+              <div className="flex items-center gap-2 text-[13px] font-bold text-[#475569] mb-2 uppercase tracking-wide">
                 <CalendarIcon size={14} className="text-slate-400" />
-                Duration
+                Select Date
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-[#94A3B8] mb-1 ml-1">
-                  From
-                </label>
-
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] focus:border-[#6366F1] outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-[#94A3B8] mb-1 ml-1">
-                  To
-                </label>
-
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] focus:border-[#6366F1] outline-none"
-                />
-              </div>
+              <input
+                type="date"
+                name="date"
+                value={formData.startDate}
+                onChange={handleDateChange}
+                required
+                className="w-full px-4 py-3 border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none transition-all"
+              />
             </div>
 
             {/* REASON */}
