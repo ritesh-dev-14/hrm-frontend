@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  ChevronRight, ArrowRight, Activity 
+import {
+  ChevronRight, ArrowRight, Activity
 } from "lucide-react";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
 import { employeeActions, employeeStats } from "../../components/dashboard/dashboardData.js";
@@ -29,38 +29,40 @@ const EmployeeHomePage = () => {
   };
 
   const [summaryData, setSummaryData] = useState({
-    thisWeekHours: 0,
+    totalHours: 0,
     completed: 0,
-    performanceScore: 0,
   });
 
   useEffect(() => {
     const fetchSummary = async () => {
+      let totalHours = 0;
+      let completed = 0;
+
       try {
-        const res = await API.get("/api/employee-dashboard/summary");
-        if (res.data?.success) {
-          setSummaryData({
-            thisWeekHours: res.data.data.thisWeekHours || 0,
-            completed: res.data.data.completed || 0,
-            performanceScore: res.data.data.performanceScore || 0,
-          });
-        }
+        const dashboardRes = await API.get("/api/employee-dashboard/summary");
+        completed = dashboardRes.data?.data?.completed || 0;
       } catch (err) {
-        console.error("Failed to fetch dashboard summary", err);
+        console.error("Failed to fetch dashboard summary (Make sure backend is deployed)", err);
       }
+
+      try {
+        const attendanceRes = await API.get("/api/attendance/summary");
+        totalHours = attendanceRes.data?.data?.totalHours || 0;
+      } catch (err) {
+        console.error("Failed to fetch attendance summary", err);
+      }
+
+      setSummaryData({ totalHours, completed });
     };
     fetchSummary();
   }, []);
 
   const realEmployeeStats = employeeStats.map((stat) => {
-    if (stat.label === "This Week Hours") {
-      return { ...stat, value: `${summaryData.thisWeekHours}h` };
+    if (stat.label === "Total Hours") {
+      return { ...stat, value: `${summaryData.totalHours}h` };
     }
     if (stat.label === "Tasks Completed") {
       return { ...stat, value: `${summaryData.completed}` };
-    }
-    if (stat.label === "Performance Score") {
-      return { ...stat, value: `${summaryData.performanceScore}%` };
     }
     return stat;
   });
@@ -71,7 +73,7 @@ const EmployeeHomePage = () => {
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <motion.div 
+      <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="show"
@@ -80,7 +82,7 @@ const EmployeeHomePage = () => {
         {/* HERO */}
         <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/60 backdrop-blur-xl p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
           <div className="absolute -right-20 -top-20 w-64 h-64 bg-gradient-to-br from-indigo-500/20 to-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
             <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2">
               Welcome back, <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{firstName}</span>!
@@ -89,8 +91,8 @@ const EmployeeHomePage = () => {
               Here's an overview of your attendance, recent tasks, and current work session performance.
             </p>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => navigate("/attendance")}
             className="relative z-10 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
           >
@@ -100,29 +102,29 @@ const EmployeeHomePage = () => {
         </motion.div>
 
         {/* STATS ROW */}
-        <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
           {realEmployeeStats.map((stat, i) => (
-            <motion.div 
-              key={i} 
-              variants={itemVariants} 
+            <motion.div
+              key={i}
+              variants={itemVariants}
               whileHover={{ y: -4 }}
               className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-sm border border-slate-100 transition-all group relative overflow-hidden"
             >
               <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.accent} rounded-bl-full -z-10 transition-transform group-hover:scale-110`} />
-              
+
               <div className="flex justify-between items-start mb-4">
                 <div className={`p-3 rounded-2xl bg-slate-50 ${stat.iconColor} border border-slate-100/50`}>
                   <stat.icon size={22} />
                 </div>
               </div>
-              
+
               <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
               <h3 className="text-3xl font-black text-slate-800 mb-3">{stat.value}</h3>
-              
+
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
-                  whileInView={{ width: stat.label.includes("Score") ? stat.value : "70%" }}
+                  whileInView={{ width: "70%" }}
                   transition={{ duration: 1, ease: "easeOut" }}
                   viewport={{ once: true }}
                   className={`h-full rounded-full ${stat.progress}`}
@@ -157,7 +159,7 @@ const EmployeeHomePage = () => {
                   className="group w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all duration-300 hover:-translate-y-1 text-left relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
+
                   <div className="flex items-center gap-4 relative z-10">
                     <div className={`w-12 h-12 rounded-xl ${action.bg} flex items-center justify-center shrink-0 border border-white`}>
                       <action.icon size={20} className={action.color} />
@@ -176,9 +178,9 @@ const EmployeeHomePage = () => {
                 </button>
               ))}
             </div>
-            
+
             <div className="mt-6 pt-6 border-t border-slate-100/50">
-              <button 
+              <button
                 onClick={() => navigate("/assigned-actions")}
                 className="w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
               >
