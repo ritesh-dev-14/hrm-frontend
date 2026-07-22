@@ -17,6 +17,7 @@ import {
   Zap,
   Camera,
   Keyboard,
+  CreditCard,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -131,6 +132,13 @@ const NAV_CONFIG = [
     icon: FileText,
     path: "/leave",
     roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
+  },
+  {
+    id: "payslips",
+    label: "Payslips",
+    icon: CreditCard,
+    path: "/payslips",
+    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
   },
   {
     id: "admin-panel",

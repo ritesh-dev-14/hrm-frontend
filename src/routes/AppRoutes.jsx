@@ -317,7 +317,7 @@ export const AppRoutes = () => {
                 <EmployeePayslips />
               ) : role === "MANAGER" ? (
                 <ManagerPayslips />
-              ) : role === "HR" ? (
+              ) : ["HR", "ADMIN", "EA"].includes(role) ? (
                 <HrPayslips />
               ) : role === "COORDINATOR" ? (
                 <EmployeePayslips />
