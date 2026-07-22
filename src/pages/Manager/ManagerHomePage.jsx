@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ClipboardList,
   CheckCircle2,
   FolderOpen,
   Users,
   Loader2,
+  Clock,
 } from "lucide-react";
 
 import AttendanceCard from "../../components/attendece/AttendenceCard";
@@ -12,7 +13,8 @@ import API from "../../services/api";
 
 const ManagerHomePage = () => {
   const [dashboard, setDashboard] = useState(null);
-
+  const [projectsCount, setProjectsCount] = useState(0);
+  const [workingHours, setWorkingHours] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const user =
@@ -29,12 +31,33 @@ const ManagerHomePage = () => {
     try {
       setLoading(true);
 
-      const res = await API.get(
-        "/api/manager/dashboard",
-      );
+      const [dashRes, projRes, attRes] = await Promise.allSettled([
+        API.get("/api/manager/dashboard"),
+        API.get("/api/projects/assigned"),
+        API.get("/api/attendance/history"),
+      ]);
 
-      if (res?.data?.success) {
-        setDashboard(res.data.data);
+      if (dashRes.status === "fulfilled" && dashRes.value?.data?.success) {
+        setDashboard(dashRes.value.data.data);
+      }
+
+      if (projRes.status === "fulfilled" && projRes.value?.data?.success) {
+        setProjectsCount(projRes.value.data.data?.length || 0);
+      }
+
+      if (attRes.status === "fulfilled" && attRes.value?.data?.success) {
+        const records = attRes.value.data.data || [];
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const thisMonthRecords = records.filter((r) => {
+          if (!r.date) return false;
+          const d = new Date(r.date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        });
+
+        const totalHours = thisMonthRecords.reduce((sum, r) => sum + (r.totalHours || 0), 0);
+        setWorkingHours(parseFloat(totalHours.toFixed(1)));
       }
     } catch (error) {
       console.log(error);
@@ -46,32 +69,40 @@ const ManagerHomePage = () => {
   const stats = useMemo(() => {
     if (!dashboard) return [];
 
+    const totalTasksAssigned = dashboard.employees?.reduce((sum, emp) => sum + (emp.totalTasksAssigned || 0), 0) || 0;
+    const completedTasksCount = dashboard.employees?.reduce((sum, emp) => sum + (emp.completedTasksCount || 0), 0) || 0;
+
     return [
       {
-        title: "Total Tasks",
-        value: dashboard.totalTasks || 0,
-        icon: ClipboardList,
+        title: "Total Working Hours",
+        value: `${workingHours}h`,
+        icon: Clock,
+        color: "text-blue-600",
+        bg: "bg-blue-100",
       },
-
       {
-        title: "Completed",
-        value: dashboard.completedTasks || 0,
-        icon: CheckCircle2,
-      },
-
-      {
-        title: "Draft Tasks",
-        value: dashboard.draftTasks || 0,
+        title: "Total Projects",
+        value: projectsCount,
         icon: FolderOpen,
+        color: "text-indigo-600",
+        bg: "bg-indigo-100",
       },
-
       {
-        title: "Employees",
-        value: dashboard.totalEmployees || 0,
-        icon: Users,
+        title: "Total Tasks Assigned",
+        value: totalTasksAssigned,
+        icon: ClipboardList,
+        color: "text-amber-600",
+        bg: "bg-amber-100",
+      },
+      {
+        title: "Tasks Completed",
+        value: completedTasksCount,
+        icon: CheckCircle2,
+        color: "text-emerald-600",
+        bg: "bg-emerald-100",
       },
     ];
-  }, [dashboard]);
+  }, [dashboard, projectsCount, workingHours]);
 
   return (
     <div className="min-h-screen bg-[#f6f8fb]">
@@ -119,12 +150,6 @@ const ManagerHomePage = () => {
           </div>
         </div>
 
-        {/* ATTENDANCE */}
-
-        <div className="bg-white border border-slate-200 rounded-[32px] p-5 sm:p-7 shadow-sm mb-7">
-          <AttendanceCard />
-        </div>
-
         {/* LOADING */}
 
         {loading ? (
@@ -148,7 +173,7 @@ const ManagerHomePage = () => {
                   key={index}
                   className="bg-white border border-slate-200 rounded-[28px] p-6 shadow-sm hover:shadow-md transition-all duration-300"
                 >
-                  <div className="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-700 mb-5">
+                  <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center ${item.color} mb-5`}>
                     <item.icon size={20} />
                   </div>
 
@@ -161,6 +186,12 @@ const ManagerHomePage = () => {
                   </h2>
                 </div>
               ))}
+            </div>
+
+            {/* ATTENDANCE */}
+
+            <div className="bg-white border border-slate-200 rounded-[32px] p-5 sm:p-7 shadow-sm mb-7">
+              <AttendanceCard />
             </div>
 
             {/* EMPLOYEES */}
