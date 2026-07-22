@@ -665,18 +665,22 @@ const SMMManagerView = ({ projectId }) => {
           (day.title && day.title.trim() !== "") ||
           (day.referenceLinks && day.referenceLinks.length > 0) ||
           (day.script && day.script.trim() !== "") ||
-          (day.description && day.description.trim() !== ""),
+          (day.description && day.description.trim() !== "") ||
+          (day.submissionLinks && day.submissionLinks.length > 0),
       );
 
       const cleanedDays = activeDays.map((day) => {
         const dayObj = { date: day.date };
 
+        if (day.id) dayObj.id = day.id;
         if (day.reelType && day.reelType !== "NONE") dayObj.reelType = day.reelType;
         if (day.postType && day.postType !== "NONE") dayObj.postType = day.postType;
         if (day.title && day.title.trim() !== "") dayObj.title = day.title;
         if (day.videoType) dayObj.videoType = day.videoType;
         if (day.referenceLinks && day.referenceLinks.length > 0)
           dayObj.referenceLinks = day.referenceLinks;
+        if (day.submissionLinks && day.submissionLinks.length > 0)
+          dayObj.submissionLinks = day.submissionLinks;
         if (day.script && day.script.trim() !== "") dayObj.script = day.script;
         if (day.description && day.description.trim() !== "")
           dayObj.description = day.description;
