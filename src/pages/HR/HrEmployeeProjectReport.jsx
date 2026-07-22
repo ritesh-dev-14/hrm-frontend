@@ -125,7 +125,7 @@ export default function HrEmployeeProjectReport() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Task Completion by Project</h2>
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Task Completion by Project & Shoot Workspace</h2>
           <div className="h-[350px]">
             {projectStats.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -136,13 +136,13 @@ export default function HrEmployeeProjectReport() {
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                   <XAxis type="number" tick={{fill: '#64748b', fontSize: 12}} />
-                  <YAxis dataKey="projectName" type="category" width={100} tick={{fill: '#64748b', fontSize: 12}} />
+                  <YAxis dataKey="projectName" type="category" width={120} tick={{fill: '#64748b', fontSize: 12}} />
                   <Tooltip 
                     cursor={{fill: '#f8fafc'}}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend />
-                  <Bar dataKey="completedTasks" name="Completed" stackId="a" fill="#4ade80" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="completedTasks" name="Completed / Approved" stackId="a" fill="#4ade80" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="pending" name="Pending" stackId="a" fill="#f87171" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -171,10 +171,59 @@ export default function HrEmployeeProjectReport() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-500 text-center px-4">
-                Radar chart requires at least 3 projects to display effectively.
+                Radar chart requires at least 3 workspaces/projects to display effectively.
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Projects & Shoot Workspaces Table */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
+        <h2 className="text-lg font-bold text-slate-900 mb-6">Projects & Shoot Workspaces Breakdown</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="pb-3">Name</th>
+                <th className="pb-3">Type</th>
+                <th className="pb-3 text-center">Total Tasks</th>
+                <th className="pb-3 text-center">Completed</th>
+                <th className="pb-3 text-center">Progress</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {projectStats.map((item, index) => (
+                <tr key={index} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-4 font-bold text-slate-900 text-sm">{item.projectName}</td>
+                  <td className="py-4">
+                    <span
+                      className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        item.type === "SHOOT"
+                          ? "bg-purple-100 text-purple-800 border border-purple-200"
+                          : "bg-indigo-100 text-indigo-800 border border-indigo-200"
+                      }`}
+                    >
+                      {item.type === "SHOOT" ? "SHOOT WORKSPACE" : "GENERAL PROJECT"}
+                    </span>
+                  </td>
+                  <td className="py-4 text-center font-semibold text-slate-700 text-xs">{item.totalTasks}</td>
+                  <td className="py-4 text-center font-semibold text-emerald-600 text-xs">{item.completedTasks}</td>
+                  <td className="py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${item.type === "SHOOT" ? "bg-purple-600" : "bg-indigo-600"}`}
+                          style={{ width: `${item.completionPercentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-700">{item.completionPercentage}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
