@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
@@ -1199,134 +1200,264 @@ const SMMManagerView = ({ projectId }) => {
           )}
         </motion.div>
 
-        {/* ================= DRILLDOWN VIEW: SINGLE CALENDAR EDITING ================= */}
-        {selectedCalendar && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-emerald-500/30 p-8 mt-8">
-            <div className="flex flex-wrap items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-100">
-              <h3 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
-                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                </div>
-                Calendar Workspace Layout — {new Date(0, selectedCalendar.month - 1).toLocaleString(undefined, { month: "long" })} {selectedCalendar.year}
-              </h3>
-              <div className="flex gap-3">
-                <button onClick={() => setSelectedCalendar(null)} className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Close Workspace</button>
-                <button onClick={handleUpdateExistingCalendar} disabled={isPatchingDay} className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all ${isPatchingDay ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
-                  {isPatchingDay ? "Saving Layout..." : "Save Changes"}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-6 mb-6 px-4">
-              <div className="flex-1 min-w-[200px] space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reels Uploaded</label>
-                <input type="number" name="totalReelsUploaded" min="0" value={selectedCalendar.totalReelsUploaded || ""} onChange={(e) => {
-                  const val = e.target.value;
-                  setSelectedCalendar(prev => ({ ...prev, totalReelsUploaded: val }))
-                }} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 5" />
-              </div>
-              <div className="flex-1 min-w-[200px] space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Posts Uploaded</label>
-                <input type="number" name="totalPostsUploaded" min="0" value={selectedCalendar.totalPostsUploaded || ""} onChange={(e) => {
-                  const val = e.target.value;
-                  setSelectedCalendar(prev => ({ ...prev, totalPostsUploaded: val }))
-                }} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 3" />
-              </div>
-            </div>
-
-            <div className="overflow-hidden border border-slate-200 rounded-2xl bg-slate-50/50">
-              <div className="overflow-x-auto max-h-[500px]">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100/80 sticky top-0 z-20 border-b border-slate-200 shadow-sm">
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-100/90 backdrop-blur-md z-30 border-r border-slate-200">Day</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Post Type</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Title</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Video Type</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Script</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Description</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">References</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Submissions</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Status</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Feedback</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {selectedCalendar.days?.map((dayItem, index) => (
-                      <tr key={dayItem.id || index} className="hover:bg-slate-50/80 transition-colors group">
-                        <td className="px-5 py-3 whitespace-nowrap font-bold text-slate-700 text-sm sticky left-0 bg-white group-hover:bg-slate-50/80 z-10 border-r border-slate-100 transition-colors">
-                          {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
-                        </td>
-                        <td className="px-5 py-3 whitespace-nowrap">
-                          <select value={dayItem.reelType} onChange={(e) => handleSelectedDayChange(index, "reelType", e.target.value)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
-                            <option value="NONE">NONE</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
-                          </select>
-                        </td>
-                        <td className="px-5 py-3 whitespace-nowrap">
-                          <select value={dayItem.postType} onChange={(e) => handleSelectedDayChange(index, "postType", e.target.value)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
-                            <option value="NONE">NONE</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
-                          </select>
-                        </td>
-                        <td className="px-5 py-3 min-w-[180px]">
-                          <input type="text" value={dayItem.title || ""} onChange={(e) => handleSelectedDayChange(index, "title", e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Title..." />
-                        </td>
-                        <td className="px-5 py-3 whitespace-nowrap">
-                          <select value={dayItem.videoType || "HORIZONTAL"} onChange={(e) => handleSelectedDayChange(index, "videoType", e.target.value)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
-                            <option value="HORIZONTAL">HORIZONTAL</option><option value="VERTICAL">VERTICAL</option>
-                          </select>
-                        </td>
-                        <td className="px-5 py-3 min-w-[200px]">
-                          <input type="text" value={dayItem.script || ""} onChange={(e) => handleSelectedDayChange(index, "script", e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Script lines..." />
-                        </td>
-                        <td className="px-5 py-3 min-w-[200px]">
-                          <input type="text" value={dayItem.description || ""} onChange={(e) => handleSelectedDayChange(index, "description", e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Frames..." />
-                        </td>
-                        <td className="px-5 py-3 min-w-[180px]">
-                          <input type="text" value={arrayToString(dayItem.referenceLinks)} onChange={(e) => handleSelectedDayChange(index, "referenceLinks", stringToArray(e.target.value))} className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Links..." />
-                        </td>
-                        <td className="px-5 py-3 min-w-[180px]">
-                          <div className="flex flex-col gap-2">
-                            {dayItem.submissionLinks?.length > 0 && dayItem.submissionLinks.map((link, i) => (
-                              <a key={`shoot-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 break-all">Shoot Asset {i + 1} 🔗</a>
-                            ))}
-                            {dayItem.contentCreativeSubmissionLinks?.length > 0 && dayItem.contentCreativeSubmissionLinks.map((link, i) => (
-                              <a key={`creative-arr-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:text-emerald-800 break-all">Creative Asset {i + 1} 🔗</a>
-                            ))}
-                            {dayItem.creativeSubmissionLink && (
-                              <a href={dayItem.creativeSubmissionLink} target="_blank" rel="noreferrer" className="text-xs font-bold text-fuchsia-600 hover:text-fuchsia-800 break-all">Design Asset 🔗</a>
-                            )}
-                            {(!dayItem.submissionLinks?.length && !dayItem.contentCreativeSubmissionLinks?.length && !dayItem.creativeSubmissionLink) && (
-                              <span className="text-slate-400 text-xs">—</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3 whitespace-nowrap">
-                          {dayItem.submissionStatus ? (
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${dayItem.submissionStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
-                              dayItem.submissionStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                                dayItem.submissionStatus === 'SUBMITTED' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-amber-100 text-amber-800'
-                              }`}>
-                              {dayItem.submissionStatus}
+        {/* ================= DRILLDOWN VIEW: FULL SCREEN SINGLE CALENDAR EDITING (PORTAL) ================= */}
+        {typeof document !== "undefined" &&
+          createPortal(
+            <AnimatePresence>
+              {selectedCalendar && (
+                <div key="calendar-workspace-portal" className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-2xl flex flex-col p-2 sm:p-4 md:p-6 overflow-hidden">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.97, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97, y: 15 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="bg-white w-full h-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/80"
+                  >
+                    {/* Workspace Top Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-slate-50/90 backdrop-blur-md shadow-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shadow-xs">
+                          <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg md:text-xl font-black text-slate-900">
+                              Calendar Workspace — {new Date(0, selectedCalendar.month - 1).toLocaleString(undefined, { month: "long" })} {selectedCalendar.year}
+                            </h3>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Full Screen Suite
                             </span>
-                          ) : <span className="text-slate-400 text-xs">—</span>}
-                        </td>
-                        <td className="px-5 py-3 whitespace-nowrap text-xs text-slate-500">
-                          {formatDateTime(dayItem.reviewedAt)}
-                        </td>
-                        <td className="px-5 py-3 min-w-[150px] text-xs text-red-600 font-medium">
-                          {dayItem.rejectionReason || "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        )}
+                          </div>
+                          <p className="text-xs font-semibold text-slate-500">Edit scripts, titles, frame descriptions, and reference links in expanded layout</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setSelectedCalendar(null)}
+                          className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors flex items-center gap-2 shadow-xs"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Close Workspace
+                        </button>
+                        <button
+                          onClick={handleUpdateExistingCalendar}
+                          disabled={isPatchingDay}
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${
+                            isPatchingDay ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          {isPatchingDay ? "Saving Layout..." : "Save Changes"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Workspace Main Area */}
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-slate-100/50">
+                      {/* Metric Controls */}
+                      <div className="flex flex-wrap gap-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                        <div className="flex-1 min-w-[200px] space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reels Uploaded Count</label>
+                          <input
+                            type="number"
+                            name="totalReelsUploaded"
+                            min="0"
+                            value={selectedCalendar.totalReelsUploaded || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedCalendar((prev) => ({ ...prev, totalReelsUploaded: val }));
+                            }}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                            placeholder="e.g. 5"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-[200px] space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posts Uploaded Count</label>
+                          <input
+                            type="number"
+                            name="totalPostsUploaded"
+                            min="0"
+                            value={selectedCalendar.totalPostsUploaded || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedCalendar((prev) => ({ ...prev, totalPostsUploaded: val }));
+                            }}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                            placeholder="e.g. 3"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Spacious Table with Roomy Text Areas */}
+                      <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-250px)] min-h-[500px]">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-100/95 sticky top-0 z-20 border-b border-slate-200 shadow-xs backdrop-blur-md">
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-100/95 backdrop-blur-md z-30 border-r border-slate-200">
+                                  Date
+                                </th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Post Type</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Title</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Format</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Script Content</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Deliverable Links</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Status</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Feedback</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                              {selectedCalendar.days?.map((dayItem, index) => (
+                                <tr key={dayItem.id || index} className="hover:bg-slate-50/90 transition-colors group align-top">
+                                  <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
+                                    {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
+                                  </td>
+                                  <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                    <select
+                                      value={dayItem.reelType}
+                                      onChange={(e) => handleSelectedDayChange(index, "reelType", e.target.value)}
+                                      className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                    >
+                                      <option value="NONE">NONE</option>
+                                      <option value="SHOOT">SHOOT</option>
+                                      <option value="AI">AI</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                    <select
+                                      value={dayItem.postType}
+                                      onChange={(e) => handleSelectedDayChange(index, "postType", e.target.value)}
+                                      className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                    >
+                                      <option value="NONE">NONE</option>
+                                      <option value="SHOOT">SHOOT</option>
+                                      <option value="AI">AI</option>
+                                    </select>
+                                  </td>
+                                  
+                                  {/* EXPANDED & LARGE TITLE TEXTAREA */}
+                                  <td className="px-4 py-3 min-w-[240px]">
+                                    <textarea
+                                      rows={2}
+                                      value={dayItem.title || ""}
+                                      onChange={(e) => handleSelectedDayChange(index, "title", e.target.value)}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                      placeholder="Content Title / Topic..."
+                                    />
+                                  </td>
+
+                                  <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                    <select
+                                      value={dayItem.videoType || "HORIZONTAL"}
+                                      onChange={(e) => handleSelectedDayChange(index, "videoType", e.target.value)}
+                                      className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                    >
+                                      <option value="HORIZONTAL">HORIZONTAL</option>
+                                      <option value="VERTICAL">VERTICAL</option>
+                                    </select>
+                                  </td>
+
+                                  {/* EXPANDED & LARGE SCRIPT TEXTAREA */}
+                                  <td className="px-4 py-3 min-w-[300px]">
+                                    <textarea
+                                      rows={3}
+                                      value={dayItem.script || ""}
+                                      onChange={(e) => handleSelectedDayChange(index, "script", e.target.value)}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
+                                      placeholder="Write full video script, spoken dialogue lines, voiceover text..."
+                                    />
+                                  </td>
+
+                                  {/* EXPANDED & LARGE DESCRIPTION/FRAME TEXTAREA */}
+                                  <td className="px-4 py-3 min-w-[300px]">
+                                    <textarea
+                                      rows={3}
+                                      value={dayItem.description || ""}
+                                      onChange={(e) => handleSelectedDayChange(index, "description", e.target.value)}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
+                                      placeholder="Write shot sequence, frame descriptions, visual direction..."
+                                    />
+                                  </td>
+
+                                  {/* EXPANDED & LARGE REFERENCES TEXTAREA */}
+                                  <td className="px-4 py-3 min-w-[240px]">
+                                    <textarea
+                                      rows={2}
+                                      value={arrayToString(dayItem.referenceLinks)}
+                                      onChange={(e) => handleSelectedDayChange(index, "referenceLinks", stringToArray(e.target.value))}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                      placeholder="Paste reference URLs (comma separated)..."
+                                    />
+                                  </td>
+
+                                  <td className="px-4 py-3 min-w-[180px] pt-4">
+                                    <div className="flex flex-col gap-2">
+                                      {dayItem.submissionLinks?.length > 0 &&
+                                        dayItem.submissionLinks.map((link, i) => (
+                                          <a key={`shoot-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 break-all">
+                                            Shoot Asset {i + 1} 🔗
+                                          </a>
+                                        ))}
+                                      {dayItem.contentCreativeSubmissionLinks?.length > 0 &&
+                                        dayItem.contentCreativeSubmissionLinks.map((link, i) => (
+                                          <a key={`creative-arr-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:text-emerald-800 break-all">
+                                            Creative Asset {i + 1} 🔗
+                                          </a>
+                                        ))}
+                                      {dayItem.creativeSubmissionLink && (
+                                        <a href={dayItem.creativeSubmissionLink} target="_blank" rel="noreferrer" className="text-xs font-bold text-fuchsia-600 hover:text-fuchsia-800 break-all">
+                                          Design Asset 🔗
+                                        </a>
+                                      )}
+                                      {!dayItem.submissionLinks?.length && !dayItem.contentCreativeSubmissionLinks?.length && !dayItem.creativeSubmissionLink && (
+                                        <span className="text-slate-400 text-xs">—</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                    {dayItem.submissionStatus ? (
+                                      <span
+                                        className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${
+                                          dayItem.submissionStatus === "APPROVED"
+                                            ? "bg-emerald-100 text-emerald-800"
+                                            : dayItem.submissionStatus === "REJECTED"
+                                            ? "bg-red-100 text-red-800"
+                                            : dayItem.submissionStatus === "SUBMITTED"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : "bg-amber-100 text-amber-800"
+                                        }`}
+                                      >
+                                        {dayItem.submissionStatus}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-400 text-xs">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 pt-4">{formatDateTime(dayItem.reviewedAt)}</td>
+                                  <td className="px-4 py-3 min-w-[150px] text-xs text-red-600 font-medium pt-4">{dayItem.rejectionReason || "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>,
+            document.body
+          )}
 
         {/* Co-Assigned Managers */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-8 mb-12">
@@ -1358,140 +1489,280 @@ const SMMManagerView = ({ projectId }) => {
           )}
         </motion.div>
 
-        {/* ================= CREATE NEW STRATEGY WORKSPACE (MODAL) ================= */}
-        {isDrawerOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6 transition-opacity">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }} className="w-full max-w-5xl max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-              <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div>
-                  <span className="text-[10px] font-black text-emerald-600 tracking-widest uppercase">WORKSPACE ENGINE</span>
-                  <h2 className="text-xl font-black text-slate-900 mt-1">Deploy Strategy Manifest</h2>
-                </div>
-                <button onClick={() => setIsDrawerOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handlePostMonthlySheet} className="flex-1 overflow-y-auto p-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Target Calendar Window</h4>
-                    <div className="flex gap-4">
-                      <div className="flex-1 space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Month</label>
-                        <select name="month" value={sheetMeta.month} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700">
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString(undefined, { month: "long" })}</option>
-                          ))}
-                        </select>
+        {/* ================= CREATE NEW STRATEGY WORKSPACE (FULL SCREEN PORTAL) ================= */}
+        {typeof document !== "undefined" &&
+          createPortal(
+            <AnimatePresence>
+              {isDrawerOpen && (
+                <div key="create-calendar-modal-portal" className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-2xl flex flex-col p-2 sm:p-4 md:p-6 overflow-hidden">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.97, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97, y: 15 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="bg-white w-full h-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/80"
+                  >
+                    {/* Header Bar */}
+                    <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90 backdrop-blur-md shadow-xs">
+                      <div>
+                        <span className="text-[10px] font-black text-emerald-600 tracking-widest uppercase">WORKSPACE SUITE</span>
+                        <h2 className="text-lg md:text-xl font-black text-slate-900 mt-0.5">Create & Deploy Content Calendar Manifest</h2>
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Year</label>
-                        <select name="year" value={sheetMeta.year} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700">
-                          {[2025, 2026, 2027, 2028].map((y) => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
+                      <button
+                        onClick={() => setIsDrawerOpen(false)}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
-                  </div>
 
-                  <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Target Deliverables</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Reels</label>
-                        <input type="number" name="totalReels" min="0" value={sheetMeta.totalReels} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 15" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Posts</label>
-                        <input type="number" name="totalPosts" min="0" value={sheetMeta.totalPosts} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 10" required />
-                      </div>
-                      <div className="space-y-2 mt-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Reels</label>
-                        <input type="number" name="totalReelsUploaded" min="0" value={sheetMeta.totalReelsUploaded} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 1" />
-                      </div>
-                      <div className="space-y-2 mt-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Posts</label>
-                        <input type="number" name="totalPostsUploaded" min="0" value={sheetMeta.totalPostsUploaded} onChange={handleMetaChange} className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="e.g. 1" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                    <form onSubmit={handlePostMonthlySheet} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-slate-100/50 flex flex-col">
+                      {/* Configuration Metadata Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Target Calendar Window</h4>
+                          <div className="flex gap-4">
+                            <div className="flex-1 space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Month</label>
+                              <select
+                                name="month"
+                                value={sheetMeta.month}
+                                onChange={handleMetaChange}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                              >
+                                {Array.from({ length: 12 }, (_, i) => (
+                                  <option key={i + 1} value={i + 1}>
+                                    {new Date(0, i).toLocaleString(undefined, { month: "long" })}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex-1 space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Year</label>
+                              <select
+                                name="year"
+                                value={sheetMeta.year}
+                                onChange={handleMetaChange}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                              >
+                                {[2025, 2026, 2027, 2028].map((y) => (
+                                  <option key={y} value={y}>
+                                    {y}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Shared Blueprint Moodboard Asset URL Link</label>
-                  <input type="url" name="moodBoardLink" value={sheetMeta.moodBoardLink} onChange={handleMetaChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium text-slate-700" placeholder="https://figma.com/... or Pinterest space links" />
-                </div>
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Target Deliverables</h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Reels</label>
+                              <input
+                                type="number"
+                                name="totalReels"
+                                min="0"
+                                value={sheetMeta.totalReels}
+                                onChange={handleMetaChange}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                                placeholder="e.g. 15"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Posts</label>
+                              <input
+                                type="number"
+                                name="totalPosts"
+                                min="0"
+                                value={sheetMeta.totalPosts}
+                                onChange={handleMetaChange}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                                placeholder="e.g. 10"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Reels</label>
+                              <input
+                                type="number"
+                                name="totalReelsUploaded"
+                                min="0"
+                                value={sheetMeta.totalReelsUploaded}
+                                onChange={handleMetaChange}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                                placeholder="e.g. 0"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Posts</label>
+                              <input
+                                type="number"
+                                name="totalPostsUploaded"
+                                min="0"
+                                value={sheetMeta.totalPostsUploaded}
+                                onChange={handleMetaChange}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                                placeholder="e.g. 0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="flex flex-col min-h-[300px]">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Daily Tactical Matrix Breakdown</h4>
-                  <div className="overflow-hidden border border-slate-200 rounded-2xl bg-white flex-1 flex flex-col">
-                    <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-200 sticky top-0 z-20 shadow-sm">
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-50 z-30 border-r border-slate-200">Day</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Post Type</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Title</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Video Type</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Script Concept</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Frame Details</th>
-                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Visual References</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {sheetDays.map((dayItem, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/50 group">
-                              <td className="px-4 py-2.5 whitespace-nowrap font-bold text-slate-700 text-sm sticky left-0 bg-white group-hover:bg-slate-50/50 z-10 border-r border-slate-100 transition-colors">
-                                {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
-                              </td>
-                              <td className="px-4 py-2.5 whitespace-nowrap">
-                                <select value={dayItem.reelType} onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)} className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
-                                  <option value="NONE">null</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
-                                </select>
-                              </td>
-                              <td className="px-4 py-2.5 whitespace-nowrap">
-                                <select value={dayItem.postType} onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)} className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
-                                  <option value="NONE">null</option><option value="SHOOT">SHOOT</option><option value="AI">AI</option>
-                                </select>
-                              </td>
-                              <td className="px-4 py-2.5 min-w-[150px]">
-                                <input type="text" value={dayItem.title || ""} onChange={(e) => handleDayFieldChange(idx, "title", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Title..." />
-                              </td>
-                              <td className="px-4 py-2.5 whitespace-nowrap">
-                                <select value={dayItem.videoType || "HORIZONTAL"} onChange={(e) => handleDayFieldChange(idx, "videoType", e.target.value)} className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none">
-                                  <option value="HORIZONTAL">HORIZONTAL</option><option value="VERTICAL">VERTICAL</option><option value="SQUARE">SQUARE</option>
-                                </select>
-                              </td>
-                              <td className="px-4 py-2.5 min-w-[180px]">
-                                <input type="text" value={dayItem.script} onChange={(e) => handleDayFieldChange(idx, "script", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Scripts..." />
-                              </td>
-                              <td className="px-4 py-2.5 min-w-[180px]">
-                                <input type="text" value={dayItem.description} onChange={(e) => handleDayFieldChange(idx, "description", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="Directives..." />
-                              </td>
-                              <td className="px-4 py-2.5 min-w-[150px]">
-                                <input type="text" value={arrayToString(dayItem.referenceLinks)} onChange={(e) => handleDayFieldChange(idx, "referenceLinks", stringToArray(e.target.value))} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="https://..." />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Shared Blueprint Moodboard Asset URL Link</label>
+                        <input
+                          type="url"
+                          name="moodBoardLink"
+                          value={sheetMeta.moodBoardLink}
+                          onChange={handleMetaChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-semibold text-slate-700 shadow-xs"
+                          placeholder="https://figma.com/... or Pinterest space links"
+                        />
+                      </div>
 
-                <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-4 mt-auto">
-                  <button type="button" onClick={() => setIsDrawerOpen(false)} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancel</button>
-                  <button type="submit" disabled={isSubmittingSheet} className={`px-6 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isSubmittingSheet ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
-                    {isSubmittingSheet ? "Compiling Matrix..." : "Deploy Strategy Manifest"}
-                  </button>
+                      {/* Spacious Daily Matrix Table */}
+                      <div className="flex flex-col flex-1 min-h-[400px]">
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Daily Tactical Matrix Breakdown</h4>
+                        <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
+                          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-380px)] min-h-[400px]">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="bg-slate-100/95 sticky top-0 z-20 border-b border-slate-200 shadow-xs backdrop-blur-md">
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-100/95 backdrop-blur-md z-30 border-r border-slate-200">
+                                    Date
+                                  </th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Post Type</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Title</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Format</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Script Content</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 bg-white">
+                                {sheetDays.map((dayItem, idx) => (
+                                  <tr key={idx} className="hover:bg-slate-50/90 transition-colors group align-top">
+                                    <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
+                                      {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                      <select
+                                        value={dayItem.reelType}
+                                        onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)}
+                                        className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                      >
+                                        <option value="NONE">NONE</option>
+                                        <option value="SHOOT">SHOOT</option>
+                                        <option value="AI">AI</option>
+                                      </select>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                      <select
+                                        value={dayItem.postType}
+                                        onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)}
+                                        className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                      >
+                                        <option value="NONE">NONE</option>
+                                        <option value="SHOOT">SHOOT</option>
+                                        <option value="AI">AI</option>
+                                      </select>
+                                    </td>
+
+                                    {/* EXPANDED & LARGE TITLE TEXTAREA */}
+                                    <td className="px-4 py-3 min-w-[240px]">
+                                      <textarea
+                                        rows={2}
+                                        value={dayItem.title || ""}
+                                        onChange={(e) => handleDayFieldChange(idx, "title", e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                        placeholder="Content Title / Topic..."
+                                      />
+                                    </td>
+
+                                    <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                      <select
+                                        value={dayItem.videoType || "HORIZONTAL"}
+                                        onChange={(e) => handleDayFieldChange(idx, "videoType", e.target.value)}
+                                        className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                      >
+                                        <option value="HORIZONTAL">HORIZONTAL</option>
+                                        <option value="VERTICAL">VERTICAL</option>
+                                        <option value="SQUARE">SQUARE</option>
+                                      </select>
+                                    </td>
+
+                                    {/* EXPANDED & LARGE SCRIPT TEXTAREA */}
+                                    <td className="px-4 py-3 min-w-[300px]">
+                                      <textarea
+                                        rows={3}
+                                        value={dayItem.script || ""}
+                                        onChange={(e) => handleDayFieldChange(idx, "script", e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
+                                        placeholder="Write full video script, spoken dialogue lines, voiceover text..."
+                                      />
+                                    </td>
+
+                                    {/* EXPANDED & LARGE DESCRIPTION/FRAME TEXTAREA */}
+                                    <td className="px-4 py-3 min-w-[300px]">
+                                      <textarea
+                                        rows={3}
+                                        value={dayItem.description || ""}
+                                        onChange={(e) => handleDayFieldChange(idx, "description", e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
+                                        placeholder="Write shot sequence, frame descriptions, visual direction..."
+                                      />
+                                    </td>
+
+                                    {/* EXPANDED & LARGE REFERENCES TEXTAREA */}
+                                    <td className="px-4 py-3 min-w-[240px]">
+                                      <textarea
+                                        rows={2}
+                                        value={arrayToString(dayItem.referenceLinks)}
+                                        onChange={(e) => handleDayFieldChange(idx, "referenceLinks", stringToArray(e.target.value))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                        placeholder="Paste reference URLs (comma separated)..."
+                                      />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-4 mt-auto">
+                        <button
+                          type="button"
+                          onClick={() => setIsDrawerOpen(false)}
+                          className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingSheet}
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${
+                            isSubmittingSheet ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          }`}
+                        >
+                          {isSubmittingSheet ? "Compiling Matrix..." : "Deploy Strategy Manifest"}
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
+              )}
+            </AnimatePresence>,
+            document.body
+          )}
       </div>
     </div>
   );
