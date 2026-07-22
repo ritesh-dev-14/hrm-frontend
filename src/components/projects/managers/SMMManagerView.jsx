@@ -24,6 +24,8 @@ const EMPTY_DAY_SHAPE = {
   title: "",
   videoType: "HORIZONTAL",
   referenceLinks: [],
+  contentUploadLinks: [],
+  videoUploadLinks: [],
   script: "",
   description: "",
 };
@@ -250,6 +252,8 @@ const SMMManagerView = ({ projectId }) => {
           ...EMPTY_DAY_SHAPE,
           // Extract dynamic metrics synced via the Shoot Workspace Review pipelines
           submissionLinks: matchingDay.submissionLinks || [],
+          contentUploadLinks: matchingDay.contentUploadLinks || [],
+          videoUploadLinks: matchingDay.videoUploadLinks || [],
           contentCreativeSubmissionLinks: matchingDay.contentCreativeSubmissionLinks || [],
           creativeSubmissionLink: matchingDay.creativeSubmissionLink || null,
           submissionStatus: matchingDay.status || matchingDay.submissionStatus || null,
@@ -263,6 +267,8 @@ const SMMManagerView = ({ projectId }) => {
           date: calculatedISODate,
           ...EMPTY_DAY_SHAPE,
           submissionLinks: [],
+          contentUploadLinks: [],
+          videoUploadLinks: [],
           contentCreativeSubmissionLinks: [],
           creativeSubmissionLink: null,
           submissionStatus: null,
@@ -613,6 +619,8 @@ const SMMManagerView = ({ projectId }) => {
           title: day.title || "",
           videoType: day.videoType || "HORIZONTAL",
           referenceLinks: day.referenceLinks || [],
+          contentUploadLinks: day.contentUploadLinks || [],
+          videoUploadLinks: day.videoUploadLinks || [],
           script: day.script,
           description: day.description,
         })),
@@ -667,7 +675,9 @@ const SMMManagerView = ({ projectId }) => {
           (day.referenceLinks && day.referenceLinks.length > 0) ||
           (day.script && day.script.trim() !== "") ||
           (day.description && day.description.trim() !== "") ||
-          (day.submissionLinks && day.submissionLinks.length > 0),
+          (day.submissionLinks && day.submissionLinks.length > 0) ||
+          (day.contentUploadLinks && day.contentUploadLinks.length > 0) ||
+          (day.videoUploadLinks && day.videoUploadLinks.length > 0),
       );
 
       const cleanedDays = activeDays.map((day) => {
@@ -682,6 +692,10 @@ const SMMManagerView = ({ projectId }) => {
           dayObj.referenceLinks = day.referenceLinks;
         if (day.submissionLinks && day.submissionLinks.length > 0)
           dayObj.submissionLinks = day.submissionLinks;
+        if (day.contentUploadLinks && day.contentUploadLinks.length > 0)
+          dayObj.contentUploadLinks = day.contentUploadLinks;
+        if (day.videoUploadLinks && day.videoUploadLinks.length > 0)
+          dayObj.videoUploadLinks = day.videoUploadLinks;
         if (day.script && day.script.trim() !== "") dayObj.script = day.script;
         if (day.description && day.description.trim() !== "")
           dayObj.description = day.description;
@@ -955,7 +969,7 @@ const SMMManagerView = ({ projectId }) => {
                       {formData.reference.split(",").map(s => s.trim()).filter(Boolean).map((ref, idx) => (
                         <div key={idx} className="group relative flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100 cursor-pointer">
                           <span className="break-all line-clamp-1 max-w-[200px]">{ref}</span>
-                          
+
                           {/* Copy Button */}
                           <button
                             type="button"
@@ -1246,9 +1260,8 @@ const SMMManagerView = ({ projectId }) => {
                         <button
                           onClick={handleUpdateExistingCalendar}
                           disabled={isPatchingDay}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${
-                            isPatchingDay ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          }`}
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${isPatchingDay ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            }`}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
@@ -1311,6 +1324,8 @@ const SMMManagerView = ({ projectId }) => {
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Deliverable Links</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Content Upload Links</th>
+                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Upload Links</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Status</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Feedback</th>
@@ -1344,7 +1359,7 @@ const SMMManagerView = ({ projectId }) => {
                                       <option value="AI">AI</option>
                                     </select>
                                   </td>
-                                  
+
                                   {/* EXPANDED & LARGE TITLE TEXTAREA */}
                                   <td className="px-4 py-3 min-w-[240px]">
                                     <textarea
@@ -1424,18 +1439,62 @@ const SMMManagerView = ({ projectId }) => {
                                       )}
                                     </div>
                                   </td>
+
+                                  {/* CONTENT UPLOAD LINKS */}
+                                  <td className="px-4 py-3 min-w-[240px]">
+                                    <div className="space-y-2">
+                                      <textarea
+                                        rows={2}
+                                        value={arrayToString(dayItem.contentUploadLinks)}
+                                        onChange={(e) => handleSelectedDayChange(index, "contentUploadLinks", stringToArray(e.target.value))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                        placeholder="Paste Content / Post URLs (comma separated)..."
+                                      />
+                                      {dayItem.contentUploadLinks?.length > 0 && (
+                                        <div className="flex flex-col gap-1">
+                                          {dayItem.contentUploadLinks.map((link, i) => (
+                                            <a key={`content-up-${i}`} href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-sky-600 hover:text-sky-800 break-all">
+                                              Content Asset {i + 1} 🔗
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {/* VIDEO UPLOAD LINKS */}
+                                  <td className="px-4 py-3 min-w-[240px]">
+                                    <div className="space-y-2">
+                                      <textarea
+                                        rows={2}
+                                        value={arrayToString(dayItem.videoUploadLinks)}
+                                        onChange={(e) => handleSelectedDayChange(index, "videoUploadLinks", stringToArray(e.target.value))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                        placeholder="Paste Video / Reel URLs (comma separated)..."
+                                      />
+                                      {dayItem.videoUploadLinks?.length > 0 && (
+                                        <div className="flex flex-col gap-1">
+                                          {dayItem.videoUploadLinks.map((link, i) => (
+                                            <a key={`video-up-${i}`} href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-purple-600 hover:text-purple-800 break-all">
+                                              Video Asset {i + 1} 🔗
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+
                                   <td className="px-4 py-3 whitespace-nowrap pt-4">
                                     {dayItem.submissionStatus ? (
                                       <span
-                                        className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${
-                                          dayItem.submissionStatus === "APPROVED"
+                                        className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${dayItem.submissionStatus === "APPROVED"
                                             ? "bg-emerald-100 text-emerald-800"
                                             : dayItem.submissionStatus === "REJECTED"
-                                            ? "bg-red-100 text-red-800"
-                                            : dayItem.submissionStatus === "SUBMITTED"
-                                            ? "bg-blue-100 text-blue-800"
-                                            : "bg-amber-100 text-amber-800"
-                                        }`}
+                                              ? "bg-red-100 text-red-800"
+                                              : dayItem.submissionStatus === "SUBMITTED"
+                                                ? "bg-blue-100 text-blue-800"
+                                                : "bg-amber-100 text-amber-800"
+                                          }`}
                                       >
                                         {dayItem.submissionStatus}
                                       </span>
@@ -1644,6 +1703,8 @@ const SMMManagerView = ({ projectId }) => {
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Script Content</th>
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Content Upload Links</th>
+                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Upload Links</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 bg-white">
@@ -1730,6 +1791,28 @@ const SMMManagerView = ({ projectId }) => {
                                         placeholder="Paste reference URLs (comma separated)..."
                                       />
                                     </td>
+
+                                    {/* CONTENT UPLOAD LINKS */}
+                                    <td className="px-4 py-3 min-w-[240px]">
+                                      <textarea
+                                        rows={2}
+                                        value={arrayToString(dayItem.contentUploadLinks)}
+                                        onChange={(e) => handleDayFieldChange(idx, "contentUploadLinks", stringToArray(e.target.value))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                        placeholder="Paste Content / Post URLs (comma separated)..."
+                                      />
+                                    </td>
+
+                                    {/* VIDEO UPLOAD LINKS */}
+                                    <td className="px-4 py-3 min-w-[240px]">
+                                      <textarea
+                                        rows={2}
+                                        value={arrayToString(dayItem.videoUploadLinks)}
+                                        onChange={(e) => handleDayFieldChange(idx, "videoUploadLinks", stringToArray(e.target.value))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                        placeholder="Paste Video / Reel URLs (comma separated)..."
+                                      />
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1749,9 +1832,8 @@ const SMMManagerView = ({ projectId }) => {
                         <button
                           type="submit"
                           disabled={isSubmittingSheet}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${
-                            isSubmittingSheet ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          }`}
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${isSubmittingSheet ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            }`}
                         >
                           {isSubmittingSheet ? "Compiling Matrix..." : "Deploy Strategy Manifest"}
                         </button>
