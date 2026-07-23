@@ -227,7 +227,8 @@ const EditorWorkspaceDetails = () => {
       case 'DRAFT': return 'bg-slate-100 text-slate-700 border-slate-200'
       case 'ACTIVE': 
       case 'ASSIGNED': return 'bg-indigo-50 text-indigo-700 border-indigo-100'
-      case 'SUBMITTED': return 'bg-violet-50 text-violet-700 border-violet-100 font-bold'
+      case 'SUBMITTED': return 'bg-rose-500 text-white border-rose-600 font-black animate-pulse shadow-xs'
+      case 'UNABLE_TO_SUBMIT': return 'bg-amber-500 text-white border-amber-600 font-black animate-pulse shadow-xs'
       case 'VERIFIED':
       case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-100'
       case 'REJECTED': return 'bg-red-50 text-red-700 border-red-100'
@@ -384,8 +385,9 @@ const EditorWorkspaceDetails = () => {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold border rounded-md uppercase ${getStatusStyle(assignmentStatus)}`}>
-                            {assignmentStatus}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-extrabold border rounded-md uppercase ${getStatusStyle(assignmentStatus)}`}>
+                            {(assignmentStatus === "SUBMITTED" || assignmentStatus === "UNABLE_TO_SUBMIT") && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                            {assignmentStatus === "SUBMITTED" ? "🔴 SUBMITTED (Needs Review)" : assignmentStatus}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-slate-600 font-semibold whitespace-nowrap">

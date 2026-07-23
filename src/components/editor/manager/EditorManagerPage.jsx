@@ -317,17 +317,28 @@ const EditorManagerPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
-                    {filteredTasks.map((task) => (
-                      <motion.tr
-                        variants={itemVariants}
-                        key={task.id}
-                        onClick={() => navigate(`/editor/${task.id}`)}
-                        className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
-                      >
-                        <td className="py-4 px-6 max-w-sm">
-                          <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm tracking-tight">{task.projectName}</div>
-                          <div className="text-slate-400 truncate mt-0.5 font-medium">{task.description || 'No descriptive tags specified.'}</div>
-                        </td>
+                    {filteredTasks.map((task) => {
+                      const submittedCount = task.submittedItemsCount ?? 0;
+
+                      return (
+                        <motion.tr
+                          variants={itemVariants}
+                          key={task.id}
+                          onClick={() => navigate(`/editor/${task.id}`)}
+                          className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
+                        >
+                          <td className="py-4 px-6 max-w-sm">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm tracking-tight">{task.projectName}</span>
+                              {submittedCount > 0 && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-sm shadow-rose-500/30 animate-pulse flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                  {submittedCount} Submitted
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-slate-400 truncate mt-0.5 font-medium">{task.description || 'No descriptive tags specified.'}</div>
+                          </td>
                         <td className="py-4 px-6 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold tracking-widest border rounded-md uppercase ${getStatusStyle(task.status)}`}>
                             {task.status}
@@ -354,7 +365,8 @@ const EditorManagerPage = () => {
                           </div>
                         </td>
                       </motion.tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </motion.table>
               </div>

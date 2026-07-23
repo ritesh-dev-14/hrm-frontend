@@ -233,43 +233,60 @@ const ShootManagerPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {filteredWorkspaces.map((shoot) => (
-                    <motion.tr 
-                      variants={itemVariants}
-                      key={shoot.id}
-                      onClick={() => navigate(`/shoot/${shoot.id}`)} 
-                      className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
-                    >
-                      <td className="py-4 px-6 max-w-sm">
-                        <div className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100/50 text-indigo-600 shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                            <Video size={16} />
+                  {filteredWorkspaces.map((shoot) => {
+                    const pendingCount = shoot.pendingSubmissionsCount ?? (shoot.tasks || []).reduce((acc, t) => acc + ((t.subtasks || t.subTasks || []).filter(st => st.status === 'SUBMITTED' || st.status === 'UNABLE_TO_SUBMIT').length), 0);
+
+                    return (
+                      <motion.tr 
+                        variants={itemVariants}
+                        key={shoot.id}
+                        onClick={() => navigate(`/shoot/${shoot.id}`)} 
+                        className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
+                      >
+                        <td className="py-4 px-6 max-w-sm">
+                          <div className="flex items-start gap-4">
+                            <div className="relative w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100/50 text-indigo-600 shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                              <Video size={16} />
+                              {pendingCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-md animate-pulse border-2 border-white">
+                                  {pendingCount}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm tracking-tight">{shoot.name}</span>
+                                {pendingCount > 0 && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-sm shadow-rose-500/30 animate-pulse flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                    {pendingCount} Pending Review
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-slate-400 truncate mt-0.5 font-medium">{shoot.description || 'No descriptive tags specified.'}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm tracking-tight">{shoot.name}</div>
-                            <div className="text-slate-400 truncate mt-0.5 font-medium">{shoot.description || 'No descriptive tags specified.'}</div>
+                        </td>
+                        <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-1 rounded-md text-[11px] uppercase tracking-wider">
+                            <ListTodo size={14} className="text-slate-400" />
+                            {shoot.tasks?.length || 0}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-1 rounded-md text-[11px] uppercase tracking-wider">
+                            <Users size={14} className="text-slate-400" />
+                            {shoot.members?.length || 0}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
+                            Enter Workspace <ArrowRight className="w-3.5 h-3.5" />
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-1 rounded-md text-[11px] uppercase tracking-wider">
-                          <ListTodo size={14} className="text-slate-400" />
-                          {shoot.tasks?.length || 0}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-1 rounded-md text-[11px] uppercase tracking-wider">
-                          <Users size={14} className="text-slate-400" />
-                          {shoot.members?.length || 0}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
-                          Enter Workspace <ArrowRight className="w-3.5 h-3.5" />
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </motion.table>
             </div>

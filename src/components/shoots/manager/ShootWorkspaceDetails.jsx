@@ -429,16 +429,10 @@ export default function ShootWorkspaceDetails() {
         title,
         description,
         type: subtaskForm.type,
+        videoType: subtaskForm.type === "REEL" ? (subtaskForm.videoType || "HORIZONTAL") : null,
+        referenceLinks: parsedLinks,
         dayId: subtaskForm.monthlySheetDayId || null
       };
-
-      if (subtaskForm.type === "REEL") {
-        payload.videoType = subtaskForm.videoType;
-      }
-
-      if (parsedLinks.length > 0) {
-        payload.referenceLinks = parsedLinks;
-      }
 
       const requestUrl = isEditSubtaskMode
         ? `/api/shoot-workspaces/${shootId}/tasks/${selectedTaskDetails.id}/subtasks/${activeEditingSubtaskId}`
@@ -830,21 +824,32 @@ export default function ShootWorkspaceDetails() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-sm">
-                      {tasks.map((task) => (
-                        <tr
-                          key={task.id}
-                          onClick={() => handleOpenTaskDetails(task.id)}
-                          className="hover:bg-indigo-50/30 transition group cursor-pointer"
-                        >
-                          <td className="py-4 px-5 max-w-xs">
-                            <span className="font-bold text-slate-900 block tracking-tight group-hover:text-indigo-600 transition">{task.title}</span>
-                            <span className="text-xs text-slate-400 line-clamp-1 mt-0.5">{task.description || "No specifications description provided."}</span>
-                            {task.subtasks?.length > 0 && (
-                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-medium">
-                                <Layers size={10} /> Contains {task.subtasks.length} subtasks
-                              </span>
-                            )}
-                          </td>
+                      {tasks.map((task) => {
+                        const pendingCount = task.pendingSubmissionsCount ?? (task.subtasks || []).filter(st => st.status === 'SUBMITTED' || st.status === 'UNABLE_TO_SUBMIT').length;
+
+                        return (
+                          <tr
+                            key={task.id}
+                            onClick={() => handleOpenTaskDetails(task.id)}
+                            className="hover:bg-indigo-50/30 transition group cursor-pointer"
+                          >
+                            <td className="py-4 px-5 max-w-xs">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-900 block tracking-tight group-hover:text-indigo-600 transition">{task.title}</span>
+                                {pendingCount > 0 && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-sm shadow-rose-500/30 animate-pulse flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                    {pendingCount} Submitted
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-slate-400 line-clamp-1 mt-0.5">{task.description || "No specifications description provided."}</span>
+                              {task.subtasks?.length > 0 && (
+                                <span className="inline-flex items-center gap-1 mt-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-medium">
+                                  <Layers size={10} /> Contains {task.subtasks.length} subtasks
+                                </span>
+                              )}
+                            </td>
                           <td className="py-4 px-4 whitespace-nowrap">
                             {task.setupType ? (
                               <span className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full ${
@@ -911,7 +916,8 @@ export default function ShootWorkspaceDetails() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      );
+                    })}
                     </tbody>
                   </table>
                 </div>
@@ -1388,9 +1394,9 @@ export default function ShootWorkspaceDetails() {
                                       <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded">
                                         <CheckCircle2 size={10} /> Approved & Synchronized
                                       </span>
-                                    ) : sub.status === "SUBMITTED" ? (
-                                      <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 rounded animate-pulse">
-                                        <Clock size={10} /> Awaiting Review
+                                    ) : isSubmitted || sub.status === "SUBMITTED" ? (
+                                      <span className="inline-flex items-center gap-1 text-[9px] font-black bg-rose-500 text-white shadow-sm shadow-rose-500/30 px-2.5 py-0.5 rounded animate-pulse">
+                                        <Clock size={10} /> 🔴 SUBMITTED (Needs Review)
                                       </span>
                                     ) : hasIssue ? (
                                       <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 rounded">
