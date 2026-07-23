@@ -109,6 +109,29 @@ const HrHomePage = () => {
 
 
 
+  const attendanceStats = useMemo(() => {
+    if (!rosterData || rosterData.length === 0) {
+      return { present: 0, absent: 0, leave: 0 };
+    }
+
+    let present = 0;
+    let absent = 0;
+    let leave = 0;
+
+    rosterData.forEach((u) => {
+      const status = u.attendance?.status;
+      if (status === "PRESENT" || status === "HALF_DAY") {
+        present++;
+      } else if (status === "LEAVE" || status === "HOLIDAY" || status === "ON_LEAVE") {
+        leave++;
+      } else {
+        absent++;
+      }
+    });
+
+    return { present, absent, leave };
+  }, [rosterData]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -151,10 +174,12 @@ const HrHomePage = () => {
         </motion.div>
 
         {/* TOP LEVEL GLOBAL DIRECTORY METRICS METADATA */}
-        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
           <StatsMiniRow title="Total Managers" value={globalStats.totalManagers} icon={Users} color="indigo" link="/hr/team?role=MANAGER" />
           <StatsMiniRow title="Total Employees" value={globalStats.totalEmployees} icon={Users} color="emerald" link="/hr/team?role=EMPLOYEE" />
-          <StatsMiniRow title="Total Projects" value={globalStats.totalTasks} icon={Briefcase} color="violet" link="/projects" />
+          <StatsMiniRow title="Today Present" value={attendanceStats.present} icon={UserCheck} color="emerald" link="/hr/employees-attendance" />
+          <StatsMiniRow title="Today Absent" value={attendanceStats.absent} icon={XCircle} color="rose" link="/hr/employees-attendance" />
+          <StatsMiniRow title="Today On Leave" value={attendanceStats.leave} icon={CalendarDays} color="amber" link="/hr/employees-leaves" />
         </motion.div>
 
         {/* DEDICATED ATTENDANCE ROSTER SECTION */}
@@ -319,6 +344,7 @@ const StatsMiniRow = ({ title, value, icon: Icon, color = "indigo", link = "#" }
     emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
     violet: "bg-violet-50 text-violet-600 border-violet-100",
     amber: "bg-amber-50 text-amber-600 border-amber-100",
+    rose: "bg-rose-50 text-rose-600 border-rose-100",
   };
   
   return (
