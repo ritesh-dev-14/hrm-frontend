@@ -19,7 +19,9 @@ import {
   Building2,
   MapPin,
   PenTool,
-  X
+  X,
+  Edit2,
+  Trash2
 } from 'lucide-react'
 
 const EditorManagerPage = () => {
@@ -41,6 +43,18 @@ const EditorManagerPage = () => {
     description: '',
     startDate: '',
     endDate: ''
+  })
+
+  // Edit Modal Controls
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingTaskId, setEditingTaskId] = useState(null)
+  const [submittingEdit, setSubmittingEdit] = useState(false)
+  const [editFormData, setEditFormData] = useState({
+    projectName: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    status: 'DRAFT'
   })
 
   // Search/Filter states
@@ -133,6 +147,64 @@ const EditorManagerPage = () => {
       alert(err.response?.data?.message || 'Failed to construct task architecture structure.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Open Edit Modal with prefilled values
+  const handleOpenEditModal = (e, task) => {
+    e.stopPropagation()
+    setEditingTaskId(task.id)
+    setEditFormData({
+      projectName: task.projectName || '',
+      description: task.description || '',
+      startDate: task.startDate ? task.startDate.split('T')[0] : '',
+      endDate: task.endDate ? task.endDate.split('T')[0] : '',
+      status: task.status || 'DRAFT'
+    })
+    setIsEditModalOpen(true)
+  }
+
+  // Submit Edit Task changes
+  const handleUpdateTask = async (e) => {
+    e.preventDefault()
+    if (!editFormData.projectName.trim()) return
+
+    setSubmittingEdit(true)
+    const payload = {
+      ...editFormData,
+      startDate: editFormData.startDate ? new Date(editFormData.startDate).toISOString() : null,
+      endDate: editFormData.endDate ? new Date(editFormData.endDate).toISOString() : null
+    }
+
+    try {
+      const response = await API.patch(`/api/manager/tasks/${editingTaskId}`, payload)
+      if (response.data?.success) {
+        setIsEditModalOpen(false)
+        setEditingTaskId(null)
+        await fetchTasks()
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update task details.')
+    } finally {
+      setSubmittingEdit(false)
+    }
+  }
+
+  // Delete Task
+  const handleDeleteTask = async (e, taskId) => {
+    e.stopPropagation()
+    if (!window.confirm('Are you sure you want to delete this project task and all its subtasks?')) return
+
+    try {
+      setLoading(true)
+      const res = await API.delete(`/api/manager/tasks/${taskId}`)
+      if (res.data?.success) {
+        await fetchTasks()
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete project task.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -359,9 +431,28 @@ const EditorManagerPage = () => {
                             {task.totalItems ?? 0}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
-                            Enter Workspace <ChevronRight className="w-3.5 h-3.5" />
+                        <td className="py-4 px-6 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={(e) => handleOpenEditModal(e, task)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 rounded-lg text-xs font-semibold transition"
+                              title="Edit Task"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" /> Edit
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteTask(e, task.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 border border-rose-100 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold transition"
+                              title="Delete Task"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                            <div
+                              onClick={() => navigate(`/editor/${task.id}`)}
+                              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer ml-1"
+                            >
+                              Enter <ChevronRight className="w-3.5 h-3.5" />
+                            </div>
                           </div>
                         </td>
                       </motion.tr>
@@ -502,6 +593,124 @@ const EditorManagerPage = () => {
                     >
                       {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                       Deploy Workspace
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Modal System */}
+        <AnimatePresence>
+          {isEditModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsEditModalOpen(false)}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                className="relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-2xl z-10 overflow-hidden"
+              >
+                <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
+                      <Edit2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Edit Project Task</h3>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">Update project name, description, horizon, and status</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleUpdateTask} className="space-y-4 pt-6">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Project Name</label>
+                    <input
+                      type="text"
+                      value={editFormData.projectName}
+                      onChange={(e) => setEditFormData({ ...editFormData, projectName: e.target.value })}
+                      required
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Description</label>
+                    <textarea
+                      value={editFormData.description}
+                      onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Start Date</label>
+                      <input
+                        type="date"
+                        value={editFormData.startDate}
+                        onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">End Date</label>
+                      <input
+                        type="date"
+                        value={editFormData.endDate}
+                        onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Status</label>
+                    <select
+                      value={editFormData.status}
+                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    >
+                      <option value="DRAFT">DRAFT</option>
+                      <option value="ASSIGNED">ASSIGNED</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="SUBMITTED">SUBMITTED</option>
+                      <option value="VERIFIED">VERIFIED</option>
+                      <option value="COMPLETED">COMPLETED</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={submittingEdit}
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submittingEdit || !editFormData.projectName.trim()}
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2"
+                    >
+                      {submittingEdit && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      Save Updates
                     </button>
                   </div>
                 </form>

@@ -18,7 +18,10 @@ import {
   UserCheck,
   ThumbsUp,
   ThumbsDown,
-  CheckCircle2
+  CheckCircle2,
+  Edit2,
+  Trash2,
+  X
 } from 'lucide-react'
 
 const EditorWorkspaceDetails = () => {
@@ -46,6 +49,30 @@ const EditorWorkspaceDetails = () => {
     open: false,
     assignmentId: null, 
     reason: ""
+  })
+
+  // Edit Subtask State Module
+  const [showEditSubtaskModal, setShowEditSubtaskModal] = useState(false)
+  const [editingSubtask, setEditingSubtask] = useState(null)
+  const [editSubtaskForm, setEditSubtaskForm] = useState({
+    title: '',
+    employeeId: '',
+    dueDate: '',
+    priority: 'MEDIUM',
+    description: '',
+    status: 'DRAFT',
+    referenceLink: '',
+    rawDataLink: ''
+  })
+
+  // Edit Workspace State Module
+  const [showEditWorkspaceModal, setShowEditWorkspaceModal] = useState(false)
+  const [editWorkspaceForm, setEditWorkspaceForm] = useState({
+    projectName: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    status: 'DRAFT'
   })
 
   // Subtask Form Data Initial Bind Vectors
@@ -208,6 +235,130 @@ const EditorWorkspaceDetails = () => {
     }
   }
 
+  // Handle Open Edit Subtask Modal
+  const handleOpenEditSubtask = (item) => {
+    const primaryAssignment = item.assignments?.[0] || null
+    const assignedEmp = primaryAssignment?.employee || null
+
+    setEditingSubtask(item)
+    setEditSubtaskForm({
+      title: item.title || '',
+      employeeId: assignedEmp?.employeeId || '',
+      dueDate: item.dueDate ? item.dueDate.split('T')[0] : '',
+      priority: item.priority || 'MEDIUM',
+      description: item.description || '',
+      status: item.status || 'DRAFT',
+      referenceLink: item.referenceLink || '',
+      rawDataLink: item.rawDataLink || ''
+    })
+    setShowEditSubtaskModal(true)
+  }
+
+  // Handle Submit Edit Subtask
+  const handleUpdateSubtask = async (e) => {
+    e.preventDefault()
+    if (!editSubtaskForm.title.trim()) return
+
+    try {
+      setIsActionLoading(true)
+      const payload = {
+        ...editSubtaskForm,
+        title: editSubtaskForm.title.trim(),
+        description: editSubtaskForm.description.trim(),
+        dueDate: editSubtaskForm.dueDate ? new Date(editSubtaskForm.dueDate).toISOString() : null,
+        referenceLink: editSubtaskForm.referenceLink.trim() || null,
+        rawDataLink: editSubtaskForm.rawDataLink.trim() || null
+      }
+
+      const res = await API.patch(`/api/task-items/${editingSubtask.id}`, payload)
+      if (res.data?.success) {
+        setShowEditSubtaskModal(false)
+        setEditingSubtask(null)
+        await refreshSubtaskIndex()
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update subtask item.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Handle Delete Subtask
+  const handleDeleteSubtask = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this subtask item?')) return
+
+    try {
+      setIsActionLoading(true)
+      const res = await API.delete(`/api/task-items/${itemId}`)
+      if (res.data?.success) {
+        if (selectedSubtask?.id === itemId) {
+          setSelectedSubtask(null)
+          setShowDetailsModal(false)
+        }
+        await refreshSubtaskIndex()
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete subtask item.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Handle Open Edit Workspace Modal
+  const handleOpenEditWorkspace = () => {
+    if (!workspace) return
+    setEditWorkspaceForm({
+      projectName: workspace.projectName || '',
+      description: workspace.description || '',
+      startDate: workspace.startDate ? workspace.startDate.split('T')[0] : '',
+      endDate: workspace.endDate ? workspace.endDate.split('T')[0] : '',
+      status: workspace.status || 'DRAFT'
+    })
+    setShowEditWorkspaceModal(true)
+  }
+
+  // Handle Submit Edit Workspace
+  const handleUpdateWorkspace = async (e) => {
+    e.preventDefault()
+    if (!editWorkspaceForm.projectName.trim()) return
+
+    try {
+      setIsActionLoading(true)
+      const payload = {
+        ...editWorkspaceForm,
+        startDate: editWorkspaceForm.startDate ? new Date(editWorkspaceForm.startDate).toISOString() : null,
+        endDate: editWorkspaceForm.endDate ? new Date(editWorkspaceForm.endDate).toISOString() : null
+      }
+
+      const res = await API.patch(`/api/manager/tasks/${workspaceId}`, payload)
+      if (res.data?.success) {
+        setShowEditWorkspaceModal(false)
+        await refreshSubtaskIndex()
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update project workspace.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Handle Delete Workspace
+  const handleDeleteWorkspace = async () => {
+    if (!window.confirm('Are you sure you want to delete this entire project workspace and all its subtasks?')) return
+
+    try {
+      setIsActionLoading(true)
+      const res = await API.delete(`/api/manager/tasks/${workspaceId}`)
+      if (res.data?.success) {
+        navigate('/editor')
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete project workspace.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
   const handleOpenRowDetails = (item) => {
     setSelectedSubtask(item)
     setShowDetailsModal(true)
@@ -272,12 +423,28 @@ const EditorWorkspaceDetails = () => {
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Matrix Pipeline
         </button>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-3.5 h-3.5" /> Inject Subtask Element
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleOpenEditWorkspace}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded-xl text-xs font-bold transition shadow-2xs"
+            title="Edit Project"
+          >
+            <Edit2 className="w-3.5 h-3.5" /> Edit Project
+          </button>
+          <button
+            onClick={handleDeleteWorkspace}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition shadow-2xs"
+            title="Delete Project"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete Project
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" /> Inject Subtask Element
+          </button>
+        </div>
       </div>
 
       {/* PARENT WORKSPACE SUMMARY SPECS SHEET CARD */}
@@ -396,13 +563,14 @@ const EditorWorkspaceDetails = () => {
                           ) : <span className="text-slate-300 italic">Unscheduled</span>}
                         </td>
                         <td className="py-3.5 px-5 text-right whitespace-nowrap text-indigo-600 font-bold" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1.5">
                             {isActionable && assignmentId && (
-                              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shadow-2xs">
+                              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shadow-2xs">
                                 <button
                                   disabled={actionLoadingId !== null}
                                   onClick={() => handleApproveSubmission(assignmentId)}
                                   className="p-1.5 bg-white text-emerald-600 hover:bg-emerald-50 rounded-lg border border-slate-200 shadow-3xs transition"
+                                  title="Approve Submission"
                                 >
                                   {actionLoadingId === assignmentId ? (
                                     <Loader2 size={13} className="animate-spin" />
@@ -414,16 +582,31 @@ const EditorWorkspaceDetails = () => {
                                   disabled={actionLoadingId !== null}
                                   onClick={() => setRejectModal({ open: true, assignmentId: assignmentId, reason: "" })}
                                   className="p-1.5 bg-white text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 shadow-3xs transition"
+                                  title="Reject Submission"
                                 >
                                   <ThumbsDown size={13} />
                                 </button>
                               </div>
                             )}
+                            <button
+                              onClick={() => handleOpenEditSubtask(item)}
+                              className="p-1.5 border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 rounded-lg transition"
+                              title="Edit Subtask"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSubtask(item.id)}
+                              className="p-1.5 border border-rose-100 hover:bg-rose-50 text-rose-600 rounded-lg transition"
+                              title="Delete Subtask"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                             <button 
                               onClick={() => handleOpenRowDetails(item)}
-                              className="text-indigo-600 font-bold group-hover:translate-x-0.5 transition-transform text-xs px-2 py-1 hover:bg-slate-50 rounded-lg"
+                              className="text-indigo-600 font-bold group-hover:translate-x-0.5 transition-transform text-xs px-2 py-1 hover:bg-slate-50 rounded-lg ml-1"
                             >
-                              View Details →
+                              Details →
                             </button>
                           </div>
                         </td>
@@ -784,6 +967,259 @@ const EditorWorkspaceDetails = () => {
                 Confirm Rejection Node
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT SUBTASK MODAL SYSTEM */}
+      {showEditSubtaskModal && editingSubtask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
+                  <Edit2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Edit Subtask Item</h3>
+                  <p className="text-xs text-slate-500 font-medium">Update subtask specs, assigned employee, or priority</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditSubtaskModal(false)
+                  setEditingSubtask(null)
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSubtask} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Subtask Title</label>
+                <input
+                  type="text"
+                  value={editSubtaskForm.title}
+                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, title: e.target.value })}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Assigned Employee</label>
+                  <select
+                    value={editSubtaskForm.employeeId}
+                    onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, employeeId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                  >
+                    <option value="">Select Employee...</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.employeeId}>
+                        {emp.name} ({emp.employeeId})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Priority</label>
+                  <select
+                    value={editSubtaskForm.priority}
+                    onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, priority: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Due Date</label>
+                  <input
+                    type="date"
+                    value={editSubtaskForm.dueDate}
+                    onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, dueDate: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status</label>
+                  <select
+                    value={editSubtaskForm.status}
+                    onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, status: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                  >
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="ASSIGNED">ASSIGNED</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                    <option value="SUBMITTED">SUBMITTED</option>
+                    <option value="VERIFIED">VERIFIED</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Description</label>
+                <textarea
+                  value={editSubtaskForm.description}
+                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Reference Link</label>
+                <input
+                  type="url"
+                  value={editSubtaskForm.referenceLink}
+                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, referenceLink: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Raw Data Link</label>
+                <input
+                  type="url"
+                  value={editSubtaskForm.rawDataLink}
+                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, rawDataLink: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={isActionLoading}
+                  onClick={() => setShowEditSubtaskModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isActionLoading || !editSubtaskForm.title.trim()}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
+                >
+                  {isActionLoading && <Loader2 size={13} className="animate-spin" />}
+                  Save Subtask Updates
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT WORKSPACE PROJECT MODAL SYSTEM */}
+      {showEditWorkspaceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
+                  <Edit2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Edit Project Workspace</h3>
+                  <p className="text-xs text-slate-500 font-medium">Update project title, description, horizon, and status</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEditWorkspaceModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateWorkspace} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Project Name</label>
+                <input
+                  type="text"
+                  value={editWorkspaceForm.projectName}
+                  onChange={(e) => setEditWorkspaceForm({ ...editWorkspaceForm, projectName: e.target.value })}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Description</label>
+                <textarea
+                  value={editWorkspaceForm.description}
+                  onChange={(e) => setEditWorkspaceForm({ ...editWorkspaceForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Start Date</label>
+                  <input
+                    type="date"
+                    value={editWorkspaceForm.startDate}
+                    onChange={(e) => setEditWorkspaceForm({ ...editWorkspaceForm, startDate: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">End Date</label>
+                  <input
+                    type="date"
+                    value={editWorkspaceForm.endDate}
+                    onChange={(e) => setEditWorkspaceForm({ ...editWorkspaceForm, endDate: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status</label>
+                <select
+                  value={editWorkspaceForm.status}
+                  onChange={(e) => setEditWorkspaceForm({ ...editWorkspaceForm, status: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                >
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="ASSIGNED">ASSIGNED</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="SUBMITTED">SUBMITTED</option>
+                  <option value="VERIFIED">VERIFIED</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={isActionLoading}
+                  onClick={() => setShowEditWorkspaceModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isActionLoading || !editWorkspaceForm.projectName.trim()}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
+                >
+                  {isActionLoading && <Loader2 size={13} className="animate-spin" />}
+                  Save Workspace Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
