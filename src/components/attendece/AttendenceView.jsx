@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 
 import { motion } from "framer-motion";
+import DownloadAttendanceExcelModal from "./DownloadAttendanceExcelModal";
+import { useAuth } from "../../context/AuthContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -29,6 +31,9 @@ export default function AttendanceView({
   records,
   loading,
 }) {
+  const { user } = useAuth();
+  const isHRorAdmin = ["HR", "ADMIN"].includes(user?.role);
+
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [isExpanded, setIsExpanded] = useState(false);
@@ -118,16 +123,20 @@ export default function AttendanceView({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
         
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-end">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
             <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">Attendance</span>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
               Attendance History
             </h1>
             <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl">
-              View your complete attendance records, check-ins, and total working hours.
+              View complete attendance records, check-ins, and total working hours.
             </p>
           </div>
+
+          {isHRorAdmin && (
+            <DownloadAttendanceExcelModal />
+          )}
         </motion.div>
 
         {/* STATS */}

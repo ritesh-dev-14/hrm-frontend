@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import DownloadAttendanceExcelModal from "../../components/attendece/DownloadAttendanceExcelModal";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -232,16 +233,20 @@ export default function HrAttendance() {
             </p>
           </div>
 
-          {/* SEARCH */}
-          <div className="relative w-full lg:w-[320px] group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search by name, ID, or position..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
-            />
+          {/* SEARCH & EXCEL */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-[300px] group">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search by name, ID, or position..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+              />
+            </div>
+            
+            <DownloadAttendanceExcelModal buttonClassName="h-12 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap" />
           </div>
         </motion.div>
 
@@ -313,6 +318,8 @@ export default function HrAttendance() {
                   </button>
                 ))}
               </div>
+
+              <DownloadAttendanceExcelModal />
             </div>
           </div>
 

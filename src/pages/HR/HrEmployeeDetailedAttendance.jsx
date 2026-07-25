@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "../../services/api";
+import DownloadAttendanceExcelModal from "../../components/attendece/DownloadAttendanceExcelModal";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -206,6 +207,7 @@ export default function HrEmployeeDetailedAttendance() {
                 </div>
               </div>
             </div>
+            <DownloadAttendanceExcelModal />
           </div>
         </motion.div>
 
