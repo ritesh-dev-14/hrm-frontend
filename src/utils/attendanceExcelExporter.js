@@ -12,6 +12,7 @@ import * as XLSX from "xlsx";
 export const exportMonthlyAttendanceExcel = ({
   allUsers = [],
   allRecords = [],
+  departmentsMap = new Map(),
   year = new Date().getFullYear(),
   month = new Date().getMonth() + 1,
 }) => {
@@ -44,6 +45,50 @@ export const exportMonthlyAttendanceExcel = ({
     }
   });
 
+  // Helper function to resolve department name reliably
+  const resolveDepartmentName = (u) => {
+    // 1. Direct department object name
+    if (u?.department?.name) return u.department.name;
+    
+    // 2. Direct string department (if not a UUID format)
+    if (typeof u?.department === "string" && u.department.trim().length > 0) {
+      const isUuid = u.department.match(/^[0-9a-fA-F-]{24,36}$/);
+      if (!isUuid) return u.department.trim();
+    }
+
+    // 3. Lookup departmentId / department_id / department in departmentsMap
+    const deptId = u?.departmentId || u?.department_id || (typeof u?.department === "string" ? u.department : null);
+    if (deptId && departmentsMap.has(String(deptId))) {
+      return departmentsMap.get(String(deptId));
+    }
+
+    // 4. Check departments array if user has multiple assigned departments
+    if (Array.isArray(u?.departments) && u.departments.length > 0) {
+      const names = u.departments
+        .map((d) => (typeof d === "object" ? d.name : departmentsMap.get(String(d)) || d))
+        .filter((n) => n && typeof n === "string" && !n.match(/^[0-9a-fA-F-]{24,36}$/));
+      if (names.length > 0) return names.join(", ");
+    }
+
+    // 5. Inspect attendance records for this user to check if record.user.department exists
+    const uId = u?.id || u?._id;
+    const eId = u?.employeeId;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const rec = recordMap.get(`${uId}_${day}`) || recordMap.get(`${eId}_${day}`);
+      if (rec?.user?.department?.name) return rec.user.department.name;
+      if (typeof rec?.user?.department === "string" && rec.user.department && !rec.user.department.match(/^[0-9a-fA-F-]{24,36}$/)) {
+        return rec.user.department;
+      }
+      if (rec?.user?.departmentId && departmentsMap.has(String(rec.user.departmentId))) {
+        return departmentsMap.get(String(rec.user.departmentId));
+      }
+    }
+
+    // 6. Position or clean fallback
+    if (u?.position) return u.position;
+    return "General Staff";
+  };
+
   const excelRows = [];
 
   (allUsers || []).forEach((user) => {
@@ -54,12 +99,11 @@ export const exportMonthlyAttendanceExcel = ({
     let totalAbsent = 0;
     let totalLeave = 0;
     let totalHalfDay = 0;
-    let totalWorkingHours = 0;
 
     const row = {
       "Employee Name": user.name || "N/A",
       "Employee ID": user.employeeId || "N/A",
-      "Department": user.department?.name || user.department || "N/A",
+      "Department": resolveDepartmentName(user),
       "Role": user.role || "EMPLOYEE",
     };
 

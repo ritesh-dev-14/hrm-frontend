@@ -32,38 +32,66 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
 
   const handleExport = async () => {
     try {
-      setIsExporting(true);
-
-      // Fetch all employees and attendance records
-      const [usersRes, recordsRes] = await Promise.all([
+      // Fetch all employees, departments, and attendance records in parallel
+      const [usersRes, empRes, recordsRes, deptsRes] = await Promise.all([
         API.get("/api/hr/dashboard/overview").catch(() => null),
+        API.get("/api/hr/dashboard/employees").catch(() => null),
         API.get("/api/attendance").catch(() => null),
+        API.get("/api/departments").catch(() => null),
       ]);
 
-      let allUsers = [];
-      let allRecords = [];
+      const allUsersMap = new Map();
+
+      const addOrMergeUser = (u) => {
+        if (!u) return;
+        const id = u.id || u._id || u.employeeId;
+        if (!id) return;
+        const existing = allUsersMap.get(id) || {};
+        allUsersMap.set(id, {
+          ...existing,
+          ...u,
+          department: u.department || existing.department,
+          departmentId: u.departmentId || u.department_id || existing.departmentId,
+        });
+      };
 
       if (usersRes?.data?.success) {
-        allUsers = usersRes.data.data?.allUsers || [];
+        (usersRes.data.data?.allUsers || []).forEach(addOrMergeUser);
       }
-      
-      // Fallback if overview is not populated
-      if (allUsers.length === 0) {
-        const empRes = await API.get("/api/hr/dashboard/employees").catch(() => null);
-        if (empRes?.data?.success) {
-          allUsers = empRes.data.data || [];
-        }
+      if (empRes?.data?.success) {
+        (empRes.data.data || []).forEach(addOrMergeUser);
       }
 
+      let allRecords = [];
       if (recordsRes?.data) {
         const data = recordsRes.data.data || recordsRes.data;
         allRecords = Array.isArray(data) ? data : [];
+      }
+
+      // Merge users found in attendance records as well
+      allRecords.forEach((r) => {
+        if (r.user) {
+          addOrMergeUser(r.user);
+        }
+      });
+
+      const allUsers = Array.from(allUsersMap.values());
+
+      // Build department ID -> Name map
+      const departmentsMap = new Map();
+      if (deptsRes?.data?.data) {
+        const list = Array.isArray(deptsRes.data.data) ? deptsRes.data.data : [];
+        list.forEach((d) => {
+          if (d.id) departmentsMap.set(String(d.id), d.name);
+          if (d._id) departmentsMap.set(String(d._id), d.name);
+        });
       }
 
       // Generate & download Excel
       exportMonthlyAttendanceExcel({
         allUsers,
         allRecords,
+        departmentsMap,
         year: Number(selectedYear),
         month: Number(selectedMonth),
       });
