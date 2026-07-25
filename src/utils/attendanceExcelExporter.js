@@ -45,6 +45,28 @@ export const exportMonthlyAttendanceExcel = ({
     }
   });
 
+  // Resolve department name strictly — never use position as department
+  const resolveDept = (u) => {
+    // 1. departments array (multi-dept, comma-separated)
+    if (Array.isArray(u.departments) && u.departments.length > 0) {
+      const names = u.departments
+        .map((d) => (typeof d === "object" ? d.name : departmentsMap.get(String(d)) || d))
+        .filter((n) => n && typeof n === "string" && !n.match(/^[0-9a-fA-F-]{24,36}$/) && n.trim() !== "GENERAL_STAFF");
+      if (names.length > 0) return names.join(", ");
+    }
+    // 2. department object
+    if (u.department?.name && u.department.name.trim() !== "GENERAL_STAFF") return u.department.name.trim();
+    // 3. departmentId lookup
+    const deptId = u.departmentId || u.department_id;
+    if (deptId && departmentsMap.has(String(deptId))) return departmentsMap.get(String(deptId));
+    // 4. department as plain string (not UUID, not GENERAL_STAFF)
+    if (typeof u.department === "string" && u.department.trim() && !u.department.match(/^[0-9a-fA-F-]{24,36}$/) && u.department.trim() !== "GENERAL_STAFF") {
+      return u.department.trim();
+    }
+    // No department — leave blank
+    return "";
+  };
+
   const excelRows = [];
 
   (allUsers || []).forEach((user) => {
@@ -59,6 +81,7 @@ export const exportMonthlyAttendanceExcel = ({
     const row = {
       "Employee Name": user.name || "N/A",
       "Employee ID": user.employeeId || "N/A",
+      "Department": resolveDept(user),
       "Role": user.role || "EMPLOYEE",
     };
 
@@ -118,6 +141,7 @@ export const exportMonthlyAttendanceExcel = ({
   const colWidths = [
     { wch: 22 }, // Name
     { wch: 14 }, // ID
+    { wch: 24 }, // Department
     { wch: 14 }, // Role
   ];
 

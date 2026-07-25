@@ -32,32 +32,53 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
 
   const handleExport = async () => {
     try {
-      // Fetch overview, attendance records, and departments in parallel
-      const [usersRes, recordsRes, deptsRes] = await Promise.all([
+      // Fetch overview, attendance records, departments, and full employee/manager list in parallel
+      const [usersRes, recordsRes, deptsRes, empRes, mgrRes] = await Promise.all([
         API.get("/api/hr/dashboard/overview").catch(() => null),
         API.get("/api/attendance").catch(() => null),
         API.get("/api/departments").catch(() => null),
+        API.get("/api/hr/employees").catch(() => null),
+        API.get("/api/hr/managers").catch(() => null),
       ]);
 
       const allUsersMap = new Map();
 
       const addOrMergeUser = (u) => {
         if (!u) return;
-        const id = u.id || u._id || u.employeeId;
-        if (!id) return;
-        const existing = allUsersMap.get(id) || {};
-        allUsersMap.set(id, {
+        const uuid = u.id || u._id;
+        const empId = u.employeeId;
+        // Find existing entry by either key
+        const existing = (uuid && allUsersMap.get(uuid)) || (empId && allUsersMap.get(empId)) || {};
+        const merged = {
           ...existing,
           ...u,
           position: u.position || existing.position,
           department: u.department || existing.department,
-          departments: u.departments || existing.departments,
+          departments:
+            (Array.isArray(u.departments) && u.departments.length > 0)
+              ? u.departments
+              : (existing.departments || []),
           departmentId: u.departmentId || u.department_id || existing.departmentId,
-        });
+        };
+        // Store under both keys so any source can find this entry
+        if (uuid) allUsersMap.set(uuid, merged);
+        if (empId) allUsersMap.set(empId, merged);
       };
 
       if (usersRes?.data?.success) {
         (usersRes.data.data?.allUsers || []).forEach(addOrMergeUser);
+      }
+
+      // Merge full employee list (has departments[] with ids & names)
+      if (empRes?.data?.data) {
+        const empList = Array.isArray(empRes.data.data) ? empRes.data.data : [];
+        empList.forEach(addOrMergeUser);
+      }
+
+      // Merge full manager list (managers can have multiple departments[])
+      if (mgrRes?.data?.data) {
+        const mgrList = Array.isArray(mgrRes.data.data) ? mgrRes.data.data : [];
+        mgrList.forEach(addOrMergeUser);
       }
 
       let allRecords = [];
@@ -73,7 +94,14 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
         }
       });
 
-      const allUsers = Array.from(allUsersMap.values());
+      // Deduplicate: same object may be stored under both uuid and employeeId
+      const seenIds = new Set();
+      const allUsers = Array.from(allUsersMap.values()).filter((u) => {
+        const uid = u.id || u._id || u.employeeId;
+        if (!uid || seenIds.has(uid)) return false;
+        seenIds.add(uid);
+        return true;
+      });
 
       // Build department ID -> Name map
       const departmentsMap = new Map();
@@ -157,7 +185,7 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
                   <CheckCircle size={14} className="text-emerald-500" />
                   <span>Excel Report Format:</span>
                 </div>
-                <p>• Employee details (Name, ID, Role)</p>
+                <p>• Employee details (Name, ID, Department, Role)</p>
                 <p>• Daily status columns for Date 1 to end of month</p>
                 <p>• Total Days Present, Total Absent & Total Leaves</p>
               </div>
