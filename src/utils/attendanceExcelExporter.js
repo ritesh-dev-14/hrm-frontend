@@ -113,7 +113,6 @@ export const exportMonthlyAttendanceExcel = ({
 
       if (rec) {
         const status = rec.status;
-        totalWorkingHours += rec.totalHours || 0;
 
         if (status === "PRESENT") {
           row[colHeader] = "Present";

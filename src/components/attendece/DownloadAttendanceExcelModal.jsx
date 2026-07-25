@@ -32,10 +32,9 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
 
   const handleExport = async () => {
     try {
-      // Fetch all employees, departments, and attendance records in parallel
-      const [usersRes, empRes, recordsRes, deptsRes] = await Promise.all([
+      // Fetch overview, attendance records, and departments in parallel
+      const [usersRes, recordsRes, deptsRes] = await Promise.all([
         API.get("/api/hr/dashboard/overview").catch(() => null),
-        API.get("/api/hr/dashboard/employees").catch(() => null),
         API.get("/api/attendance").catch(() => null),
         API.get("/api/departments").catch(() => null),
       ]);
@@ -57,9 +56,6 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
 
       if (usersRes?.data?.success) {
         (usersRes.data.data?.allUsers || []).forEach(addOrMergeUser);
-      }
-      if (empRes?.data?.success) {
-        (empRes.data.data || []).forEach(addOrMergeUser);
       }
 
       let allRecords = [];
