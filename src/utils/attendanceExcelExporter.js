@@ -45,59 +45,6 @@ export const exportMonthlyAttendanceExcel = ({
     }
   });
 
-  // Helper function to resolve department name strictly (never mix position into department)
-  const resolveDepartmentName = (u) => {
-    if (!u) return "General Staff";
-
-    // 1. Array of departments (e.g. u.departments = [{ name: "Video Production Department" }, { name: "Web Development Department" }])
-    if (Array.isArray(u.departments) && u.departments.length > 0) {
-      const names = u.departments
-        .map((d) => (typeof d === "object" ? d.name : departmentsMap.get(String(d)) || d))
-        .filter((n) => n && typeof n === "string" && !n.match(/^[0-9a-fA-F-]{24,36}$/));
-      if (names.length > 0) return names.join(", ");
-    }
-
-    // 2. Direct department object name
-    if (u.department?.name) return u.department.name.trim();
-
-    // 3. Direct departmentName / department_name properties on user
-    if (u.departmentName) return String(u.departmentName).trim();
-    if (u.department_name) return String(u.department_name).trim();
-
-    // 4. Lookup departmentId / department_id in departmentsMap
-    const deptId = u.departmentId || u.department_id || (typeof u.department === "string" ? u.department : null);
-    if (deptId && departmentsMap.has(String(deptId))) {
-      return departmentsMap.get(String(deptId));
-    }
-
-    // 5. Direct string department (if not a UUID format and not GENERAL_STAFF)
-    if (typeof u.department === "string" && u.department.trim().length > 0) {
-      const isUuid = u.department.match(/^[0-9a-fA-F-]{24,36}$/);
-      if (!isUuid && u.department.trim() !== "GENERAL_STAFF") {
-        return u.department.trim();
-      }
-    }
-
-    // 6. Inspect attendance records for this user
-    const uId = u.id || u._id;
-    const eId = u.employeeId;
-    for (let day = 1; day <= daysInMonth; day++) {
-      const rec = recordMap.get(`${uId}_${day}`) || recordMap.get(`${eId}_${day}`);
-      if (Array.isArray(rec?.user?.departments) && rec.user.departments.length > 0) {
-        const names = rec.user.departments
-          .map((d) => (typeof d === "object" ? d.name : departmentsMap.get(String(d)) || d))
-          .filter((n) => n && typeof n === "string" && !n.match(/^[0-9a-fA-F-]{24,36}$/));
-        if (names.length > 0) return names.join(", ");
-      }
-      if (rec?.user?.department?.name) return rec.user.department.name;
-      if (rec?.user?.departmentId && departmentsMap.has(String(rec.user.departmentId))) {
-        return departmentsMap.get(String(rec.user.departmentId));
-      }
-    }
-
-    return "General Staff";
-  };
-
   const excelRows = [];
 
   (allUsers || []).forEach((user) => {
@@ -112,8 +59,6 @@ export const exportMonthlyAttendanceExcel = ({
     const row = {
       "Employee Name": user.name || "N/A",
       "Employee ID": user.employeeId || "N/A",
-      "Department": resolveDepartmentName(user),
-      "Position": user.position || "--",
       "Role": user.role || "EMPLOYEE",
     };
 
@@ -173,8 +118,6 @@ export const exportMonthlyAttendanceExcel = ({
   const colWidths = [
     { wch: 22 }, // Name
     { wch: 14 }, // ID
-    { wch: 24 }, // Dept
-    { wch: 18 }, // Position
     { wch: 14 }, // Role
   ];
 

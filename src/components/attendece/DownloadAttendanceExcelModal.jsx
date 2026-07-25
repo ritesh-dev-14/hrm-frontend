@@ -157,7 +157,7 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
                   <CheckCircle size={14} className="text-emerald-500" />
                   <span>Excel Report Format:</span>
                 </div>
-                <p>• Employee details (Name, ID, Department, Role)</p>
+                <p>• Employee details (Name, ID, Role)</p>
                 <p>• Daily status columns for Date 1 to end of month</p>
                 <p>• Total Days Present, Total Absent & Total Leaves</p>
               </div>
