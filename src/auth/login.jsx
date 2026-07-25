@@ -6,11 +6,14 @@ import {
   Mail,
   Loader2,
   AlertCircle,
+  ArrowRight,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
-import logo from "../assets/logo-removebg-.png"
+import logo from "../assets/logo-removebg-.png";
+import { motion } from "framer-motion";
 
 export default function Login() {
   const { login } = useAuth();
@@ -27,9 +30,7 @@ export default function Login() {
     general: "",
   });
 
-  const [showPassword, setShowPassword] =
-    useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -83,131 +84,186 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md ">
-        {/* HEADER */}
-        <div className="text-center mb-10">
-          <div className="w-10 h-10 mx-auto border border-slate-200 rounded-xl flex items-center justify-center mb-4">
-            {/* <Lock size={16} className="text-slate-700" /> */}
-            <img src={logo} alt="" />
-          </div>
-
-          <h1 className="text-xl font-medium text-slate-900">
-            Sign in
-          </h1>
-
-          <p className="text-sm text-slate-500 mt-1">
-            Enter your credentials to continue
-          </p>
+    <div className="min-h-screen w-full flex bg-slate-50">
+      {/* LEFT PANEL - Branding/Image (Hidden on mobile) */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] bg-slate-900 p-12 relative overflow-hidden">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-emerald-500/20 blur-[120px]" />
+          <div className="absolute bottom-[10%] -right-[20%] w-[60%] h-[60%] rounded-full bg-blue-500/20 blur-[120px]" />
+          {/* Subtle grid pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
         </div>
 
-        {/* CARD */}
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5"
-        >
-          {/* ERROR */}
-          {errors.general && (
-            <div className="flex items-center gap-2 text-sm text-red-600">
-              <AlertCircle size={14} />
-              {errors.general}
-            </div>
-          )}
-
-          {/* EMAIL */}
-          <div>
-            <label className="text-xs text-slate-500">
-              Email
-            </label>
-
-            <div className="relative mt-1">
-              <Mail
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="name@example.com"
-                className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-slate-900 transition"
-              />
-            </div>
-
-            {errors.email && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.email}
-              </p>
-            )}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md border border-white/10 shadow-xl">
+            <Sparkles className="text-emerald-400" size={24} />
           </div>
+          <span className="text-white text-xl font-bold tracking-tight">We Promote</span>
+        </div>
 
-          {/* PASSWORD */}
-          <div>
-            <label className="text-xs text-slate-500">
-              Password
-            </label>
-
-            <div className="relative mt-1">
-              <Lock
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                type={
-                  showPassword ? "text" : "password"
-                }
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full pl-9 pr-9 py-2.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-slate-900 transition"
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword(!showPassword)
-                }
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-              >
-                {showPassword ? (
-                  <EyeOff size={14} />
-                ) : (
-                  <Eye size={14} />
-                )}
-              </button>
-            </div>
-
-            {errors.password && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.password}
-              </p>
-            )}
-          </div>
-
-          {/* BUTTON */}
-          <button
-            disabled={loading}
-            className="w-full py-2.5 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition flex items-center justify-center"
+        <div className="relative z-10 max-w-lg mt-auto mb-20">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-6"
           >
-            {loading ? (
-              <Loader2
-                size={16}
-                className="animate-spin"
-              />
-            ) : (
-              "Sign in"
-            )}
-          </button>
-        </form>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-medium text-emerald-100">Internal Portal</span>
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-4xl xl:text-5xl font-bold text-white leading-[1.15] tracking-tight mb-6"
+          >
+            Empowering your workforce, <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+              one step at a time.
+            </span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-slate-400 text-lg leading-relaxed font-light"
+          >
+            Sign in to access your dashboard, manage attendance, track performance, and collaborate seamlessly with your team.
+          </motion.p>
+        </div>
 
-        {/* FOOTER */}
-        <p className="text-center text-xs text-slate-400 mt-8">
-          Contact admin for access
-        </p>
+        <div className="relative z-10 flex items-center justify-between text-slate-500 text-sm font-medium">
+          <p>© 2026 We Promote. All rights reserved.</p>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL - Login Form */}
+      <div className="w-full lg:w-[55%] flex items-center justify-center p-6 sm:p-12 md:p-24 bg-white relative">
+        {/* Mobile Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none lg:hidden">
+          <div className="absolute top-[-10%] right-[-5%] w-72 h-72 rounded-full bg-emerald-50 blur-[80px]" />
+          <div className="absolute bottom-[-10%] left-[-5%] w-72 h-72 rounded-full bg-blue-50 blur-[80px]" />
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md relative z-10"
+        >
+          {/* Logo for mobile only */}
+          <div className="lg:hidden flex justify-center mb-8">
+            <div className="bg-white shadow-xl shadow-slate-200/50 p-3 rounded-2xl border border-slate-100">
+              <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
+            </div>
+          </div>
+
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Welcome back</h2>
+            <p className="text-slate-500">Please enter your details to sign in.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* ERROR */}
+            {errors.general && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                className="flex items-center gap-3 p-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl"
+              >
+                <AlertCircle size={18} className="shrink-0 text-red-500" />
+                <p className="font-medium">{errors.general}</p>
+              </motion.div>
+            )}
+
+            <div className="space-y-5">
+              {/* EMAIL */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-slate-700">
+                  Email Address
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail size={18} className="text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="name@wepromote.com"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-xs text-red-500 font-medium ml-1">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* PASSWORD */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-slate-700">
+                  Password
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock size={18} className="text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-12 py-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-xs text-red-500 font-medium ml-1">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* BUTTON */}
+            <button
+              disabled={loading}
+              className="group w-full relative flex items-center justify-center gap-2 py-3.5 px-4 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 focus:ring-4 focus:ring-slate-900/10 transition-all disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden shadow-lg shadow-slate-900/10"
+            >
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <>
+                  <span>Sign in to account</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* FOOTER */}
+          <div className="mt-10 pt-8 border-t border-slate-100 flex flex-col items-center">
+            {/* Logo for desktop, below form */}
+            <div className="hidden lg:flex justify-center mb-6">
+              <img src={logo} alt="Logo" className="h-10 object-contain opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-300" />
+            </div>
+            <p className="text-sm text-slate-500 text-center">
+              Don't have an account or forgot password? <br/>
+              <span className="font-medium text-slate-900 hover:text-emerald-600 cursor-pointer transition-colors">Contact your administrator.</span>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
