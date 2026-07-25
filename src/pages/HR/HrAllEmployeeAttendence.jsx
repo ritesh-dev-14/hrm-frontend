@@ -7,7 +7,9 @@ import {
   TimerReset,
   Filter,
   CircleDot,
-  Clock
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -107,6 +109,18 @@ export default function HrAttendance() {
 
     return filtered;
   }, [attendance, search, selectedFilter]);
+
+  const [isExpanded, setIsExpanded] = useState(false);
+  const INITIAL_SHOW_COUNT = 5;
+
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [search, selectedFilter]);
+
+  const visibleAttendance = useMemo(() => {
+    if (isExpanded) return filteredAttendance;
+    return filteredAttendance.slice(0, INITIAL_SHOW_COUNT);
+  }, [filteredAttendance, isExpanded]);
 
   // DYNAMIC DASHBOARD STATS
   const dynamicStats = useMemo(() => {
@@ -330,7 +344,7 @@ export default function HrAttendance() {
 
                 {/* TABLE ROWS */}
                 <div className="divide-y divide-slate-100">
-                  {filteredAttendance.map((item, index) => {
+                  {visibleAttendance.map((item, index) => {
                     let statusBadge = "";
                     if (item.status === "PRESENT") statusBadge = "bg-emerald-50 text-emerald-600 border-emerald-200";
                     else if (item.status === "HALF_DAY") statusBadge = "bg-amber-50 text-amber-600 border-amber-200";
@@ -393,6 +407,28 @@ export default function HrAttendance() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* EXPAND / COLLAPSE BUTTON */}
+            {filteredAttendance?.length > INITIAL_SHOW_COUNT && (
+              <div className="mt-6 flex justify-center items-center pb-4">
+                <button
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  className="px-6 py-3 rounded-2xl bg-white border border-indigo-100 shadow-sm hover:shadow-md text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/60 text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 group cursor-pointer"
+                >
+                  {isExpanded ? (
+                    <>
+                      <span>Show Less</span>
+                      <ChevronUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Expand All Records ({filteredAttendance.length - INITIAL_SHOW_COUNT} More)</span>
+                      <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>

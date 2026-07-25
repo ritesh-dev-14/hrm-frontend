@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, Briefcase, FileText, CheckCircle2, Clock3, XCircle, TrendingUp, ChevronRight
+  Users, Briefcase, FileText, CheckCircle2, Clock3, XCircle, TrendingUp, ChevronRight, ChevronDown, ChevronUp
 } from "lucide-react";
 import API from "../../services/api";
 
@@ -83,6 +83,14 @@ const AdminPage = () => {
       </div>
     );
   }
+
+  const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
+  const INITIAL_EMP_COUNT = 8;
+
+  const visibleEmployees = useMemo(() => {
+    if (isEmployeesExpanded) return employees;
+    return employees.slice(0, INITIAL_EMP_COUNT);
+  }, [employees, isEmployeesExpanded]);
 
   const counts = overview?.counts || {};
   const assignmentSummary = overview?.assignmentSummary || {};
@@ -305,7 +313,7 @@ const AdminPage = () => {
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">Team Roster & Performance</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {employees.map((emp, i) => (
+            {visibleEmployees.map((emp, i) => (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -344,6 +352,28 @@ const AdminPage = () => {
               <div className="col-span-full text-center py-8 text-slate-400 font-medium">No employee data found.</div>
             )}
           </div>
+
+          {/* EXPAND / COLLAPSE BUTTON */}
+          {employees?.length > INITIAL_EMP_COUNT && (
+            <div className="mt-6 flex justify-center items-center">
+              <button
+                onClick={() => setIsEmployeesExpanded((prev) => !prev)}
+                className="px-6 py-3 rounded-2xl bg-white border border-indigo-100 shadow-sm hover:shadow-md text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/60 text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 group cursor-pointer"
+              >
+                {isEmployeesExpanded ? (
+                  <>
+                    <span>Show Less</span>
+                    <ChevronUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                  </>
+                ) : (
+                  <>
+                    <span>Expand Team Roster ({employees.length - INITIAL_EMP_COUNT} More)</span>
+                    <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </div>

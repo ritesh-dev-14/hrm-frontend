@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Briefcase, ClipboardList, TrendingUp, Mail, CalendarDays,
   CheckCircle2, Clock3, XCircle, Loader2, Search, ChevronRight,
-  UserCheck, Layers, CheckSquare, Activity
+  UserCheck, Layers, CheckSquare, Activity, ChevronDown, ChevronUp
 } from "lucide-react";
 
 import API from "../../services/api";
@@ -69,6 +69,13 @@ const HrHomePage = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
 
+  const [isRosterExpanded, setIsRosterExpanded] = useState(false);
+  const INITIAL_ROSTER_COUNT = 5;
+
+  useEffect(() => {
+    setIsRosterExpanded(false);
+  }, [selectedDate]);
+
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
@@ -102,6 +109,11 @@ const HrHomePage = () => {
       };
     });
   }, [dashboardData?.allUsers, attendanceRecords]);
+
+  const visibleRoster = useMemo(() => {
+    if (isRosterExpanded) return rosterData;
+    return rosterData.slice(0, INITIAL_ROSTER_COUNT);
+  }, [rosterData, isRosterExpanded]);
 
   useEffect(() => {
     fetchDashboard();
@@ -250,7 +262,7 @@ const HrHomePage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {rosterData.map((user, i) => {
+                      {visibleRoster.map((user, i) => {
                         const status = user.attendance?.status || "ABSENT";
                         const inTime = user.attendance?.startTime ? new Date(user.attendance.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                         const outTime = user.attendance?.endTime ? new Date(user.attendance.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
@@ -303,6 +315,28 @@ const HrHomePage = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* EXPAND / COLLAPSE BUTTON */}
+            {rosterData?.length > INITIAL_ROSTER_COUNT && (
+              <div className="mt-6 flex justify-center items-center">
+                <button
+                  onClick={() => setIsRosterExpanded((prev) => !prev)}
+                  className="px-6 py-3 rounded-2xl bg-white border border-indigo-100 shadow-sm hover:shadow-md text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/60 text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 group cursor-pointer"
+                >
+                  {isRosterExpanded ? (
+                    <>
+                      <span>Show Less</span>
+                      <ChevronUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Expand Company Roster ({rosterData.length - INITIAL_ROSTER_COUNT} More)</span>
+                      <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>

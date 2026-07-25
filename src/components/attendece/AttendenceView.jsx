@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Calendar,
   Clock,
   CircleDot,
   Filter,
-  Activity
+  Activity,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -29,6 +31,13 @@ export default function AttendanceView({
 }) {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [selectedFilter, selectedStatus]);
+
+  const INITIAL_SHOW_COUNT = 5;
 
   const getIcon = (label) => {
     if (label.includes("Present")) {
@@ -95,6 +104,11 @@ export default function AttendanceView({
     return filtered;
   }, [records, selectedFilter, selectedStatus]);
 
+  const visibleRecords = useMemo(() => {
+    if (isExpanded) return filteredRecords;
+    return filteredRecords?.slice(0, INITIAL_SHOW_COUNT);
+  }, [filteredRecords, isExpanded]);
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
       {/* Background ambient glows */}
@@ -141,7 +155,7 @@ export default function AttendanceView({
         </motion.div>
 
         {/* DEDICATED ATTENDANCE ROSTER SECTION */}
-        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col min-h-[500px]">
+        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col min-h-[350px]">
           
           {/* List Header & Filters */}
           <div className="p-6 md:p-8 border-b border-slate-100/70 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/50">
@@ -152,6 +166,11 @@ export default function AttendanceView({
               <div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
                   Attendance Records
+                  {filteredRecords?.length > 0 && (
+                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                      {isExpanded ? `Showing All (${filteredRecords.length})` : `Showing ${visibleRecords.length} of ${filteredRecords.length}`}
+                    </span>
+                  )}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1 font-medium">Daily check-in logs and aggregate hours</p>
               </div>
@@ -218,8 +237,8 @@ export default function AttendanceView({
                           <p className="text-indigo-900 font-semibold text-sm tracking-wide">Loading attendance...</p>
                         </td>
                       </tr>
-                    ) : filteredRecords?.length > 0 ? (
-                      filteredRecords.map((r, i) => {
+                    ) : visibleRecords?.length > 0 ? (
+                      visibleRecords.map((r, i) => {
                         let statusBadge = "";
                         if (r.status === "PRESENT") statusBadge = "bg-emerald-50 text-emerald-600 border-emerald-200";
                         else statusBadge = "bg-rose-50 text-rose-600 border-rose-200";
@@ -282,8 +301,8 @@ export default function AttendanceView({
                 <div className="py-12 text-center bg-white border border-slate-200 rounded-[28px] shadow-sm">
                   <p className="text-indigo-900 font-semibold text-sm tracking-wide">Loading attendance...</p>
                 </div>
-              ) : filteredRecords?.length > 0 ? (
-                filteredRecords.map((r, i) => {
+              ) : visibleRecords?.length > 0 ? (
+                visibleRecords.map((r, i) => {
                   let statusBadge = "";
                   if (r.status === "PRESENT") statusBadge = "bg-emerald-50 text-emerald-600 border-emerald-200";
                   else statusBadge = "bg-rose-50 text-rose-600 border-rose-200";
@@ -351,6 +370,28 @@ export default function AttendanceView({
                 </div>
               )}
             </div>
+
+            {/* EXPAND / COLLAPSE BUTTON */}
+            {filteredRecords?.length > INITIAL_SHOW_COUNT && (
+              <div className="mt-6 flex justify-center items-center">
+                <button
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  className="px-6 py-3 rounded-2xl bg-white border border-indigo-100 shadow-sm hover:shadow-md text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/60 text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 group cursor-pointer"
+                >
+                  {isExpanded ? (
+                    <>
+                      <span>Show Less</span>
+                      <ChevronUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Expand All Records ({filteredRecords.length - INITIAL_SHOW_COUNT} More)</span>
+                      <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

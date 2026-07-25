@@ -6,6 +6,8 @@ import {
   Users,
   Loader2,
   Clock,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import AttendanceCard from "../../components/attendece/AttendenceCard";
@@ -16,6 +18,15 @@ const ManagerHomePage = () => {
   const [projectsCount, setProjectsCount] = useState(0);
   const [workingHours, setWorkingHours] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
+  const INITIAL_EMP_COUNT = 5;
+
+  const visibleEmployees = useMemo(() => {
+    if (!dashboard?.employees) return [];
+    if (isEmployeesExpanded) return dashboard.employees;
+    return dashboard.employees.slice(0, INITIAL_EMP_COUNT);
+  }, [dashboard?.employees, isEmployeesExpanded]);
 
   const user =
     JSON.parse(localStorage.getItem("user")) || {};
@@ -237,66 +248,63 @@ const ManagerHomePage = () => {
               {/* EMPLOYEE LIST */}
 
               <div>
-                {dashboard?.employees?.length >
-                  0 ? (
-                  dashboard.employees.map(
-                    (employee) => (
-                      <div
-                        key={employee.id}
-                        className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-4 px-6 sm:px-8 py-6 border-b border-slate-100 hover:bg-slate-50/70 transition-all"
-                      >
-                        {/* USER */}
+                {visibleEmployees.length > 0 ? (
+                  visibleEmployees.map((employee) => (
+                    <div
+                      key={employee.id}
+                      className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-4 px-6 sm:px-8 py-6 border-b border-slate-100 hover:bg-slate-50/70 transition-all"
+                    >
+                      {/* USER */}
 
-                        <div className="lg:col-span-4">
-                          <h3 className="text-base font-semibold text-slate-900">
-                            {employee.name}
-                          </h3>
+                      <div className="lg:col-span-4">
+                        <h3 className="text-base font-semibold text-slate-900">
+                          {employee.name}
+                        </h3>
 
-                          <p className="text-sm text-slate-500 mt-1">
-                            {
-                              employee.employeeId
-                            }
-                          </p>
+                        <p className="text-sm text-slate-500 mt-1">
+                          {
+                            employee.employeeId
+                          }
+                        </p>
 
-                          <p className="text-sm text-slate-400 mt-1 break-all">
-                            {employee.email}
-                          </p>
-                        </div>
-
-                        {/* STATS */}
-
-                        <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                          <MiniStat
-                            title="Assigned"
-                            value={
-                              employee.totalTasksAssigned
-                            }
-                          />
-
-                          <MiniStat
-                            title="Completed"
-                            value={
-                              employee.completedTasksCount
-                            }
-                          />
-
-                          <MiniStat
-                            title="Progress"
-                            value={
-                              employee.inProgressTasksCount
-                            }
-                          />
-
-                          <MiniStat
-                            title="Draft"
-                            value={
-                              employee.draftTasksCount
-                            }
-                          />
-                        </div>
+                        <p className="text-sm text-slate-400 mt-1 break-all">
+                          {employee.email}
+                        </p>
                       </div>
-                    ),
-                  )
+
+                      {/* STATS */}
+
+                      <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <MiniStat
+                          title="Assigned"
+                          value={
+                            employee.totalTasksAssigned
+                          }
+                        />
+
+                        <MiniStat
+                          title="Completed"
+                          value={
+                            employee.completedTasksCount
+                          }
+                        />
+
+                        <MiniStat
+                          title="Progress"
+                          value={
+                            employee.inProgressTasksCount
+                          }
+                        />
+
+                        <MiniStat
+                          title="Draft"
+                          value={
+                            employee.draftTasksCount
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))
                 ) : (
                   <div className="py-20 text-center">
                     <p className="text-sm text-slate-400">
@@ -305,6 +313,28 @@ const ManagerHomePage = () => {
                   </div>
                 )}
               </div>
+
+              {/* EXPAND / COLLAPSE BUTTON */}
+              {dashboard?.employees?.length > INITIAL_EMP_COUNT && (
+                <div className="p-6 border-t border-slate-100 flex justify-center items-center bg-slate-50/50">
+                  <button
+                    onClick={() => setIsEmployeesExpanded((prev) => !prev)}
+                    className="px-6 py-3 rounded-2xl bg-white border border-indigo-100 shadow-sm hover:shadow-md text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/60 text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 group cursor-pointer"
+                  >
+                    {isEmployeesExpanded ? (
+                      <>
+                        <span>Show Less</span>
+                        <ChevronUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Expand Employees Overview ({dashboard.employees.length - INITIAL_EMP_COUNT} More)</span>
+                        <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
