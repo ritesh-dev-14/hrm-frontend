@@ -21,33 +21,25 @@ import {
   Award,
   ChevronDown,
   Lock,
+  Check,
 } from "lucide-react";
 
 export default function EmployeeDetails() {
   const { id } = useParams();
 
   const [employee, setEmployee] = useState(null);
-
   const [attendance, setAttendance] = useState([]);
-
   const [leaveData, setLeaveData] = useState(null);
+  const [departments, setDepartments] = useState([]);
 
-  const [departments, setDepartments] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState(null);
-
-  const [isEditing, setIsEditing] =
-    useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
     email: "",
-    department: "",
+    departments: [],
     position: "",
     password: "",
   });
@@ -60,65 +52,46 @@ export default function EmployeeDetails() {
   const fetchData = async () => {
     try {
       setLoading(true);
-
       setError(null);
 
-      const [
-        empRes,
-        attRes,
-        leaveRes,
-        deptRes,
-      ] = await Promise.all([
-        API.get(`/api/hr/employee/${id}`),
-
-        API.get(`/api/attendance/${id}`),
-
-        API.get(
-          `/api/hr/leave/employee/${id}`
-        ),
-
-        API.get(`/api/departments`),
+      const [empRes, attRes, leaveRes, deptRes] = await Promise.all([
+        API.get(`/api/hr/employee/${id}`).catch(() => null),
+        API.get(`/api/attendance/${id}`).catch(() => null),
+        API.get(`/api/hr/leave/employee/${id}`).catch(() => null),
+        API.get(`/api/departments`).catch(() => null),
       ]);
 
-      const empData =
-        empRes?.data?.data || null;
-
-      const attData =
-        attRes?.data?.data?.records || [];
-
-      const leaveStats =
-        leaveRes?.data?.data || null;
-
-      const deptData =
-        deptRes?.data?.data || [];
+      const empData = empRes?.data?.data || null;
+      const attData = attRes?.data?.data?.records || [];
+      const leaveStats = leaveRes?.data?.data || null;
+      const deptData = deptRes?.data?.data || [];
 
       setEmployee(empData);
-
       setAttendance(attData);
-
       setLeaveData(leaveStats);
-
       setDepartments(deptData);
+
+      let initialDepts = [];
+      if (Array.isArray(empData?.departments) && empData.departments.length > 0) {
+        initialDepts = empData.departments.map((d) => (typeof d === "object" ? d.name : d));
+      } else if (Array.isArray(empData?.department)) {
+        initialDepts = empData.department.map((d) => (typeof d === "object" ? d.name : d));
+      } else if (empData?.department?.name) {
+        initialDepts = [empData.department.name];
+      } else if (typeof empData?.department === "string" && empData.department) {
+        initialDepts = [empData.department];
+      }
 
       setForm({
         name: empData?.name || "",
-
         email: empData?.email || "",
-
-        department:
-          empData?.department?.name || "",
-
-        position:
-          empData?.position || "",
-
+        departments: initialDepts,
+        position: empData?.position || "",
         password: "",
       });
     } catch (err) {
-      console.log(err);
-
-      setError(
-        "Failed to load employee details"
-      );
+      console.error(err);
+      setError("Failed to load profile details");
     } finally {
       setLoading(false);
     }
@@ -128,19 +101,16 @@ export default function EmployeeDetails() {
   const handleSave = async () => {
     try {
       let endpoint = "";
-
       let payload = {};
 
       if (employee.role === "MANAGER") {
         endpoint = `/api/hr/manager/${employee.employeeId}`;
 
         payload = {
-          name: form.name,
-
-          email: form.email,
-
-          department: form.department,
-
+          name: form.name.trim(),
+          email: form.email.trim(),
+          department: form.departments, // Array of department names e.g. ["Video Production Department", "Web Development Department"]
+          position: form.position.trim(), // Send position for managers!
           ...(form.password && {
             password: form.password,
           }),
@@ -149,69 +119,55 @@ export default function EmployeeDetails() {
         endpoint = `/api/hr/employee/${employee.employeeId}`;
 
         payload = {
-          name: form.name,
-
-          email: form.email,
-
-          department: form.department,
-
-          position: form.position,
-
+          name: form.name.trim(),
+          email: form.email.trim(),
+          department: form.departments.length > 0 ? form.departments : "",
+          position: form.position.trim(), // Send position for employees!
           ...(form.password && {
             password: form.password,
           }),
         };
       }
 
-      const res = await API.put(
-        endpoint,
-        payload
-      );
+      const res = await API.put(endpoint, payload);
+      const updated = res?.data?.data;
 
-      const updated =
-        res?.data?.data;
+      if (updated) {
+        setEmployee(updated);
 
-      setEmployee(updated);
+        let updatedDepts = [];
+        if (Array.isArray(updated?.departments) && updated.departments.length > 0) {
+          updatedDepts = updated.departments.map((d) => (typeof d === "object" ? d.name : d));
+        } else if (Array.isArray(updated?.department)) {
+          updatedDepts = updated.department.map((d) => (typeof d === "object" ? d.name : d));
+        } else if (updated?.department?.name) {
+          updatedDepts = [updated.department.name];
+        } else if (typeof updated?.department === "string" && updated.department) {
+          updatedDepts = [updated.department];
+        }
 
-      setForm({
-        name: updated?.name || "",
-
-        email: updated?.email || "",
-
-        department:
-          updated?.department?.name || "",
-
-        position:
-          updated?.position || "",
-
-        password: "",
-      });
+        setForm({
+          name: updated?.name || "",
+          email: updated?.email || "",
+          departments: updatedDepts,
+          position: updated?.position || "",
+          password: "",
+        });
+      }
 
       setIsEditing(false);
     } catch (err) {
-      console.log(err);
-
-      alert(
-        err?.response?.data?.message ||
-          "Update failed"
-      );
+      console.error(err);
+      alert(err?.response?.data?.message || "Update failed");
     }
   };
 
   // ---------------- ATTENDANCE STATS ----------------
   const attendanceStats = useMemo(() => {
     return {
-      present: attendance.filter(
-        (a) => a.status === "PRESENT"
-      ).length,
-
-      leave: attendance.filter(
-        (a) => a.status === "LEAVE"
-      ).length,
-
-      absent: attendance.filter(
-        (a) => a.status === "ABSENT"
-      ).length,
+      present: attendance.filter((a) => a.status === "PRESENT").length,
+      leave: attendance.filter((a) => a.status === "LEAVE").length,
+      absent: attendance.filter((a) => a.status === "ABSENT").length,
     };
   }, [attendance]);
 
@@ -221,7 +177,6 @@ export default function EmployeeDetails() {
       <div className="p-8 flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-[3px] border-slate-200 border-t-slate-900 rounded-full animate-spin" />
-
           <p className="text-sm text-slate-500 font-medium tracking-wide">
             Loading profile analytics...
           </p>
@@ -232,15 +187,13 @@ export default function EmployeeDetails() {
 
   if (error)
     return (
-      <div className="p-8 text-center text-rose-500 font-medium">
-        {error}
-      </div>
+      <div className="p-8 text-center text-rose-500 font-medium">{error}</div>
     );
 
   if (!employee)
     return (
       <div className="p-8 text-center text-slate-500 font-medium">
-        Employee not found
+        Employee or Manager not found
       </div>
     );
 
@@ -261,19 +214,27 @@ export default function EmployeeDetails() {
                 </span>
               </div>
 
+              {/* DEPARTMENT & POSITION PILLS */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {employee.department && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium">
+                {Array.isArray(employee.departments) && employee.departments.length > 0 ? (
+                  employee.departments.map((dept, idx) => (
+                    <span
+                      key={dept.id || idx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold"
+                    >
+                      <Building2 size={12} />
+                      {dept.name || dept}
+                    </span>
+                  ))
+                ) : employee.department ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
                     <Building2 size={12} />
-                    {
-                      employee?.department
-                        ?.name
-                    }
+                    {employee.department.name || employee.department}
                   </span>
-                )}
+                ) : null}
 
                 {employee.position && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">
                     <Award size={12} />
                     {employee.position}
                   </span>
@@ -282,10 +243,8 @@ export default function EmployeeDetails() {
             </div>
 
             <button
-              onClick={() =>
-                setIsEditing(!isEditing)
-              }
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+              onClick={() => setIsEditing(!isEditing)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
                 isEditing
                   ? "bg-slate-100 text-slate-700"
                   : "bg-white hover:bg-slate-50"
@@ -333,19 +292,18 @@ export default function EmployeeDetails() {
               }
             />
 
-            {/* DEPARTMENT SELECT */}
-            <SelectInput
-              label="Department"
-              value={form.department}
-              disabled={!isEditing}
-              icon={<Building2 size={15} />}
-              onChange={(e) =>
+            {/* MULTI-SELECT DEPARTMENT */}
+            <MultiSelectDepartment
+              label="Department(s)"
+              selectedDepts={form.departments}
+              onChange={(updatedDepts) =>
                 setForm({
                   ...form,
-                  department:
-                    e.target.value,
+                  departments: updatedDepts,
                 })
               }
+              disabled={!isEditing}
+              icon={<Building2 size={15} />}
               options={departments}
             />
 
@@ -357,8 +315,7 @@ export default function EmployeeDetails() {
               onChange={(e) =>
                 setForm({
                   ...form,
-                  position:
-                    e.target.value,
+                  position: e.target.value,
                 })
               }
             />
@@ -374,20 +331,19 @@ export default function EmployeeDetails() {
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    password:
-                      e.target.value,
+                    password: e.target.value,
                   })
                 }
               />
             )}
           </div>
 
-          {/* SAVE */}
+          {/* SAVE BUTTON */}
           {isEditing && (
             <div className="mt-8 pt-5 border-t border-slate-100 flex justify-end">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-semibold"
+                className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
               >
                 <Save size={15} />
                 Save Changes
@@ -396,11 +352,11 @@ export default function EmployeeDetails() {
           )}
         </div>
 
-        {/* LEAVE */}
+        {/* LEAVE MANAGEMENT */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
           <SectionHeader
             title="Leave Management"
-            subtitle="Overview of employee leave data"
+            subtitle="Overview of leave data"
             icon={<Briefcase size={18} />}
           />
 
@@ -409,190 +365,110 @@ export default function EmployeeDetails() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
                 <StatCard
                   title="Total Leaves"
-                  value={
-                    leaveData.totalLeaves
-                  }
-                  icon={
-                    <CalendarDays
-                      size={18}
-                    />
-                  }
+                  value={leaveData.totalLeaves}
+                  icon={<CalendarDays size={18} />}
                 />
-
                 <StatCard
                   title="Approved"
-                  value={
-                    leaveData.approved
-                  }
-                  icon={
-                    <CheckCircle2
-                      size={18}
-                    />
-                  }
+                  value={leaveData.approved}
+                  icon={<CheckCircle2 size={18} />}
                 />
-
                 <StatCard
                   title="Pending"
-                  value={
-                    leaveData.pending
-                  }
-                  icon={
-                    <Clock3 size={18} />
-                  }
+                  value={leaveData.pending}
+                  icon={<Clock3 size={18} />}
                 />
-
                 <StatCard
                   title="Rejected"
-                  value={
-                    leaveData.rejected
-                  }
-                  icon={
-                    <XCircle
-                      size={18}
-                    />
-                  }
+                  value={leaveData.rejected}
+                  icon={<XCircle size={18} />}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                <BalanceCard
-                  title="Casual Leave"
-                  value={
-                    leaveData.balance
-                      ?.casualLeft
-                  }
-                />
-
-                <BalanceCard
-                  title="Sick Leave"
-                  value={
-                    leaveData.balance
-                      ?.sickLeft
-                  }
-                />
+              {/* LEAVE HISTORY TABLE */}
+              <div className="mt-8">
+                <h3 className="text-sm font-bold text-slate-800 mb-4">
+                  Recent Leave Requests
+                </h3>
+                {leaveData.recentRequests?.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          <th className="py-3 px-4">Leave Type</th>
+                          <th className="py-3 px-4">From</th>
+                          <th className="py-3 px-4">To</th>
+                          <th className="py-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                        {leaveData.recentRequests.map((req) => (
+                          <tr key={req.id} className="hover:bg-slate-50/50">
+                            <td className="py-3.5 px-4 font-bold text-slate-900">
+                              {req.type || "Leave"}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {req.startDate ? new Date(req.startDate).toLocaleDateString() : "--"}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {req.endDate ? new Date(req.endDate).toLocaleDateString() : "--"}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  req.status === "APPROVED"
+                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                    : req.status === "REJECTED"
+                                    ? "bg-rose-50 text-rose-600 border border-rose-100"
+                                    : "bg-amber-50 text-amber-600 border border-amber-100"
+                                }`}
+                              >
+                                {req.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 font-medium py-4">
+                    No recent leave requests logged.
+                  </p>
+                )}
               </div>
             </>
           ) : (
-            <EmptyState text="No leave data found" />
+            <p className="text-xs text-slate-400 font-medium mt-4">
+              Leave records unavailable.
+            </p>
           )}
         </div>
 
-        {/* ATTENDANCE */}
+        {/* ATTENDANCE ANALYTICS */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
           <SectionHeader
-            title="Attendance Logs"
-            subtitle="Daily attendance records"
+            title="Attendance Overview"
+            subtitle="Tracked check-in activity & attendance history"
             icon={<TimerReset size={18} />}
           />
 
-          <div className="grid grid-cols-3 gap-4 mt-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <StatCard
-              title="Present"
-              value={
-                attendanceStats.present
-              }
-              icon={
-                <CheckCircle2
-                  size={18}
-                />
-              }
+              title="Total Present"
+              value={attendanceStats.present}
+              icon={<LogIn size={18} className="text-emerald-500" />}
             />
-
             <StatCard
-              title="Leave"
-              value={
-                attendanceStats.leave
-              }
-              icon={
-                <CalendarDays
-                  size={18}
-                />
-              }
+              title="Total Leaves"
+              value={attendanceStats.leave}
+              icon={<LogOut size={18} className="text-amber-500" />}
             />
-
             <StatCard
-              title="Absent"
-              value={
-                attendanceStats.absent
-              }
-              icon={
-                <XCircle
-                  size={18}
-                />
-              }
+              title="Total Absences"
+              value={attendanceStats.absent}
+              icon={<XCircle size={18} className="text-rose-500" />}
             />
-          </div>
-
-          <div className="space-y-3">
-            {attendance.length > 0 ? (
-              attendance.map((record) => (
-                <div
-                  key={record.id}
-                  className="border border-slate-100 rounded-xl p-4 bg-slate-50"
-                >
-                  <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <StatusBadge
-                        status={
-                          record.status
-                        }
-                      />
-
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">
-                          {new Date(
-                            record.date
-                          ).toLocaleDateString()}
-                        </p>
-
-                        <p className="text-xs text-slate-400 mt-1">
-                          Logged at{" "}
-                          {new Date(
-                            record.createdAt
-                          ).toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <TimeBox
-                        label="Check In"
-                        value={
-                          record.startTime
-                            ? new Date(
-                                record.startTime
-                              ).toLocaleTimeString()
-                            : "-- : --"
-                        }
-                        icon={
-                          <LogIn
-                            size={14}
-                          />
-                        }
-                      />
-
-                      <TimeBox
-                        label="Check Out"
-                        value={
-                          record.endTime
-                            ? new Date(
-                                record.endTime
-                              ).toLocaleTimeString()
-                            : "-- : --"
-                        }
-                        icon={
-                          <LogOut
-                            size={14}
-                          />
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <EmptyState text="No attendance logs found" />
-            )}
           </div>
         </div>
       </div>
@@ -601,144 +477,39 @@ export default function EmployeeDetails() {
 }
 
 // ---------------- SECTION HEADER ----------------
-function SectionHeader({
-  title,
-  subtitle,
-  icon,
-}) {
+function SectionHeader({ title, subtitle, icon }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+      <div className="p-2.5 bg-slate-100 text-slate-700 rounded-xl">
         {icon}
       </div>
-
       <div>
-        <h2 className="text-lg font-bold text-slate-900">
-          {title}
-        </h2>
-
-        <p className="text-xs text-slate-400">
-          {subtitle}
-        </p>
+        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <p className="text-xs text-slate-400 font-medium">{subtitle}</p>
       </div>
     </div>
   );
 }
 
 // ---------------- STAT CARD ----------------
-function StatCard({
-  title,
-  value,
-  icon,
-}) {
+function StatCard({ title, value, icon }) {
   return (
-    <div className="border border-slate-100 rounded-xl p-4 flex items-center justify-between">
+    <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
       <div>
-        <p className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
           {title}
         </p>
-
-        <h3 className="text-2xl font-bold text-slate-900 mt-1">
-          {value}
-        </h3>
+        <h3 className="text-2xl font-black text-slate-900 mt-1">{value}</h3>
       </div>
-
-      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+      <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-slate-500">
         {icon}
       </div>
-    </div>
-  );
-}
-
-// ---------------- BALANCE CARD ----------------
-function BalanceCard({
-  title,
-  value,
-}) {
-  return (
-    <div className="border border-slate-100 rounded-xl p-4 bg-slate-50 flex items-center justify-between">
-      <div>
-        <p className="text-xs font-semibold text-slate-400">
-          {title}
-        </p>
-
-        <h3 className="text-2xl font-bold text-slate-900 mt-1">
-          {value} Days
-        </h3>
-      </div>
-
-      <div className="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center">
-        <CalendarDays size={16} />
-      </div>
-    </div>
-  );
-}
-
-// ---------------- STATUS BADGE ----------------
-function StatusBadge({ status }) {
-  const styles = {
-    PRESENT:
-      "bg-emerald-50 text-emerald-700 border-emerald-200",
-
-    LEAVE:
-      "bg-amber-50 text-amber-700 border-amber-200",
-
-    ABSENT:
-      "bg-rose-50 text-rose-700 border-rose-200",
-  };
-
-  return (
-    <span
-      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase border ${
-        styles[status]
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
-
-// ---------------- TIME BOX ----------------
-function TimeBox({
-  label,
-  value,
-  icon,
-}) {
-  return (
-    <div className="min-w-[120px] border border-slate-200 rounded-lg px-3 py-2 bg-white">
-      <div className="flex items-center gap-1 mb-1">
-        {icon}
-
-        <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-          {label}
-        </p>
-      </div>
-
-      <h4 className="text-xs font-bold text-slate-800">
-        {value}
-      </h4>
-    </div>
-  );
-}
-
-// ---------------- EMPTY ----------------
-function EmptyState({ text }) {
-  return (
-    <div className="py-10 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">
-      {text}
     </div>
   );
 }
 
 // ---------------- INPUT ----------------
-function Input({
-  label,
-  value,
-  onChange,
-  disabled,
-  icon,
-  type = "text",
-}) {
+function Input({ label, type = "text", value, onChange, disabled, icon }) {
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -766,54 +537,122 @@ function Input({
   );
 }
 
-// ---------------- SELECT INPUT ----------------
-function SelectInput({
+// ---------------- MULTI-SELECT DEPARTMENT ----------------
+function MultiSelectDepartment({
   label,
-  value,
+  selectedDepts = [],
   onChange,
   disabled,
   icon,
   options = [],
 }) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest(".custom-dept-multiselect")) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, [dropdownOpen]);
+
+  const toggleDept = (deptName) => {
+    const isSelected = selectedDepts.includes(deptName);
+    if (isSelected) {
+      onChange(selectedDepts.filter((d) => d !== deptName));
+    } else {
+      onChange([...selectedDepts, deptName]);
+    }
+  };
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 custom-dept-multiselect relative">
       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
         {label}
       </label>
 
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 z-10">
-          {icon}
+      {disabled ? (
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 z-10">
+            {icon}
+          </div>
+          <div className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm text-slate-600 flex flex-wrap gap-1.5 items-center min-h-[42px]">
+            {selectedDepts.length > 0 ? (
+              selectedDepts.map((d, i) => (
+                <span
+                  key={i}
+                  className="px-2.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-semibold"
+                >
+                  {d}
+                </span>
+              ))
+            ) : (
+              <span className="text-slate-400 italic">No department assigned</span>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 z-10 pointer-events-none">
+            {icon}
+          </div>
 
-        <select
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className={`appearance-none w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all ${
-            disabled
-              ? "bg-slate-50 border-slate-100 text-slate-500"
-              : "bg-white border-slate-200 focus:border-slate-900 focus:ring-4 focus:ring-slate-100"
-          }`}
-        >
-          <option value="">
-            Select Department
-          </option>
+          <div
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="w-full pl-10 pr-10 py-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all text-sm min-h-[42px] flex flex-wrap gap-1.5 items-center cursor-pointer"
+          >
+            {selectedDepts.length > 0 ? (
+              selectedDepts.map((d) => (
+                <span
+                  key={d}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold"
+                >
+                  {d}
+                  <X
+                    size={12}
+                    className="hover:text-indigo-900 cursor-pointer ml-0.5"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleDept(d);
+                    }}
+                  />
+                </span>
+              ))
+            ) : (
+              <span className="text-slate-400">Select department(s)...</span>
+            )}
 
-          {options.map((dept) => (
-            <option
-              key={dept.id}
-              value={dept.name}
-            >
-              {dept.name}
-            </option>
-          ))}
-        </select>
+            <div className="absolute inset-y-0 right-3 flex items-center text-slate-400 pointer-events-none">
+              <ChevronDown size={16} />
+            </div>
+          </div>
 
-        <div className="absolute inset-y-0 right-3 flex items-center text-slate-400">
-          <ChevronDown size={16} />
+          {dropdownOpen && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto p-1.5 space-y-0.5">
+              {options.map((dept) => {
+                const isSelected = selectedDepts.includes(dept.name);
+                return (
+                  <div
+                    key={dept.id || dept._id || dept.name}
+                    onClick={() => toggleDept(dept.name)}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                      isSelected
+                        ? "bg-indigo-50 text-indigo-700 font-bold"
+                        : "hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <span>{dept.name}</span>
+                    {isSelected && <Check size={14} className="text-indigo-600" />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
