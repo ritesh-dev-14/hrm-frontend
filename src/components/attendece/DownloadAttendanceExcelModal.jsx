@@ -51,6 +51,7 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
           ...u,
           position: u.position || existing.position,
           department: u.department || existing.department,
+          departments: u.departments || existing.departments,
           departmentId: u.departmentId || u.department_id || existing.departmentId,
         });
       };
