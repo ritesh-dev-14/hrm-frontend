@@ -47,36 +47,50 @@ export const exportMonthlyAttendanceExcel = ({
 
   // Helper function to resolve department name reliably
   const resolveDepartmentName = (u) => {
+    if (!u) return "General Staff";
+
     // 1. Direct department object name
-    if (u?.department?.name) return u.department.name;
-    
-    // 2. Direct string department (if not a UUID format)
-    if (typeof u?.department === "string" && u.department.trim().length > 0) {
-      const isUuid = u.department.match(/^[0-9a-fA-F-]{24,36}$/);
-      if (!isUuid) return u.department.trim();
+    if (u.department?.name) return u.department.name.trim();
+
+    // 2. Direct departmentName / department_name properties on user
+    if (u.departmentName) return String(u.departmentName).trim();
+    if (u.department_name) return String(u.department_name).trim();
+
+    // 3. User position (often holds department name like "Social Media Department")
+    if (u.position && typeof u.position === "string" && u.position.trim().length > 0 && u.position.trim() !== "GENERAL_STAFF") {
+      return u.position.trim();
     }
 
-    // 3. Lookup departmentId / department_id / department in departmentsMap
-    const deptId = u?.departmentId || u?.department_id || (typeof u?.department === "string" ? u.department : null);
+    // 4. Direct string department (if not a UUID format and not GENERAL_STAFF)
+    if (typeof u.department === "string" && u.department.trim().length > 0) {
+      const isUuid = u.department.match(/^[0-9a-fA-F-]{24,36}$/);
+      if (!isUuid && u.department.trim() !== "GENERAL_STAFF") {
+        return u.department.trim();
+      }
+    }
+
+    // 5. Lookup departmentId / department_id in departmentsMap
+    const deptId = u.departmentId || u.department_id || (typeof u.department === "string" ? u.department : null);
     if (deptId && departmentsMap.has(String(deptId))) {
       return departmentsMap.get(String(deptId));
     }
 
-    // 4. Check departments array if user has multiple assigned departments
-    if (Array.isArray(u?.departments) && u.departments.length > 0) {
+    // 6. Check departments array if user has assigned departments
+    if (Array.isArray(u.departments) && u.departments.length > 0) {
       const names = u.departments
         .map((d) => (typeof d === "object" ? d.name : departmentsMap.get(String(d)) || d))
         .filter((n) => n && typeof n === "string" && !n.match(/^[0-9a-fA-F-]{24,36}$/));
       if (names.length > 0) return names.join(", ");
     }
 
-    // 5. Inspect attendance records for this user to check if record.user.department exists
-    const uId = u?.id || u?._id;
-    const eId = u?.employeeId;
+    // 7. Inspect attendance records for this user to check record.user.department or record.user.position
+    const uId = u.id || u._id;
+    const eId = u.employeeId;
     for (let day = 1; day <= daysInMonth; day++) {
       const rec = recordMap.get(`${uId}_${day}`) || recordMap.get(`${eId}_${day}`);
       if (rec?.user?.department?.name) return rec.user.department.name;
-      if (typeof rec?.user?.department === "string" && rec.user.department && !rec.user.department.match(/^[0-9a-fA-F-]{24,36}$/)) {
+      if (rec?.user?.position && rec.user.position !== "GENERAL_STAFF") return rec.user.position;
+      if (typeof rec?.user?.department === "string" && rec.user.department && !rec.user.department.match(/^[0-9a-fA-F-]{24,36}$/) && rec.user.department !== "GENERAL_STAFF") {
         return rec.user.department;
       }
       if (rec?.user?.departmentId && departmentsMap.has(String(rec.user.departmentId))) {
@@ -84,8 +98,11 @@ export const exportMonthlyAttendanceExcel = ({
       }
     }
 
-    // 6. Position or clean fallback
-    if (u?.position) return u.position;
+    // 8. Fallback if department was "GENERAL_STAFF"
+    if (typeof u.department === "string" && u.department.trim() === "GENERAL_STAFF") {
+      return "General Staff";
+    }
+
     return "General Staff";
   };
 

@@ -49,6 +49,7 @@ export default function DownloadAttendanceExcelModal({ buttonClassName = "" }) {
         allUsersMap.set(id, {
           ...existing,
           ...u,
+          position: u.position || existing.position,
           department: u.department || existing.department,
           departmentId: u.departmentId || u.department_id || existing.departmentId,
         });
