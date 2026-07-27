@@ -28,6 +28,14 @@ const AdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
+  const INITIAL_EMP_COUNT = 8;
+
+  const visibleEmployees = useMemo(() => {
+    if (isEmployeesExpanded) return employees;
+    return employees.slice(0, INITIAL_EMP_COUNT);
+  }, [employees, isEmployeesExpanded]);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -83,14 +91,6 @@ const AdminPage = () => {
       </div>
     );
   }
-
-  const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
-  const INITIAL_EMP_COUNT = 8;
-
-  const visibleEmployees = useMemo(() => {
-    if (isEmployeesExpanded) return employees;
-    return employees.slice(0, INITIAL_EMP_COUNT);
-  }, [employees, isEmployeesExpanded]);
 
   const counts = overview?.counts || {};
   const assignmentSummary = overview?.assignmentSummary || {};
