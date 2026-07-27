@@ -991,8 +991,8 @@ const SMMManagerView = ({ projectId }) => {
                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-900"></div>
                           </div>
 
-                          {isEditingCredentials && (d.
-                            < button
+                          {isEditingCredentials && (
+                            <button
                               type="button"
                           onClick={() => {
                             const currentRefs = formData.reference.split(",").map(s => s.trim()).filter(Boolean);
