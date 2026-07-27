@@ -121,7 +121,7 @@ export default function AttendanceView({
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-        
+
         {/* HEADER */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
@@ -165,7 +165,7 @@ export default function AttendanceView({
 
         {/* DEDICATED ATTENDANCE ROSTER SECTION */}
         <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col min-h-[350px]">
-          
+
           {/* List Header & Filters */}
           <div className="p-6 md:p-8 border-b border-slate-100/70 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/50">
             <div className="flex items-center gap-4">
@@ -194,11 +194,10 @@ export default function AttendanceView({
                   <button
                     key={filter}
                     onClick={() => setSelectedFilter(filter)}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-300 relative overflow-hidden ${
-                      selectedFilter === filter
+                    className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-300 relative overflow-hidden ${selectedFilter === filter
                         ? "text-indigo-600 bg-white shadow-sm"
                         : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                    }`}
+                      }`}
                   >
                     {filter}
                   </button>
@@ -211,11 +210,10 @@ export default function AttendanceView({
                   <button
                     key={status}
                     onClick={() => setSelectedStatus(status)}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-300 relative overflow-hidden ${
-                      selectedStatus === status
+                    className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-300 relative overflow-hidden ${selectedStatus === status
                         ? "text-blue-600 bg-white shadow-sm"
                         : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                    }`}
+                      }`}
                   >
                     {status}
                   </button>

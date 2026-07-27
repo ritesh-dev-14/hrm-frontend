@@ -991,325 +991,693 @@ const SMMManagerView = ({ projectId }) => {
                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-900"></div>
                           </div>
 
-                          {isEditingCredentials && (
-                            <button
+                          {isEditingCredentials && (d.
+                            < button
                               type="button"
-                              onClick={() => {
-                                const currentRefs = formData.reference.split(",").map(s => s.trim()).filter(Boolean);
-                                currentRefs.splice(idx, 1);
-                                setFormData({ ...formData, reference: currentRefs.join(", ") });
-                              }}
-                              className="text-indigo-400 hover:text-indigo-600 font-bold ml-1 transition-colors"
+                          onClick={() => {
+                            const currentRefs = formData.reference.split(",").map(s => s.trim()).filter(Boolean);
+                            currentRefs.splice(idx, 1);
+                            setFormData({ ...formData, reference: currentRefs.join(", ") });
+                          }}
+                          className="text-indigo-400 hover:text-indigo-600 font-bold ml-1 transition-colors"
                             >
-                              ×
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                          ×
+                        </button>
+                      )}
                     </div>
+                  ))}
+                </div>
                   )}
-                </div>
-
-                {/* <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">Taste <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-400">Medium Description</span></label>
-                  <textarea
-                    name="taste"
-                    value={formData.taste}
-                    onChange={handleInputChange}
-                    disabled={!isEditingCredentials}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm font-medium text-slate-700 min-h-[100px] resize-y disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
-                    placeholder="Medium description of taste/preferences..."
-                  />
-                </div> */}
               </div>
             </div>
+          </div>
 
-            <div className="pt-6 border-t border-slate-100">
-              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-violet-500"></div> Social Media Credentials</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+          <div className="pt-6 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-violet-500"></div> Social Media Credentials</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Username</label>
-                    <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="fb_username" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Email</label>
-                    <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="fb@enterprise.com" />
-                  </div>
-                  {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "••••••••••••")}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Username</label>
+                  <input type="text" name="facebookUsername" value={formData.facebookUsername} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="fb_username" />
                 </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Username</label>
-                    <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="insta_username" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Email</label>
-                    <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="insta_handle" />
-                  </div>
-                  {renderPasswordField("Instagram Password", "instaPassword", formData.instaPassword, showInstaPassword, setShowInstaPassword, "••••••••••••")}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Facebook Email</label>
+                  <input type="email" name="fbEmail" value={formData.fbEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="fb@enterprise.com" />
                 </div>
+                {renderPasswordField("Facebook Password", "fbPassword", formData.fbPassword, showFbPassword, setShowFbPassword, "••••••••••••")}
+              </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">YouTube Email</label>
-                    <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="youtube@channel.com" />
-                  </div>
-                  {renderPasswordField("YouTube Password", "youtubePassword", formData.youtubePassword, showYoutubePassword, setShowYoutubePassword, "••••••••••••")}
-
-                  <div className="space-y-2 mt-4 pt-4 border-t border-slate-200">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">LinkedIn Email</label>
-                    <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="linkedin@company.com" />
-                  </div>
-                  {renderPasswordField("LinkedIn Password", "linkedinPassword", formData.linkedinPassword, showLinkedinPassword, setShowLinkedinPassword, "••••••••••••")}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Username</label>
+                  <input type="text" name="instaUsername" value={formData.instaUsername} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="insta_username" />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instagram Email</label>
+                  <input type="text" name="instaEmail" value={formData.instaEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="insta_handle" />
+                </div>
+                {renderPasswordField("Instagram Password", "instaPassword", formData.instaPassword, showInstaPassword, setShowInstaPassword, "••••••••••••")}
+              </div>
 
-                <div className="space-y-4 md:col-span-2 lg:col-span-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Twitter / X Email</label>
-                      <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="twitter_handle" />
-                    </div>
-                    {renderPasswordField("Twitter / X Password", "twitterPassword", formData.twitterPassword, showTwitterPassword, setShowTwitterPassword, "••••••••••••")}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">YouTube Email</label>
+                  <input type="text" name="youtubeEmail" value={formData.youtubeEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="youtube@channel.com" />
+                </div>
+                {renderPasswordField("YouTube Password", "youtubePassword", formData.youtubePassword, showYoutubePassword, setShowYoutubePassword, "••••••••••••")}
+
+                <div className="space-y-2 mt-4 pt-4 border-t border-slate-200">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">LinkedIn Email</label>
+                  <input type="text" name="linkedinEmail" value={formData.linkedinEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="linkedin@company.com" />
+                </div>
+                {renderPasswordField("LinkedIn Password", "linkedinPassword", formData.linkedinPassword, showLinkedinPassword, setShowLinkedinPassword, "••••••••••••")}
+              </div>
+
+              <div className="space-y-4 md:col-span-2 lg:col-span-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Twitter / X Email</label>
+                    <input type="text" name="twitterEmail" value={formData.twitterEmail} onChange={handleInputChange} disabled={!isEditingCredentials} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed" placeholder="twitter_handle" />
                   </div>
+                  {renderPasswordField("Twitter / X Password", "twitterPassword", formData.twitterPassword, showTwitterPassword, setShowTwitterPassword, "••••••••••••")}
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex justify-end pt-6 border-t border-slate-100 gap-3">
-              {!isEditingCredentials ? (
+          <div className="flex justify-end pt-6 border-t border-slate-100 gap-3">
+            {!isEditingCredentials ? (
+              <button
+                type="button"
+                onClick={() => setIsEditingCredentials(true)}
+                className="px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md"
+              >
+                Edit Credentials
+              </button>
+            ) : (
+              <>
                 <button
                   type="button"
-                  onClick={() => setIsEditingCredentials(true)}
-                  className="px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md"
+                  onClick={() => {
+                    setIsEditingCredentials(false);
+                    fetchProjectDetails(); // Reset modifications
+                  }}
+                  className="px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all bg-slate-100 hover:bg-slate-200 text-slate-700"
                 >
-                  Edit Credentials
+                  Cancel
                 </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditingCredentials(false);
-                      fetchProjectDetails(); // Reset modifications
-                    }}
-                    className="px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdating}
-                    className={`px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isUpdating ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-md'}`}
-                  >
-                    {isUpdating ? "Updating Details..." : "Save Credentials"}
-                  </button>
-                </>
-              )}
-            </div>
-          </form>
-        </motion.div>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className={`px-8 py-3 rounded-xl font-bold text-sm shadow-sm transition-all ${isUpdating ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-md'}`}
+                >
+                  {isUpdating ? "Updating Details..." : "Save Credentials"}
+                </button>
+              </>
+            )}
+          </div>
+        </form>
+      </motion.div>
 
-        {/* ================= MASTER HISTORICAL CALENDARS LIST ================= */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-8">
-          <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            </div>
-            Monthly Content Calendars
-          </h3>
-          {sheetsLoading ? (
-            <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-12 text-center">
-              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Re-indexing calendar collection tree...</p>
-            </div>
-          ) : monthlySheets.length > 0 ? (
-            <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-100/60">
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Month</th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Content Planned</th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Content Uploaded</th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Assigned By</th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Logo &amp; Moodboard</th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/60">
-                    {monthlySheets.map((sheet) => {
-                      const isThisCalendarLoading = loadingCalendarId === sheet.id;
-                      return (
-                        <tr key={sheet.id} className={`group transition-colors hover:bg-slate-50/50 ${selectedCalendar?.id === sheet.id ? "bg-indigo-50/30" : ""}`}>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <p className="text-sm font-bold text-slate-900">{new Date(0, sheet.month - 1).toLocaleString(undefined, { month: "long" })} {sheet.year}</p>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">🎬 {sheet.totalReels} R</span>
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">📝 {sheet.totalPosts} P</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-md">🚀 {sheet.totalReelsUploaded} R</span>
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-1 rounded-md">✨ {sheet.totalPostsUploaded} P</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
-                                {sheet.createdBy?.name?.charAt(0) || "S"}
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-slate-800">{sheet.createdBy?.name || "System Agent"}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{sheet.createdBy?.employeeId}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="flex items-center gap-4">
-                              {sheet.projectLogo || project?.logo ? (
-                                <img src={sheet.projectLogo || project.logo} alt="Project logo" className="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-sm" />
-                              ) : (
-                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs">—</div>
-                              )}
-                              {sheet.moodBoardLink ? (
-                                <a href={sheet.moodBoardLink} target="_blank" rel="noreferrer" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
-                                  Blueprint <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                </a>
-                              ) : (
-                                <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">No moodboard</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => fetchMonthlySheetDetail(sheet.id)}
-                              disabled={isThisCalendarLoading}
-                              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${selectedCalendar?.id === sheet.id ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}
-                            >
-                              {isThisCalendarLoading
-                                ? "Loading..."
-                                : selectedCalendar?.id === sheet.id
-                                  ? "Viewing Layout"
-                                  : "Open Calendar"}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-12 text-center">
-              <svg className="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No monthly strategy planning manifests initialized yet.</p>
-            </div>
-          )}
-        </motion.div>
-
-        {/* ================= DRILLDOWN VIEW: FULL SCREEN SINGLE CALENDAR EDITING (PORTAL) ================= */}
-        {typeof document !== "undefined" &&
-          createPortal(
-            <AnimatePresence>
-              {selectedCalendar && (
-                <div key="calendar-workspace-portal" className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-2xl flex flex-col p-2 sm:p-4 md:p-6 overflow-hidden">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.97, y: 15 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.97, y: 15 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="bg-white w-full h-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/80"
-                  >
-                    {/* Workspace Top Bar */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-slate-50/90 backdrop-blur-md shadow-xs">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shadow-xs">
-                          <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg md:text-xl font-black text-slate-900">
-                              Calendar Workspace — {new Date(0, selectedCalendar.month - 1).toLocaleString(undefined, { month: "long" })} {selectedCalendar.year}
-                            </h3>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              Full Screen Suite
-                            </span>
+      {/* ================= MASTER HISTORICAL CALENDARS LIST ================= */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-8">
+        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </div>
+          Monthly Content Calendars
+        </h3>
+        {sheetsLoading ? (
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-12 text-center">
+            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Re-indexing calendar collection tree...</p>
+          </div>
+        ) : monthlySheets.length > 0 ? (
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-100/60">
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Month</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Content Planned</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Content Uploaded</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Assigned By</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Logo &amp; Moodboard</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/60">
+                  {monthlySheets.map((sheet) => {
+                    const isThisCalendarLoading = loadingCalendarId === sheet.id;
+                    return (
+                      <tr key={sheet.id} className={`group transition-colors hover:bg-slate-50/50 ${selectedCalendar?.id === sheet.id ? "bg-indigo-50/30" : ""}`}>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <p className="text-sm font-bold text-slate-900">{new Date(0, sheet.month - 1).toLocaleString(undefined, { month: "long" })} {sheet.year}</p>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">🎬 {sheet.totalReels} R</span>
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">📝 {sheet.totalPosts} P</span>
                           </div>
-                          <p className="text-xs font-semibold text-slate-500">Edit scripts, titles, frame descriptions, and reference links in expanded layout</p>
-                        </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-md">🚀 {sheet.totalReelsUploaded} R</span>
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-1 rounded-md">✨ {sheet.totalPostsUploaded} P</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                              {sheet.createdBy?.name?.charAt(0) || "S"}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{sheet.createdBy?.name || "System Agent"}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{sheet.createdBy?.employeeId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-4">
+                            {sheet.projectLogo || project?.logo ? (
+                              <img src={sheet.projectLogo || project.logo} alt="Project logo" className="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-sm" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs">—</div>
+                            )}
+                            {sheet.moodBoardLink ? (
+                              <a href={sheet.moodBoardLink} target="_blank" rel="noreferrer" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                                Blueprint <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                              </a>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">No moodboard</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-right">
+                          <button
+                            onClick={() => fetchMonthlySheetDetail(sheet.id)}
+                            disabled={isThisCalendarLoading}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${selectedCalendar?.id === sheet.id ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}
+                          >
+                            {isThisCalendarLoading
+                              ? "Loading..."
+                              : selectedCalendar?.id === sheet.id
+                                ? "Viewing Layout"
+                                : "Open Calendar"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-12 text-center">
+            <svg className="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No monthly strategy planning manifests initialized yet.</p>
+          </div>
+        )}
+      </motion.div>
+
+      {/* ================= DRILLDOWN VIEW: FULL SCREEN SINGLE CALENDAR EDITING (PORTAL) ================= */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {selectedCalendar && (
+              <div key="calendar-workspace-portal" className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-2xl flex flex-col p-2 sm:p-4 md:p-6 overflow-hidden">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97, y: 15 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="bg-white w-full h-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/80"
+                >
+                  {/* Workspace Top Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-slate-50/90 backdrop-blur-md shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shadow-xs">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setSelectedCalendar(null)}
-                          className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors flex items-center gap-2 shadow-xs"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          Close Workspace
-                        </button>
-                        <button
-                          onClick={handleUpdateExistingCalendar}
-                          disabled={isPatchingDay}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${isPatchingDay ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                            }`}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                          {isPatchingDay ? "Saving Layout..." : "Save Changes"}
-                        </button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg md:text-xl font-black text-slate-900">
+                            Calendar Workspace — {new Date(0, selectedCalendar.month - 1).toLocaleString(undefined, { month: "long" })} {selectedCalendar.year}
+                          </h3>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Full Screen Suite
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-500">Edit scripts, titles, frame descriptions, and reference links in expanded layout</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedCalendar(null)}
+                        className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors flex items-center gap-2 shadow-xs"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Close Workspace
+                      </button>
+                      <button
+                        onClick={handleUpdateExistingCalendar}
+                        disabled={isPatchingDay}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${isPatchingDay ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {isPatchingDay ? "Saving Layout..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Workspace Main Area */}
+                  <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-slate-100/50">
+                    {/* Metric Controls */}
+                    <div className="flex flex-wrap gap-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                      <div className="flex-1 min-w-[200px] space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reels Uploaded Count</label>
+                        <input
+                          type="number"
+                          name="totalReelsUploaded"
+                          min="0"
+                          value={selectedCalendar.totalReelsUploaded || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedCalendar((prev) => ({ ...prev, totalReelsUploaded: val }));
+                          }}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                          placeholder="e.g. 5"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[200px] space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posts Uploaded Count</label>
+                        <input
+                          type="number"
+                          name="totalPostsUploaded"
+                          min="0"
+                          value={selectedCalendar.totalPostsUploaded || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedCalendar((prev) => ({ ...prev, totalPostsUploaded: val }));
+                          }}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                          placeholder="e.g. 3"
+                        />
                       </div>
                     </div>
 
-                    {/* Workspace Main Area */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-slate-100/50">
-                      {/* Metric Controls */}
-                      <div className="flex flex-wrap gap-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-                        <div className="flex-1 min-w-[200px] space-y-1.5">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reels Uploaded Count</label>
-                          <input
-                            type="number"
-                            name="totalReelsUploaded"
-                            min="0"
-                            value={selectedCalendar.totalReelsUploaded || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSelectedCalendar((prev) => ({ ...prev, totalReelsUploaded: val }));
-                            }}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
-                            placeholder="e.g. 5"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-[200px] space-y-1.5">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posts Uploaded Count</label>
-                          <input
-                            type="number"
-                            name="totalPostsUploaded"
-                            min="0"
-                            value={selectedCalendar.totalPostsUploaded || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSelectedCalendar((prev) => ({ ...prev, totalPostsUploaded: val }));
-                            }}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
-                            placeholder="e.g. 3"
-                          />
+                    {/* Spacious Table with Roomy Text Areas */}
+                    <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
+                      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-250px)] min-h-[500px]">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-100/95 sticky top-0 z-20 border-b border-slate-200 shadow-xs backdrop-blur-md">
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-100/95 backdrop-blur-md z-30 border-r border-slate-200">
+                                Date
+                              </th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Post Type</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Title</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Format</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Script Content</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Deliverable Links</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Content Upload Links</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Upload Links</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Status</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Feedback</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            {selectedCalendar.days?.map((dayItem, index) => (
+                              <tr key={dayItem.id || index} className="hover:bg-slate-50/90 transition-colors group align-top">
+                                <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
+                                  {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                  <select
+                                    value={dayItem.reelType}
+                                    onChange={(e) => handleSelectedDayChange(index, "reelType", e.target.value)}
+                                    className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                  >
+                                    <option value="NONE">NONE</option>
+                                    <option value="SHOOT">SHOOT</option>
+                                    <option value="AI">AI</option>
+                                  </select>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                  <select
+                                    value={dayItem.postType}
+                                    onChange={(e) => handleSelectedDayChange(index, "postType", e.target.value)}
+                                    className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                  >
+                                    <option value="NONE">NONE</option>
+                                    <option value="SHOOT">SHOOT</option>
+                                    <option value="AI">AI</option>
+                                  </select>
+                                </td>
+
+                                {/* EXPANDED & LARGE TITLE TEXTAREA */}
+                                <td className="px-4 py-3 min-w-[240px]">
+                                  <textarea
+                                    rows={2}
+                                    value={dayItem.title || ""}
+                                    onChange={(e) => handleSelectedDayChange(index, "title", e.target.value)}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                    placeholder="Content Title / Topic..."
+                                  />
+                                </td>
+
+                                <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                  <select
+                                    value={dayItem.videoType || "HORIZONTAL"}
+                                    onChange={(e) => handleSelectedDayChange(index, "videoType", e.target.value)}
+                                    className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
+                                  >
+                                    <option value="HORIZONTAL">HORIZONTAL</option>
+                                    <option value="VERTICAL">VERTICAL</option>
+                                  </select>
+                                </td>
+
+                                {/* EXPANDED & LARGE SCRIPT TEXTAREA */}
+                                <td className="px-4 py-3 min-w-[300px]">
+                                  <textarea
+                                    rows={3}
+                                    value={dayItem.script || ""}
+                                    onChange={(e) => handleSelectedDayChange(index, "script", e.target.value)}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
+                                    placeholder="Write full video script, spoken dialogue lines, voiceover text..."
+                                  />
+                                </td>
+
+                                {/* EXPANDED & LARGE DESCRIPTION/FRAME TEXTAREA */}
+                                <td className="px-4 py-3 min-w-[300px]">
+                                  <textarea
+                                    rows={3}
+                                    value={dayItem.description || ""}
+                                    onChange={(e) => handleSelectedDayChange(index, "description", e.target.value)}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
+                                    placeholder="Write shot sequence, frame descriptions, visual direction..."
+                                  />
+                                </td>
+
+                                {/* EXPANDED & LARGE REFERENCES TEXTAREA */}
+                                <td className="px-4 py-3 min-w-[240px]">
+                                  <textarea
+                                    rows={2}
+                                    value={arrayToString(dayItem.referenceLinks)}
+                                    onChange={(e) => handleSelectedDayChange(index, "referenceLinks", stringToArray(e.target.value))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                    placeholder="Paste reference URLs (comma separated)..."
+                                  />
+                                </td>
+
+                                <td className="px-4 py-3 min-w-[180px] pt-4">
+                                  <div className="flex flex-col gap-2">
+                                    {dayItem.submissionLinks?.length > 0 &&
+                                      dayItem.submissionLinks.map((link, i) => (
+                                        <a key={`shoot-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 break-all">
+                                          Shoot Asset {i + 1} 🔗
+                                        </a>
+                                      ))}
+                                    {dayItem.contentCreativeSubmissionLinks?.length > 0 &&
+                                      dayItem.contentCreativeSubmissionLinks.map((link, i) => (
+                                        <a key={`creative-arr-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:text-emerald-800 break-all">
+                                          Creative Asset {i + 1} 🔗
+                                        </a>
+                                      ))}
+                                    {dayItem.creativeSubmissionLink && (
+                                      <a href={dayItem.creativeSubmissionLink} target="_blank" rel="noreferrer" className="text-xs font-bold text-fuchsia-600 hover:text-fuchsia-800 break-all">
+                                        Design Asset 🔗
+                                      </a>
+                                    )}
+                                    {!dayItem.submissionLinks?.length && !dayItem.contentCreativeSubmissionLinks?.length && !dayItem.creativeSubmissionLink && (
+                                      <span className="text-slate-400 text-xs">—</span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* CONTENT UPLOAD LINKS */}
+                                <td className="px-4 py-3 min-w-[240px]">
+                                  <div className="space-y-2">
+                                    <textarea
+                                      rows={2}
+                                      value={arrayToString(dayItem.contentUploadLinks)}
+                                      onChange={(e) => handleSelectedDayChange(index, "contentUploadLinks", stringToArray(e.target.value))}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                      placeholder="Paste Content / Post URLs (comma separated)..."
+                                    />
+                                    {dayItem.contentUploadLinks?.length > 0 && (
+                                      <div className="flex flex-col gap-1">
+                                        {dayItem.contentUploadLinks.map((link, i) => (
+                                          <a key={`content-up-${i}`} href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-sky-600 hover:text-sky-800 break-all">
+                                            Content Asset {i + 1} 🔗
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* VIDEO UPLOAD LINKS */}
+                                <td className="px-4 py-3 min-w-[240px]">
+                                  <div className="space-y-2">
+                                    <textarea
+                                      rows={2}
+                                      value={arrayToString(dayItem.videoUploadLinks)}
+                                      onChange={(e) => handleSelectedDayChange(index, "videoUploadLinks", stringToArray(e.target.value))}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                      placeholder="Paste Video / Reel URLs (comma separated)..."
+                                    />
+                                    {dayItem.videoUploadLinks?.length > 0 && (
+                                      <div className="flex flex-col gap-1">
+                                        {dayItem.videoUploadLinks.map((link, i) => (
+                                          <a key={`video-up-${i}`} href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-purple-600 hover:text-purple-800 break-all">
+                                            Video Asset {i + 1} 🔗
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="px-4 py-3 whitespace-nowrap pt-4">
+                                  {dayItem.submissionStatus ? (
+                                    <span
+                                      className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${dayItem.submissionStatus === "APPROVED"
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : dayItem.submissionStatus === "REJECTED"
+                                          ? "bg-red-100 text-red-800"
+                                          : dayItem.submissionStatus === "SUBMITTED"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : "bg-amber-100 text-amber-800"
+                                        }`}
+                                    >
+                                      {dayItem.submissionStatus}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 text-xs">—</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 pt-4">{formatDateTime(dayItem.reviewedAt)}</td>
+                                <td className="px-4 py-3 min-w-[150px] text-xs text-red-600 font-medium pt-4">{dayItem.rejectionReason || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+      {/* Co-Assigned Managers */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-8 mb-12">
+        <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100">
+            <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          </div>
+          Co-Assigned Project Stakeholders
+        </h3>
+        {project?.assignments?.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {project.assignments.map((assignment) => (
+              <div key={assignment.id} className="bg-white/60 backdrop-blur-xl border border-slate-200/60 p-4 rounded-2xl flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-700 font-black text-lg border border-indigo-200/50">
+                  {assignment.manager?.name?.charAt(0) || "M"}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900">{assignment.manager?.name}</div>
+                  <div className="text-xs font-medium text-slate-500">{assignment.manager?.position || "Manager"}</div>
+                  <div className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">ID: {assignment.manager?.employeeId}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 text-center">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">No other management stakeholders assigned.</p>
+          </div>
+        )}
+      </motion.div>
+
+      {/* ================= CREATE NEW STRATEGY WORKSPACE (FULL SCREEN PORTAL) ================= */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {isDrawerOpen && (
+              <div key="create-calendar-modal-portal" className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-2xl flex flex-col p-2 sm:p-4 md:p-6 overflow-hidden">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97, y: 15 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="bg-white w-full h-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/80"
+                >
+                  {/* Header Bar */}
+                  <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90 backdrop-blur-md shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-black text-emerald-600 tracking-widest uppercase">WORKSPACE SUITE</span>
+                      <h2 className="text-lg md:text-xl font-black text-slate-900 mt-0.5">Create & Deploy Content Calendar Manifest</h2>
+                    </div>
+                    <button
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <form onSubmit={handlePostMonthlySheet} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-slate-100/50 flex flex-col">
+                    {/* Configuration Metadata Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Target Calendar Window</h4>
+                        <div className="flex gap-4">
+                          <div className="flex-1 space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Month</label>
+                            <select
+                              name="month"
+                              value={sheetMeta.month}
+                              onChange={handleMetaChange}
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                            >
+                              {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i + 1} value={i + 1}>
+                                  {new Date(0, i).toLocaleString(undefined, { month: "long" })}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Year</label>
+                            <select
+                              name="year"
+                              value={sheetMeta.year}
+                              onChange={handleMetaChange}
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                            >
+                              {[2025, 2026, 2027, 2028].map((y) => (
+                                <option key={y} value={y}>
+                                  {y}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Spacious Table with Roomy Text Areas */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Target Deliverables</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Reels</label>
+                            <input
+                              type="number"
+                              name="totalReels"
+                              min="0"
+                              value={sheetMeta.totalReels}
+                              onChange={handleMetaChange}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                              placeholder="e.g. 15"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Posts</label>
+                            <input
+                              type="number"
+                              name="totalPosts"
+                              min="0"
+                              value={sheetMeta.totalPosts}
+                              onChange={handleMetaChange}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                              placeholder="e.g. 10"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Reels</label>
+                            <input
+                              type="number"
+                              name="totalReelsUploaded"
+                              min="0"
+                              value={sheetMeta.totalReelsUploaded}
+                              onChange={handleMetaChange}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                              placeholder="e.g. 0"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Posts</label>
+                            <input
+                              type="number"
+                              name="totalPostsUploaded"
+                              min="0"
+                              value={sheetMeta.totalPostsUploaded}
+                              onChange={handleMetaChange}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
+                              placeholder="e.g. 0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Shared Blueprint Moodboard Asset URL Link</label>
+                      <input
+                        type="url"
+                        name="moodBoardLink"
+                        value={sheetMeta.moodBoardLink}
+                        onChange={handleMetaChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-semibold text-slate-700 shadow-xs"
+                        placeholder="https://figma.com/... or Pinterest space links"
+                      />
+                    </div>
+
+                    {/* Spacious Daily Matrix Table */}
+                    <div className="flex flex-col flex-1 min-h-[400px]">
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Daily Tactical Matrix Breakdown</h4>
                       <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
-                        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-250px)] min-h-[500px]">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-380px)] min-h-[400px]">
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-slate-100/95 sticky top-0 z-20 border-b border-slate-200 shadow-xs backdrop-blur-md">
@@ -1323,24 +1691,20 @@ const SMMManagerView = ({ projectId }) => {
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Script Content</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
-                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Deliverable Links</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Content Upload Links</th>
                                 <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Upload Links</th>
-                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Status</th>
-                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
-                                <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Feedback</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
-                              {selectedCalendar.days?.map((dayItem, index) => (
-                                <tr key={dayItem.id || index} className="hover:bg-slate-50/90 transition-colors group align-top">
+                              {sheetDays.map((dayItem, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50/90 transition-colors group align-top">
                                   <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
                                     {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
                                   </td>
                                   <td className="px-4 py-3 whitespace-nowrap pt-4">
                                     <select
                                       value={dayItem.reelType}
-                                      onChange={(e) => handleSelectedDayChange(index, "reelType", e.target.value)}
+                                      onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)}
                                       className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                     >
                                       <option value="NONE">NONE</option>
@@ -1351,7 +1715,7 @@ const SMMManagerView = ({ projectId }) => {
                                   <td className="px-4 py-3 whitespace-nowrap pt-4">
                                     <select
                                       value={dayItem.postType}
-                                      onChange={(e) => handleSelectedDayChange(index, "postType", e.target.value)}
+                                      onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)}
                                       className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                     >
                                       <option value="NONE">NONE</option>
@@ -1365,7 +1729,7 @@ const SMMManagerView = ({ projectId }) => {
                                     <textarea
                                       rows={2}
                                       value={dayItem.title || ""}
-                                      onChange={(e) => handleSelectedDayChange(index, "title", e.target.value)}
+                                      onChange={(e) => handleDayFieldChange(idx, "title", e.target.value)}
                                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
                                       placeholder="Content Title / Topic..."
                                     />
@@ -1374,11 +1738,12 @@ const SMMManagerView = ({ projectId }) => {
                                   <td className="px-4 py-3 whitespace-nowrap pt-4">
                                     <select
                                       value={dayItem.videoType || "HORIZONTAL"}
-                                      onChange={(e) => handleSelectedDayChange(index, "videoType", e.target.value)}
+                                      onChange={(e) => handleDayFieldChange(idx, "videoType", e.target.value)}
                                       className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                     >
                                       <option value="HORIZONTAL">HORIZONTAL</option>
                                       <option value="VERTICAL">VERTICAL</option>
+                                      <option value="SQUARE">SQUARE</option>
                                     </select>
                                   </td>
 
@@ -1387,7 +1752,7 @@ const SMMManagerView = ({ projectId }) => {
                                     <textarea
                                       rows={3}
                                       value={dayItem.script || ""}
-                                      onChange={(e) => handleSelectedDayChange(index, "script", e.target.value)}
+                                      onChange={(e) => handleDayFieldChange(idx, "script", e.target.value)}
                                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
                                       placeholder="Write full video script, spoken dialogue lines, voiceover text..."
                                     />
@@ -1398,7 +1763,7 @@ const SMMManagerView = ({ projectId }) => {
                                     <textarea
                                       rows={3}
                                       value={dayItem.description || ""}
-                                      onChange={(e) => handleSelectedDayChange(index, "description", e.target.value)}
+                                      onChange={(e) => handleDayFieldChange(idx, "description", e.target.value)}
                                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
                                       placeholder="Write shot sequence, frame descriptions, visual direction..."
                                     />
@@ -1409,101 +1774,33 @@ const SMMManagerView = ({ projectId }) => {
                                     <textarea
                                       rows={2}
                                       value={arrayToString(dayItem.referenceLinks)}
-                                      onChange={(e) => handleSelectedDayChange(index, "referenceLinks", stringToArray(e.target.value))}
+                                      onChange={(e) => handleDayFieldChange(idx, "referenceLinks", stringToArray(e.target.value))}
                                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
                                       placeholder="Paste reference URLs (comma separated)..."
                                     />
                                   </td>
 
-                                  <td className="px-4 py-3 min-w-[180px] pt-4">
-                                    <div className="flex flex-col gap-2">
-                                      {dayItem.submissionLinks?.length > 0 &&
-                                        dayItem.submissionLinks.map((link, i) => (
-                                          <a key={`shoot-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 break-all">
-                                            Shoot Asset {i + 1} 🔗
-                                          </a>
-                                        ))}
-                                      {dayItem.contentCreativeSubmissionLinks?.length > 0 &&
-                                        dayItem.contentCreativeSubmissionLinks.map((link, i) => (
-                                          <a key={`creative-arr-${i}`} href={link} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:text-emerald-800 break-all">
-                                            Creative Asset {i + 1} 🔗
-                                          </a>
-                                        ))}
-                                      {dayItem.creativeSubmissionLink && (
-                                        <a href={dayItem.creativeSubmissionLink} target="_blank" rel="noreferrer" className="text-xs font-bold text-fuchsia-600 hover:text-fuchsia-800 break-all">
-                                          Design Asset 🔗
-                                        </a>
-                                      )}
-                                      {!dayItem.submissionLinks?.length && !dayItem.contentCreativeSubmissionLinks?.length && !dayItem.creativeSubmissionLink && (
-                                        <span className="text-slate-400 text-xs">—</span>
-                                      )}
-                                    </div>
-                                  </td>
-
                                   {/* CONTENT UPLOAD LINKS */}
                                   <td className="px-4 py-3 min-w-[240px]">
-                                    <div className="space-y-2">
-                                      <textarea
-                                        rows={2}
-                                        value={arrayToString(dayItem.contentUploadLinks)}
-                                        onChange={(e) => handleSelectedDayChange(index, "contentUploadLinks", stringToArray(e.target.value))}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Paste Content / Post URLs (comma separated)..."
-                                      />
-                                      {dayItem.contentUploadLinks?.length > 0 && (
-                                        <div className="flex flex-col gap-1">
-                                          {dayItem.contentUploadLinks.map((link, i) => (
-                                            <a key={`content-up-${i}`} href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-sky-600 hover:text-sky-800 break-all">
-                                              Content Asset {i + 1} 🔗
-                                            </a>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
+                                    <textarea
+                                      rows={2}
+                                      value={arrayToString(dayItem.contentUploadLinks)}
+                                      onChange={(e) => handleDayFieldChange(idx, "contentUploadLinks", stringToArray(e.target.value))}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                      placeholder="Paste Content / Post URLs (comma separated)..."
+                                    />
                                   </td>
 
                                   {/* VIDEO UPLOAD LINKS */}
                                   <td className="px-4 py-3 min-w-[240px]">
-                                    <div className="space-y-2">
-                                      <textarea
-                                        rows={2}
-                                        value={arrayToString(dayItem.videoUploadLinks)}
-                                        onChange={(e) => handleSelectedDayChange(index, "videoUploadLinks", stringToArray(e.target.value))}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Paste Video / Reel URLs (comma separated)..."
-                                      />
-                                      {dayItem.videoUploadLinks?.length > 0 && (
-                                        <div className="flex flex-col gap-1">
-                                          {dayItem.videoUploadLinks.map((link, i) => (
-                                            <a key={`video-up-${i}`} href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-purple-600 hover:text-purple-800 break-all">
-                                              Video Asset {i + 1} 🔗
-                                            </a>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
+                                    <textarea
+                                      rows={2}
+                                      value={arrayToString(dayItem.videoUploadLinks)}
+                                      onChange={(e) => handleDayFieldChange(idx, "videoUploadLinks", stringToArray(e.target.value))}
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
+                                      placeholder="Paste Video / Reel URLs (comma separated)..."
+                                    />
                                   </td>
-
-                                  <td className="px-4 py-3 whitespace-nowrap pt-4">
-                                    {dayItem.submissionStatus ? (
-                                      <span
-                                        className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${dayItem.submissionStatus === "APPROVED"
-                                            ? "bg-emerald-100 text-emerald-800"
-                                            : dayItem.submissionStatus === "REJECTED"
-                                              ? "bg-red-100 text-red-800"
-                                              : dayItem.submissionStatus === "SUBMITTED"
-                                                ? "bg-blue-100 text-blue-800"
-                                                : "bg-amber-100 text-amber-800"
-                                          }`}
-                                      >
-                                        {dayItem.submissionStatus}
-                                      </span>
-                                    ) : (
-                                      <span className="text-slate-400 text-xs">—</span>
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 pt-4">{formatDateTime(dayItem.reviewedAt)}</td>
-                                  <td className="px-4 py-3 min-w-[150px] text-xs text-red-600 font-medium pt-4">{dayItem.rejectionReason || "—"}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1511,342 +1808,33 @@ const SMMManagerView = ({ projectId }) => {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                </div>
-              )}
-            </AnimatePresence>,
-            document.body
-          )}
 
-        {/* Co-Assigned Managers */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-8 mb-12">
-          <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100">
-              <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            </div>
-            Co-Assigned Project Stakeholders
-          </h3>
-          {project?.assignments?.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {project.assignments.map((assignment) => (
-                <div key={assignment.id} className="bg-white/60 backdrop-blur-xl border border-slate-200/60 p-4 rounded-2xl flex items-center gap-4 hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-700 font-black text-lg border border-indigo-200/50">
-                    {assignment.manager?.name?.charAt(0) || "M"}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">{assignment.manager?.name}</div>
-                    <div className="text-xs font-medium text-slate-500">{assignment.manager?.position || "Manager"}</div>
-                    <div className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">ID: {assignment.manager?.employeeId}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">No other management stakeholders assigned.</p>
-            </div>
-          )}
-        </motion.div>
-
-        {/* ================= CREATE NEW STRATEGY WORKSPACE (FULL SCREEN PORTAL) ================= */}
-        {typeof document !== "undefined" &&
-          createPortal(
-            <AnimatePresence>
-              {isDrawerOpen && (
-                <div key="create-calendar-modal-portal" className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-2xl flex flex-col p-2 sm:p-4 md:p-6 overflow-hidden">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.97, y: 15 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.97, y: 15 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="bg-white w-full h-full rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/80"
-                  >
-                    {/* Header Bar */}
-                    <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90 backdrop-blur-md shadow-xs">
-                      <div>
-                        <span className="text-[10px] font-black text-emerald-600 tracking-widest uppercase">WORKSPACE SUITE</span>
-                        <h2 className="text-lg md:text-xl font-black text-slate-900 mt-0.5">Create & Deploy Content Calendar Manifest</h2>
-                      </div>
+                    <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-4 mt-auto">
                       <button
+                        type="button"
                         onClick={() => setIsDrawerOpen(false)}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                        className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingSheet}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${isSubmittingSheet ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          }`}
+                      >
+                        {isSubmittingSheet ? "Compiling Matrix..." : "Deploy Strategy Manifest"}
                       </button>
                     </div>
-
-                    <form onSubmit={handlePostMonthlySheet} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-slate-100/50 flex flex-col">
-                      {/* Configuration Metadata Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Target Calendar Window</h4>
-                          <div className="flex gap-4">
-                            <div className="flex-1 space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Month</label>
-                              <select
-                                name="month"
-                                value={sheetMeta.month}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                              >
-                                {Array.from({ length: 12 }, (_, i) => (
-                                  <option key={i + 1} value={i + 1}>
-                                    {new Date(0, i).toLocaleString(undefined, { month: "long" })}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="flex-1 space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Year</label>
-                              <select
-                                name="year"
-                                value={sheetMeta.year}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                              >
-                                {[2025, 2026, 2027, 2028].map((y) => (
-                                  <option key={y} value={y}>
-                                    {y}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Target Deliverables</h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Reels</label>
-                              <input
-                                type="number"
-                                name="totalReels"
-                                min="0"
-                                value={sheetMeta.totalReels}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                                placeholder="e.g. 15"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planned Posts</label>
-                              <input
-                                type="number"
-                                name="totalPosts"
-                                min="0"
-                                value={sheetMeta.totalPosts}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                                placeholder="e.g. 10"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Reels</label>
-                              <input
-                                type="number"
-                                name="totalReelsUploaded"
-                                min="0"
-                                value={sheetMeta.totalReelsUploaded}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                                placeholder="e.g. 0"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploaded Posts</label>
-                              <input
-                                type="number"
-                                name="totalPostsUploaded"
-                                min="0"
-                                value={sheetMeta.totalPostsUploaded}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                                placeholder="e.g. 0"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Shared Blueprint Moodboard Asset URL Link</label>
-                        <input
-                          type="url"
-                          name="moodBoardLink"
-                          value={sheetMeta.moodBoardLink}
-                          onChange={handleMetaChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-semibold text-slate-700 shadow-xs"
-                          placeholder="https://figma.com/... or Pinterest space links"
-                        />
-                      </div>
-
-                      {/* Spacious Daily Matrix Table */}
-                      <div className="flex flex-col flex-1 min-h-[400px]">
-                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Daily Tactical Matrix Breakdown</h4>
-                        <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
-                          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-380px)] min-h-[400px]">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="bg-slate-100/95 sticky top-0 z-20 border-b border-slate-200 shadow-xs backdrop-blur-md">
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap sticky left-0 bg-slate-100/95 backdrop-blur-md z-30 border-r border-slate-200">
-                                    Date
-                                  </th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reel Type</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Post Type</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Title</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Format</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Script Content</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Frame Breakdown / Notes</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Visual References</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Content Upload Links</th>
-                                  <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Video Upload Links</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 bg-white">
-                                {sheetDays.map((dayItem, idx) => (
-                                  <tr key={idx} className="hover:bg-slate-50/90 transition-colors group align-top">
-                                    <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
-                                      {new Date(dayItem.date).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap pt-4">
-                                      <select
-                                        value={dayItem.reelType}
-                                        onChange={(e) => handleDayFieldChange(idx, "reelType", e.target.value)}
-                                        className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
-                                      >
-                                        <option value="NONE">NONE</option>
-                                        <option value="SHOOT">SHOOT</option>
-                                        <option value="AI">AI</option>
-                                      </select>
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap pt-4">
-                                      <select
-                                        value={dayItem.postType}
-                                        onChange={(e) => handleDayFieldChange(idx, "postType", e.target.value)}
-                                        className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
-                                      >
-                                        <option value="NONE">NONE</option>
-                                        <option value="SHOOT">SHOOT</option>
-                                        <option value="AI">AI</option>
-                                      </select>
-                                    </td>
-
-                                    {/* EXPANDED & LARGE TITLE TEXTAREA */}
-                                    <td className="px-4 py-3 min-w-[240px]">
-                                      <textarea
-                                        rows={2}
-                                        value={dayItem.title || ""}
-                                        onChange={(e) => handleDayFieldChange(idx, "title", e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Content Title / Topic..."
-                                      />
-                                    </td>
-
-                                    <td className="px-4 py-3 whitespace-nowrap pt-4">
-                                      <select
-                                        value={dayItem.videoType || "HORIZONTAL"}
-                                        onChange={(e) => handleDayFieldChange(idx, "videoType", e.target.value)}
-                                        className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
-                                      >
-                                        <option value="HORIZONTAL">HORIZONTAL</option>
-                                        <option value="VERTICAL">VERTICAL</option>
-                                        <option value="SQUARE">SQUARE</option>
-                                      </select>
-                                    </td>
-
-                                    {/* EXPANDED & LARGE SCRIPT TEXTAREA */}
-                                    <td className="px-4 py-3 min-w-[300px]">
-                                      <textarea
-                                        rows={3}
-                                        value={dayItem.script || ""}
-                                        onChange={(e) => handleDayFieldChange(idx, "script", e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
-                                        placeholder="Write full video script, spoken dialogue lines, voiceover text..."
-                                      />
-                                    </td>
-
-                                    {/* EXPANDED & LARGE DESCRIPTION/FRAME TEXTAREA */}
-                                    <td className="px-4 py-3 min-w-[300px]">
-                                      <textarea
-                                        rows={3}
-                                        value={dayItem.description || ""}
-                                        onChange={(e) => handleDayFieldChange(idx, "description", e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[72px] shadow-xs leading-relaxed"
-                                        placeholder="Write shot sequence, frame descriptions, visual direction..."
-                                      />
-                                    </td>
-
-                                    {/* EXPANDED & LARGE REFERENCES TEXTAREA */}
-                                    <td className="px-4 py-3 min-w-[240px]">
-                                      <textarea
-                                        rows={2}
-                                        value={arrayToString(dayItem.referenceLinks)}
-                                        onChange={(e) => handleDayFieldChange(idx, "referenceLinks", stringToArray(e.target.value))}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Paste reference URLs (comma separated)..."
-                                      />
-                                    </td>
-
-                                    {/* CONTENT UPLOAD LINKS */}
-                                    <td className="px-4 py-3 min-w-[240px]">
-                                      <textarea
-                                        rows={2}
-                                        value={arrayToString(dayItem.contentUploadLinks)}
-                                        onChange={(e) => handleDayFieldChange(idx, "contentUploadLinks", stringToArray(e.target.value))}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Paste Content / Post URLs (comma separated)..."
-                                      />
-                                    </td>
-
-                                    {/* VIDEO UPLOAD LINKS */}
-                                    <td className="px-4 py-3 min-w-[240px]">
-                                      <textarea
-                                        rows={2}
-                                        value={arrayToString(dayItem.videoUploadLinks)}
-                                        onChange={(e) => handleDayFieldChange(idx, "videoUploadLinks", stringToArray(e.target.value))}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Paste Video / Reel URLs (comma separated)..."
-                                      />
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-4 mt-auto">
-                        <button
-                          type="button"
-                          onClick={() => setIsDrawerOpen(false)}
-                          className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isSubmittingSheet}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${isSubmittingSheet ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                            }`}
-                        >
-                          {isSubmittingSheet ? "Compiling Matrix..." : "Deploy Strategy Manifest"}
-                        </button>
-                      </div>
-                    </form>
-                  </motion.div>
-                </div>
-              )}
-            </AnimatePresence>,
-            document.body
-          )}
-      </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </div>
+    </div >
   );
 };
 
