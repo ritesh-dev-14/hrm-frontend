@@ -14,6 +14,8 @@ import {
   MessageSquarePlus,
   Send,
   History,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -53,6 +55,12 @@ const CoordinatorPriorityActions = () => {
   // Clean UI Virtual Pagination State
   const [visibleMessagesCount, setVisibleMessagesCount] = useState(10);
   const chatEndRef = useRef(null);
+
+  // Review (Approve / Reject) State
+  const [reviewingId, setReviewingId] = useState(null); // assignment ID being reviewed
+  const [reviewAction, setReviewAction] = useState(null); // "COMPLETED" | "REJECTED"
+  const [rejectReason, setRejectReason] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   // Derived state: Extract information seamlessly without mirroring state variables
   const selectedEmployeeDetails = useMemo(() => {
@@ -136,6 +144,28 @@ const CoordinatorPriorityActions = () => {
       console.error("Error creating task:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Review handler: coordinator approves or rejects a SUBMITTED task
+  const handleReview = async (assignmentId, status) => {
+    if (status === "REJECTED" && !rejectReason.trim()) return;
+    try {
+      setReviewLoading(true);
+      await API.patch(`/api/coordinator-assignments/${assignmentId}/review`, {
+        status,
+        reason: status === "REJECTED" ? rejectReason.trim() : undefined,
+      });
+      // Reset review state
+      setReviewingId(null);
+      setReviewAction(null);
+      setRejectReason("");
+      // Refresh assignments
+      fetchAssignments();
+    } catch (error) {
+      console.error("Failed to review submission:", error);
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -619,23 +649,99 @@ const CoordinatorPriorityActions = () => {
                         </span>
                       </td>
 
-                      {/* Integrated Follow Up Action Controller */}
+                      {/* Actions Column: Follow-Up + Approve/Reject for SUBMITTED */}
                       <td className="p-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => handleOpenFollowUpPanel(item)}
-                          className={`h-8 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${
-                            activeTaskForFollowUp?.id === item.id
-                              ? "bg-indigo-600 text-white border-indigo-600"
-                              : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
-                          }`}
-                        >
-                          <MessageSquarePlus size={13} />
-                          <span>
-                            {activeTaskForFollowUp?.id === item.id
-                              ? "Hide Follow Ups"
-                              : "Follow Ups"}
-                          </span>
-                        </button>
+                        <div className="flex flex-col items-center gap-2">
+                          {/* Follow-Up button always available */}
+                          <button
+                            onClick={() => handleOpenFollowUpPanel(item)}
+                            className={`h-8 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${
+                              activeTaskForFollowUp?.id === item.id
+                                ? "bg-indigo-600 text-white border-indigo-600"
+                                : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
+                            }`}
+                          >
+                            <MessageSquarePlus size={13} />
+                            <span>
+                              {activeTaskForFollowUp?.id === item.id
+                                ? "Hide Follow Ups"
+                                : "Follow Ups"}
+                            </span>
+                          </button>
+
+                          {/* Approve / Reject — only for SUBMITTED tasks */}
+                          {item?.status === "SUBMITTED" && (
+                            <div className="w-full">
+                              {reviewingId === item.id ? (
+                                <div className="flex flex-col gap-1.5 min-w-[200px]">
+                                  {reviewAction === "REJECTED" && (
+                                    <input
+                                      type="text"
+                                      placeholder="Reason for rejection..."
+                                      value={rejectReason}
+                                      onChange={(e) => setRejectReason(e.target.value)}
+                                      className="w-full px-2 py-1 text-xs rounded-lg border border-rose-300 focus:outline-none focus:border-rose-500 bg-white"
+                                      autoFocus
+                                    />
+                                  )}
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      onClick={() =>
+                                        handleReview(item.id, reviewAction)
+                                      }
+                                      disabled={
+                                        reviewLoading ||
+                                        (reviewAction === "REJECTED" && !rejectReason.trim())
+                                      }
+                                      className="flex-1 h-7 rounded-lg text-xs font-semibold transition inline-flex items-center justify-center gap-1 disabled:opacity-50 bg-slate-900 text-white hover:bg-slate-800"
+                                    >
+                                      {reviewLoading ? (
+                                        <Loader2 size={11} className="animate-spin" />
+                                      ) : (
+                                        "Confirm"
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setReviewingId(null);
+                                        setReviewAction(null);
+                                        setRejectReason("");
+                                      }}
+                                      className="flex-1 h-7 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1.5">
+                                  <button
+                                    onClick={() => {
+                                      setReviewingId(item.id);
+                                      setReviewAction("COMPLETED");
+                                      setRejectReason("");
+                                    }}
+                                    className="flex-1 h-7 px-2 rounded-lg border text-xs font-semibold transition inline-flex items-center justify-center gap-1 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                  >
+                                    <ThumbsUp size={11} />
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setReviewingId(item.id);
+                                      setReviewAction("REJECTED");
+                                      setRejectReason("");
+                                    }}
+                                    className="flex-1 h-7 px-2 rounded-lg border text-xs font-semibold transition inline-flex items-center justify-center gap-1 bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
+                                  >
+                                    <ThumbsDown size={11} />
+                                    Reject
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
 
