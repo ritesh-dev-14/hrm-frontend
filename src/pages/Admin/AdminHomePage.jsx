@@ -174,43 +174,7 @@ const AdminPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* Assignment Status Summary */}
-        <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100/60">
-          <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="text-slate-400" size={20} />
-            <h3 className="text-lg font-bold text-slate-800 tracking-tight">Global Assignment Status</h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-shadow">
-              <div>
-                <span className="block text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">Pending</span>
-                <span className="text-3xl font-black text-slate-800">{assignmentSummary.pending || 0}</span>
-              </div>
-              <Clock3 className="text-amber-100 group-hover:text-amber-200 transition-colors" size={40} />
-            </div>
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-shadow">
-              <div>
-                <span className="block text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Submitted</span>
-                <span className="text-3xl font-black text-slate-800">{assignmentSummary.submitted || 0}</span>
-              </div>
-              <FileText className="text-blue-100 group-hover:text-blue-200 transition-colors" size={40} />
-            </div>
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-shadow">
-              <div>
-                <span className="block text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Completed</span>
-                <span className="text-3xl font-black text-slate-800">{assignmentSummary.completed || 0}</span>
-              </div>
-              <CheckCircle2 className="text-emerald-100 group-hover:text-emerald-200 transition-colors" size={40} />
-            </div>
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-shadow">
-              <div>
-                <span className="block text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Rejected</span>
-                <span className="text-3xl font-black text-slate-800">{assignmentSummary.rejected || 0}</span>
-              </div>
-              <XCircle className="text-red-100 group-hover:text-red-200 transition-colors" size={40} />
-            </div>
-          </div>
-        </motion.div>
+
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Projects Catalog */}
