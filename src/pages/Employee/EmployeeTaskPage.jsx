@@ -18,7 +18,23 @@ import {
   Search,
   Layers,
   Link2,
+  Globe,
+  Phone,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Calendar,
+  ClipboardList,
 } from "lucide-react";
+
+// Web Development department name matchers
+const WEB_DEV_DEPT_KEYS = ["web development", "webdevelopment", "it"];
+const isWebDevDept = (deptName) => {
+  if (!deptName) return false;
+  const n = deptName.toLowerCase().replace(/\s+/g, " ").trim();
+  return WEB_DEV_DEPT_KEYS.some((key) => n.includes(key.split(" ")[0]));
+};
 
 // Status configuration map for beautiful UI rendering
 const statusConfig = {
@@ -412,6 +428,12 @@ const EmployeeTaskPage = () => {
                       </p>
                     </div>
 
+                    {/* Web Development Project Credentials Panel */}
+                    {selectedTask.taskItem?.task?.project &&
+                      isWebDevDept(selectedTask.taskItem?.task?.project?.department?.name) && (
+                      <WebDevCredentialsPanel project={selectedTask.taskItem.task.project} />
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="border border-slate-200/60 bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm">
                         <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500 shrink-0">
@@ -679,6 +701,122 @@ const StatsRow = ({ title, value, icon: Icon, color = "slate" }) => {
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{title}</span>
         <span className="text-xl font-black text-slate-900 block mt-0.5">{value}</span>
       </div>
+    </div>
+  );
+};
+
+/* ──────────────────────────────────────────────────────────────
+   WEB DEV PROJECT CREDENTIALS PANEL
+   Shown in the task modal when the task belongs to a Web Dev project
+   ────────────────────────────────────────────────────────────── */
+const WebDevCredentialsPanel = ({ project }) => {
+  const [showDomainPass, setShowDomainPass] = useState(false);
+  const [showEmailPass, setShowEmailPass] = useState(false);
+
+  const fmt = (d) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const SecretField = ({ label, value, show, onToggle, icon: Icon }) => (
+    <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 last:border-0 gap-3">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Icon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 whitespace-nowrap">{label}</span>
+      </div>
+      <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+        <span className={`text-xs font-semibold text-slate-700 text-right break-all ${!value ? "text-slate-400 italic" : ""}`}>
+          {show ? (value || "—") : (value ? "••••••••" : "—")}
+        </span>
+        {value && (
+          <button onClick={onToggle} className="w-6 h-6 flex items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-400 transition shrink-0">
+            {show ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="bg-gradient-to-br from-indigo-50/80 to-violet-50/50 border border-indigo-200/60 rounded-2xl p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <Globe className="w-4 h-4 text-indigo-600" />
+        </div>
+        <div>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-600">Project Credentials</span>
+          <p className="text-[10px] text-indigo-400 font-medium">Provided by your manager for this project</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0">
+        {/* Client Info */}
+        <div>
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-1.5 mb-2 border-b border-indigo-100 pb-1.5">
+            <User2 className="w-3 h-3" /> Client Info
+          </h4>
+          <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 gap-3">
+            <div className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-indigo-300 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Client</span></div>
+            <span className={`text-xs font-semibold ${project.clientName ? "text-slate-700" : "text-slate-400 italic"}`}>{project.clientName || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 gap-3">
+            <div className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-indigo-300 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Phone</span></div>
+            <span className={`text-xs font-semibold ${project.phone ? "text-slate-700" : "text-slate-400 italic"}`}>{project.phone || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 gap-3">
+            <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-indigo-300 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Start</span></div>
+            <span className="text-xs font-semibold text-slate-700">{fmt(project.startDate)}</span>
+          </div>
+          <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 gap-3">
+            <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-rose-300 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">End</span></div>
+            <span className="text-xs font-semibold text-slate-700">{fmt(project.endDate)}</span>
+          </div>
+        </div>
+
+        {/* Domain Access */}
+        <div>
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-1.5 mb-2 border-b border-indigo-100 pb-1.5">
+            <Globe className="w-3 h-3" /> Domain Access
+          </h4>
+          <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 gap-3">
+            <div className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-indigo-300 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Domain</span></div>
+            {project.domainName ? (
+              <a href={project.domainName.startsWith("http") ? project.domainName : `https://${project.domainName}`} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-1 flex items-center gap-1 transition break-all text-right">
+                {project.domainName} <ExternalLink className="w-3 h-3 shrink-0" />
+              </a>
+            ) : (
+              <span className="text-xs text-slate-400 italic">—</span>
+            )}
+          </div>
+          <SecretField label="Domain Pass" value={project.domainPassword} show={showDomainPass} onToggle={() => setShowDomainPass((s) => !s)} icon={Lock} />
+          <div className="flex items-center justify-between py-2.5 border-b border-indigo-50 gap-3">
+            <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-indigo-300 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Email</span></div>
+            <span className={`text-xs font-semibold ${project.clientEmail ? "text-slate-700" : "text-slate-400 italic"}`}>{project.clientEmail || "—"}</span>
+          </div>
+          <SecretField label="Email Pass" value={project.clientEmailPassword} show={showEmailPass} onToggle={() => setShowEmailPass((s) => !s)} icon={Lock} />
+        </div>
+      </div>
+
+      {/* Requirements */}
+      {project.requirements && (
+        <div className="mt-4 pt-4 border-t border-indigo-100">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-1.5 mb-2">
+            <ClipboardList className="w-3.5 h-3.5" /> Requirements & References
+          </span>
+          <div className="bg-white/70 rounded-xl p-3 text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap border border-indigo-100">
+            {project.requirements.split(/(\s+)/).map((word, i) => {
+              if (word.startsWith("http://") || word.startsWith("https://")) {
+                return (
+                  <a key={i} href={word} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline underline-offset-1 inline-flex items-center gap-0.5 transition break-all">
+                    {word}<ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                  </a>
+                );
+              }
+              return word;
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
