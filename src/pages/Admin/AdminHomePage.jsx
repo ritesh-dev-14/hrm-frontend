@@ -185,26 +185,67 @@ const AdminPage = () => {
               </h2>
             </div>
             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-              <div className="space-y-3">
-                {projects.map((proj, i) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    key={proj.id}
-                    onClick={() => navigate(`/project/${proj.id}`)}
-                    className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
-                  >
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proj.projectName}</h4>
-                      <p className="text-xs text-slate-500 mt-1">{proj.department?.name || "General"} • {new Date(proj.startDate).toLocaleDateString()} to {new Date(proj.endDate).toLocaleDateString()}</p>
-                    </div>
-                    <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                  </motion.div>
-                ))}
-                {projects.length === 0 && (
-                  <div className="text-center py-10 text-slate-400 font-medium">No projects listed.</div>
-                )}
+              <div className="space-y-6">
+                {(() => {
+                  const recurringProjects = projects.filter(
+                    (proj) => proj.department?.name?.toLowerCase().includes("social media")
+                  );
+                  const otherProjects = projects.filter(
+                    (proj) => !proj.department?.name?.toLowerCase().includes("social media")
+                  );
+
+                  return (
+                    <>
+                      {recurringProjects.length > 0 && (
+                        <div className="space-y-3">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-500 pl-2">Recurring Projects</h3>
+                          {recurringProjects.map((proj, i) => (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.05 }}
+                              key={proj.id}
+                              onClick={() => navigate(`/project/${proj.id}`)}
+                              className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
+                            >
+                              <div>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proj.projectName}</h4>
+                                <p className="text-xs text-slate-500 mt-1">{proj.department?.name || "General"} • {new Date(proj.startDate).toLocaleDateString()} to {new Date(proj.endDate).toLocaleDateString()}</p>
+                              </div>
+                              <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+
+                      {otherProjects.length > 0 && (
+                        <div className="space-y-3">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-2">Other Projects</h3>
+                          {otherProjects.map((proj, i) => (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.05 }}
+                              key={proj.id}
+                              onClick={() => navigate(`/project/${proj.id}`)}
+                              className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
+                            >
+                              <div>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proj.projectName}</h4>
+                                <p className="text-xs text-slate-500 mt-1">{proj.department?.name || "General"} • {new Date(proj.startDate).toLocaleDateString()} to {new Date(proj.endDate).toLocaleDateString()}</p>
+                              </div>
+                              <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {projects.length === 0 && (
+                        <div className="text-center py-10 text-slate-400 font-medium">No projects listed.</div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </motion.div>
