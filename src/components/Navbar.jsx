@@ -77,6 +77,13 @@ const NAV_CONFIG = [
     roles: ["EMPLOYEE"],
   },
   {
+    id: "daily-reports",
+    label: "Daily Reports",
+    icon: FileText,
+    path: "/employee-daily-reports", 
+    roles: ["EMPLOYEE"],
+  },
+  {
     id: "tasks-cor",
     label: "My Tasks",
     icon: BriefcaseBusiness,

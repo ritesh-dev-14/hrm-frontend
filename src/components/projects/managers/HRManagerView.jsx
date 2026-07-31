@@ -15,7 +15,9 @@ import {
   Save,
   Settings,
   Trash2,
-  Edit
+  Edit,
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 const HRManagerView = ({ projectId }) => {
@@ -113,6 +115,10 @@ const HRManagerView = ({ projectId }) => {
     }
   };
 
+  const [dailyReports, setDailyReports] = useState([]);
+  const [loadingDailyReports, setLoadingDailyReports] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+
   const fetchManagers = async () => {
     try {
       const res = await API.get("/api/hr/managers");
@@ -122,10 +128,35 @@ const HRManagerView = ({ projectId }) => {
     }
   };
 
+  const fetchDailyReports = async () => {
+    try {
+      setLoadingDailyReports(true);
+      const res = await API.get(`/api/project-reports/${projectId}`);
+      setDailyReports(res?.data?.data || []);
+    } catch (err) {
+      console.error("Failed to fetch daily reports", err);
+    } finally {
+      setLoadingDailyReports(false);
+    }
+  };
+
+  const handleUpdateStatus = async (newStatus) => {
+    try {
+      setStatusUpdating(true);
+      await API.patch(`/api/projects/${projectId}`, { status: newStatus });
+      await fetchProjectDetails();
+    } catch (err) {
+      alert("Failed to update status");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   useEffect(() => {
     fetchManagers();
     if (projectId) {
       fetchProjectDetails();
+      fetchDailyReports();
     } else {
       setError("No project ID passed to this component view.");
       setLoading(false);
@@ -286,6 +317,10 @@ const HRManagerView = ({ projectId }) => {
     );
   }
 
+  const isWebDev = project?.department?.name && ['web development', 'webdevelopment', 'it'].some(
+    (n) => project.department.name.toLowerCase().includes(n)
+  );
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-20">
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -315,6 +350,24 @@ const HRManagerView = ({ projectId }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {isWebDev && (
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm h-11 relative">
+                <span className="text-xs font-bold text-slate-500 uppercase">Status:</span>
+                <select
+                  value={project?.status || "ONGOING"}
+                  onChange={(e) => handleUpdateStatus(e.target.value)}
+                  disabled={statusUpdating}
+                  className={`text-xs font-black uppercase tracking-wider bg-transparent outline-none cursor-pointer ${
+                    project?.status === "VERIFIED" ? "text-emerald-600" :
+                    project?.status === "SUBMITTED" ? "text-amber-600" : "text-indigo-600"
+                  }`}
+                >
+                  <option value="ONGOING">ONGOING</option>
+                  <option value="SUBMITTED">SUBMITTED</option>
+                  <option value="VERIFIED">VERIFIED</option>
+                </select>
+              </div>
+            )}
             <button
               onClick={() => setIsEditing(!isEditing)}
               className={`inline-flex items-center gap-2 h-11 px-5 rounded-xl font-bold transition-all ${isEditing ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25'}`}
@@ -645,6 +698,42 @@ const HRManagerView = ({ projectId }) => {
                   ))}
                 </div>
               </motion.div>
+              
+              {isWebDev && (
+                <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8 mt-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <FileText size={20} className="text-indigo-500" /> Employee Daily Reports
+                    </h3>
+                    {loadingDailyReports && <Loader2 size={20} className="animate-spin text-slate-400" />}
+                  </div>
+
+                  {!loadingDailyReports && dailyReports.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400">
+                      <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm font-medium">No daily reports submitted yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                      {dailyReports.map((report) => (
+                        <div key={report.id} className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-bold text-sm text-slate-800">
+                              {report.employee?.name || "Unknown"} <span className="text-xs font-medium text-slate-500 ml-1">({report.employee?.role})</span>
+                            </div>
+                            <div className="text-xs font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                              {new Date(report.date).toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                            {report.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </>
           )}
         </motion.div>

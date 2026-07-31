@@ -58,6 +58,7 @@ import CoordinatorPriorityActions from "../pages/Coordinator/CoordinatorPriority
 /* NEW — EMPLOYEE ACTIONS */
 import AssignedActionsPage from "../pages/Employee/AssignedActionsPage.jsx";
 import CordinatorTasks from "../pages/CordinatorTasks.jsx";
+import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -238,6 +239,17 @@ export const AppRoutes = () => {
           />
 
           <Route path="/project/:id" element={<ProjectDetailsViewWrapper />} />
+
+          <Route
+            path="/employee-daily-reports"
+            element={
+              role === "EMPLOYEE" ? (
+                <EmployeeDailyReports />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
 
           {/* SAFE ACCESS GUARD GRID FOR MEDIA SHOOTS */}
           <Route path="/shoot" element={<ShootPage />} />

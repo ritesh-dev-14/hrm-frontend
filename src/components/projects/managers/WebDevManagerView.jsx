@@ -171,6 +171,11 @@ const WebDevManagerView = ({ projectId }) => {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectingAssignmentId, setRejectingAssignmentId] = useState(null);
 
+  // Daily Reports State
+  const [dailyReports, setDailyReports] = useState([]);
+  const [loadingDailyReports, setLoadingDailyReports] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+
   // ────────────── FETCH PROJECT ──────────────
   const fetchProject = async () => {
     try {
@@ -228,10 +233,37 @@ const WebDevManagerView = ({ projectId }) => {
     }
   };
 
+  // ────────────── FETCH DAILY REPORTS ──────────────
+  const fetchDailyReports = async () => {
+    try {
+      setLoadingDailyReports(true);
+      const res = await API.get(`/api/project-reports/${projectId}`);
+      setDailyReports(res?.data?.data || []);
+    } catch (err) {
+      console.error("Failed to fetch daily reports", err);
+    } finally {
+      setLoadingDailyReports(false);
+    }
+  };
+
+  // ────────────── UPDATE STATUS ──────────────
+  const handleUpdateStatus = async (newStatus) => {
+    try {
+      setStatusUpdating(true);
+      await API.patch(`/api/projects/${projectId}`, { status: newStatus });
+      await fetchProject();
+    } catch (err) {
+      alert("Failed to update status");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   useEffect(() => {
     if (projectId) {
       fetchProject();
       fetchEmployees();
+      fetchDailyReports();
     }
   }, [projectId]);
 
@@ -426,6 +458,24 @@ const WebDevManagerView = ({ projectId }) => {
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200/60 shadow-sm relative">
+              <span className="text-xs font-bold text-slate-500 uppercase">Status:</span>
+              <select
+                value={project?.status || "ONGOING"}
+                onChange={(e) => handleUpdateStatus(e.target.value)}
+                disabled={statusUpdating}
+                className={`text-xs font-black uppercase tracking-wider bg-transparent outline-none cursor-pointer ${
+                  project?.status === "VERIFIED" ? "text-emerald-600" :
+                  project?.status === "SUBMITTED" ? "text-amber-600" : "text-indigo-600"
+                }`}
+              >
+                <option value="ONGOING">ONGOING</option>
+                <option value="SUBMITTED">SUBMITTED</option>
+                <option value="VERIFIED">VERIFIED</option>
+              </select>
+              {statusUpdating && <Loader2 className="w-3 h-3 animate-spin text-slate-400 absolute right-1 top-2" />}
+            </div>
+
             <button
               onClick={() => setShowCreateTask((s) => !s)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-bold shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-200/70 transition-all"
@@ -706,6 +756,54 @@ const WebDevManagerView = ({ projectId }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ── DAILY REPORTS ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden"
+        >
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-slate-900">Employee Daily Reports</h2>
+                <p className="text-xs text-slate-500 font-medium">Updates submitted for this project</p>
+              </div>
+            </div>
+            {loadingDailyReports && <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
+          </div>
+
+          <div className="p-6">
+            {!loadingDailyReports && dailyReports.length === 0 ? (
+              <div className="text-center py-6 text-slate-400">
+                <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">No daily reports submitted yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 webdev-scrollbar">
+                {dailyReports.map((report) => (
+                  <div key={report.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-sm text-slate-800">
+                        {report.employee?.name || "Unknown"} <span className="text-xs font-medium text-slate-500 ml-1">({report.employee?.role})</span>
+                      </div>
+                      <div className="text-xs font-semibold text-slate-500 bg-white px-2 py-1 rounded-md border border-slate-200">
+                        {new Date(report.date).toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                      {report.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
 
         {/* ── TASKS LIST ── */}
         <motion.div
