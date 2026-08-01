@@ -603,7 +603,7 @@ const SMMManagerView = ({ projectId }) => {
         moodBoardLink: sheetMeta.moodBoardLink.trim() || null,
         days: activeDaysPayload.map((day) => ({
           date: day.date,
-          // Normalise values: backend expects either "SHOOT", "AI" or null for postType/reelType
+          // Normalise values: backend expects either "SHOOT_REQUIRED", "AI_REQUIRED", "DATA_AVAILABLE" or null for postType/reelType
           reelType: day.reelType && day.reelType !== "NONE" ? day.reelType : null,
           postType: day.postType && day.postType !== "NONE" ? day.postType : null,
           title: day.title || "",
@@ -1322,8 +1322,9 @@ const SMMManagerView = ({ projectId }) => {
                                     className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                   >
                                     <option value="NONE">NONE</option>
-                                    <option value="SHOOT">SHOOT</option>
-                                    <option value="AI">AI</option>
+                                    <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                    <option value="AI_REQUIRED">AI REQUIRED</option>
+                                    <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
                                   </select>
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap pt-4">
@@ -1333,8 +1334,9 @@ const SMMManagerView = ({ projectId }) => {
                                     className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                   >
                                     <option value="NONE">NONE</option>
-                                    <option value="SHOOT">SHOOT</option>
-                                    <option value="AI">AI</option>
+                                    <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                    <option value="AI_REQUIRED">AI REQUIRED</option>
+                                    <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
                                   </select>
                                 </td>
 
@@ -1711,8 +1713,9 @@ const SMMManagerView = ({ projectId }) => {
                                       className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                     >
                                       <option value="NONE">NONE</option>
-                                      <option value="SHOOT">SHOOT</option>
-                                      <option value="AI">AI</option>
+                                      <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                      <option value="AI_REQUIRED">AI REQUIRED</option>
+                                      <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
                                     </select>
                                   </td>
                                   <td className="px-4 py-3 whitespace-nowrap pt-4">
@@ -1722,8 +1725,9 @@ const SMMManagerView = ({ projectId }) => {
                                       className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-xs"
                                     >
                                       <option value="NONE">NONE</option>
-                                      <option value="SHOOT">SHOOT</option>
-                                      <option value="AI">AI</option>
+                                      <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                      <option value="AI_REQUIRED">AI REQUIRED</option>
+                                      <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
                                     </select>
                                   </td>
 
@@ -1877,8 +1881,9 @@ const SMMManagerView = ({ projectId }) => {
                                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold shadow-xs"
                               >
                                 <option value="NONE">NONE</option>
-                                <option value="SHOOT">SHOOT</option>
-                                <option value="AI">AI</option>
+                                <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                <option value="AI_REQUIRED">AI REQUIRED</option>
+                                <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
                               </select>
                             </div>
                             <div className="space-y-1">
@@ -1889,8 +1894,9 @@ const SMMManagerView = ({ projectId }) => {
                                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold shadow-xs"
                               >
                                 <option value="NONE">NONE</option>
-                                <option value="SHOOT">SHOOT</option>
-                                <option value="AI">AI</option>
+                                <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                <option value="AI_REQUIRED">AI REQUIRED</option>
+                                <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
                               </select>
                             </div>
                             <div className="space-y-1">

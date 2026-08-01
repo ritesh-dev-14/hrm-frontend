@@ -1802,7 +1802,7 @@ export default function ShootWorkspaceDetails() {
                               <span className="text-xs font-bold text-slate-800 block">{day.title || "Untitled Day"}</span>
                               <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                                 {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                {" • "}{day.reelType || day.postType || "—"}
+                                {" • "}{day.reelType ? day.reelType.replace('_', ' ') : (day.postType ? day.postType.replace('_', ' ') : "—")}
                                 {day.videoType ? ` • ${day.videoType}` : ""}
                               </span>
                             </button>
