@@ -227,6 +227,7 @@ const SMMManagerView = ({ projectId }) => {
   
   // NEW: State for Add Row modal in the drawer
   const [isAddDayModalOpen, setIsAddDayModalOpen] = useState(false);
+  const [isEditAddDayModalOpen, setIsEditAddDayModalOpen] = useState(false);
   const [newDayForm, setNewDayForm] = useState({
     date: "",
     ...EMPTY_DAY_SHAPE
@@ -235,57 +236,26 @@ const SMMManagerView = ({ projectId }) => {
   // Utility helper to guarantee all days of a month exist for rendering/editing
   const padCalendarDays = (calendar) => {
     if (!calendar) return null;
-    const { month, year, days = [] } = calendar;
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const completeDays = [];
+    const { days = [] } = calendar;
 
-    const existingDaysMap = {};
-    days.forEach((day) => {
-      if (day.date) {
-        const datePart = day.date.split("T")[0];
-        existingDaysMap[datePart] = day;
-      }
+    const formattedDays = days.map((day) => {
+      return {
+        ...EMPTY_DAY_SHAPE,
+        // Extract dynamic metrics synced via the Shoot Workspace Review pipelines
+        submissionLinks: day.submissionLinks || [],
+        contentUploadLinks: day.contentUploadLinks || [],
+        videoUploadLinks: day.videoUploadLinks || [],
+        contentCreativeSubmissionLinks: day.contentCreativeSubmissionLinks || [],
+        creativeSubmissionLink: day.creativeSubmissionLink || null,
+        submissionStatus: day.status || day.submissionStatus || null,
+        reviewedAt: day.reviewedAt || null,
+        rejectionReason: day.rejectionReason || null,
+        createdAt: day.createdAt || null,
+        ...day,
+      };
     });
-
-    for (let dayIndex = 1; dayIndex <= daysInMonth; dayIndex++) {
-      const dayString = String(dayIndex).padStart(2, "0");
-      const monthString = String(month).padStart(2, "0");
-      const dateKey = `${year}-${monthString}-${dayString}`;
-      const calculatedISODate = `${dateKey}T00:00:00.000Z`;
-
-      if (existingDaysMap[dateKey]) {
-        const matchingDay = existingDaysMap[dateKey];
-        completeDays.push({
-          ...EMPTY_DAY_SHAPE,
-          // Extract dynamic metrics synced via the Shoot Workspace Review pipelines
-          submissionLinks: matchingDay.submissionLinks || [],
-          contentUploadLinks: matchingDay.contentUploadLinks || [],
-          videoUploadLinks: matchingDay.videoUploadLinks || [],
-          contentCreativeSubmissionLinks: matchingDay.contentCreativeSubmissionLinks || [],
-          creativeSubmissionLink: matchingDay.creativeSubmissionLink || null,
-          submissionStatus: matchingDay.status || matchingDay.submissionStatus || null,
-          reviewedAt: matchingDay.reviewedAt || null,
-          rejectionReason: matchingDay.rejectionReason || null,
-          createdAt: matchingDay.createdAt || null,
-          ...matchingDay,
-        });
-      } else {
-        completeDays.push({
-          date: calculatedISODate,
-          ...EMPTY_DAY_SHAPE,
-          submissionLinks: [],
-          contentUploadLinks: [],
-          videoUploadLinks: [],
-          contentCreativeSubmissionLinks: [],
-          creativeSubmissionLink: null,
-          submissionStatus: null,
-          reviewedAt: null,
-          rejectionReason: null,
-          createdAt: null,
-        });
-      }
-    }
-    return { ...calendar, days: completeDays };
+    
+    return { ...calendar, days: formattedDays };
   };
 
   // Auto-generate empty structural layout for the dynamic creation workspace
@@ -1286,7 +1256,21 @@ const SMMManagerView = ({ projectId }) => {
                     </div>
 
                     {/* Spacious Table with Roomy Text Areas */}
-                    <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
+                    <div className="flex flex-col flex-1 min-h-[400px]">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Daily Tactical Matrix Breakdown</h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewDayForm({ date: "", ...EMPTY_DAY_SHAPE });
+                            setIsEditAddDayModalOpen(true);
+                          }}
+                          className="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                        >
+                          + Add Row
+                        </button>
+                      </div>
+                      <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
                       <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-250px)] min-h-[500px]">
                         <table className="w-full text-left border-collapse">
                           <thead>
@@ -1307,6 +1291,7 @@ const SMMManagerView = ({ projectId }) => {
                               <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Status</th>
                               <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Reviewed At</th>
                               <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Feedback</th>
+                              <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 bg-white">
@@ -1484,6 +1469,21 @@ const SMMManagerView = ({ projectId }) => {
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 pt-4">{formatDateTime(dayItem.reviewedAt)}</td>
                                 <td className="px-4 py-3 min-w-[150px] text-xs text-red-600 font-medium pt-4">{dayItem.rejectionReason || "—"}</td>
+                                {/* ACTIONS */}
+                                <td className="px-4 py-3 whitespace-nowrap pt-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updatedDays = [...selectedCalendar.days];
+                                      updatedDays.splice(index, 1);
+                                      setSelectedCalendar(prev => ({ ...prev, days: updatedDays }));
+                                    }}
+                                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                    title="Remove Row"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -1491,6 +1491,178 @@ const SMMManagerView = ({ projectId }) => {
                       </div>
                     </div>
                   </div>
+                  </div>
+
+                  {/* ADD DAY MODAL PORTAL (INSIDE EDIT VIEW) */}
+                  {isEditAddDayModalOpen && (
+                    <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 backdrop-blur-md">
+                          <h3 className="text-xl font-black text-slate-900">Add Tactical Row</h3>
+                          <button type="button" onClick={() => setIsEditAddDayModalOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                        
+                        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Date <span className="text-rose-500">*</span></label>
+                              <input 
+                                type="date" 
+                                value={newDayForm.date} 
+                                onChange={(e) => setNewDayForm({...newDayForm, date: e.target.value})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold shadow-xs" 
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Reel Type</label>
+                              <select 
+                                value={newDayForm.reelType} 
+                                onChange={(e) => setNewDayForm({...newDayForm, reelType: e.target.value})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold shadow-xs"
+                              >
+                                <option value="NONE">NONE</option>
+                                <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                <option value="AI_REQUIRED">AI REQUIRED</option>
+                                <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Post Type</label>
+                              <select 
+                                value={newDayForm.postType} 
+                                onChange={(e) => setNewDayForm({...newDayForm, postType: e.target.value})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold shadow-xs"
+                              >
+                                <option value="NONE">NONE</option>
+                                <option value="SHOOT_REQUIRED">SHOOT REQUIRED</option>
+                                <option value="AI_REQUIRED">AI REQUIRED</option>
+                                <option value="DATA_AVAILABLE">DATA AVAILABLE</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Video Format</label>
+                              <select 
+                                value={newDayForm.videoType} 
+                                onChange={(e) => setNewDayForm({...newDayForm, videoType: e.target.value})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold shadow-xs"
+                              >
+                                <option value="HORIZONTAL">HORIZONTAL</option>
+                                <option value="VERTICAL">VERTICAL</option>
+                                <option value="SQUARE">SQUARE</option>
+                              </select>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Title / Topic</label>
+                            <textarea 
+                              rows={2} 
+                              value={newDayForm.title} 
+                              onChange={(e) => setNewDayForm({...newDayForm, title: e.target.value})}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium shadow-xs resize-y" 
+                              placeholder="Enter Title..."
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Script Content</label>
+                              <textarea 
+                                rows={3} 
+                                value={newDayForm.script} 
+                                onChange={(e) => setNewDayForm({...newDayForm, script: e.target.value})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium shadow-xs resize-y" 
+                                placeholder="Enter Script..."
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Frame Breakdown / Notes</label>
+                              <textarea 
+                                rows={3} 
+                                value={newDayForm.description} 
+                                onChange={(e) => setNewDayForm({...newDayForm, description: e.target.value})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium shadow-xs resize-y" 
+                                placeholder="Enter Descriptions..."
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Visual References</label>
+                              <textarea 
+                                rows={2} 
+                                value={arrayToString(newDayForm.referenceLinks)} 
+                                onChange={(e) => setNewDayForm({...newDayForm, referenceLinks: stringToArray(e.target.value)})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-xs font-medium shadow-xs resize-y" 
+                                placeholder="Comma separated URLs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Content Links</label>
+                              <textarea 
+                                rows={2} 
+                                value={arrayToString(newDayForm.contentUploadLinks)} 
+                                onChange={(e) => setNewDayForm({...newDayForm, contentUploadLinks: stringToArray(e.target.value)})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-xs font-medium shadow-xs resize-y" 
+                                placeholder="Comma separated URLs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Video Links</label>
+                              <textarea 
+                                rows={2} 
+                                value={arrayToString(newDayForm.videoUploadLinks)} 
+                                onChange={(e) => setNewDayForm({...newDayForm, videoUploadLinks: stringToArray(e.target.value)})}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-xs font-medium shadow-xs resize-y" 
+                                placeholder="Comma separated URLs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                          <button 
+                            type="button" 
+                            onClick={() => setIsEditAddDayModalOpen(false)} 
+                            className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              if (!newDayForm.date) {
+                                alert("Please select a valid date for this row.");
+                                return;
+                              }
+                              // Parse date into ISO format assuming UTC midnight
+                              const parsedDate = new Date(newDayForm.date);
+                              if (isNaN(parsedDate.getTime())) {
+                                alert("Invalid date selected.");
+                                return;
+                              }
+                              
+                              setSelectedCalendar(prev => ({
+                                ...prev,
+                                days: [...prev.days, {
+                                  ...newDayForm,
+                                  date: parsedDate.toISOString()
+                                }]
+                              }));
+                              setIsEditAddDayModalOpen(false);
+                            }} 
+                            className="px-6 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all"
+                          >
+                            Save Row
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </motion.div>
               </div>
             )}
