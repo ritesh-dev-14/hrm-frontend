@@ -665,9 +665,14 @@ const SMMManagerView = ({ projectId }) => {
 
       const payload = {
         days: cleanedDays,
+        totalReels: selectedCalendar.totalReels ? parseInt(selectedCalendar.totalReels, 10) : 0,
+        totalPosts: selectedCalendar.totalPosts ? parseInt(selectedCalendar.totalPosts, 10) : 0,
         totalReelsUploaded: selectedCalendar.totalReelsUploaded ? parseInt(selectedCalendar.totalReelsUploaded, 10) : 0,
         totalPostsUploaded: selectedCalendar.totalPostsUploaded ? parseInt(selectedCalendar.totalPostsUploaded, 10) : 0,
       };
+      if (selectedCalendar.moodBoardLink && selectedCalendar.moodBoardLink.trim() !== "") {
+        payload.moodBoardLink = selectedCalendar.moodBoardLink.trim();
+      }
 
       const response = await API.patch(
         `/api/projects/${projectId}/monthly-sheets/${selectedCalendar.id}`,
@@ -1222,35 +1227,59 @@ const SMMManagerView = ({ projectId }) => {
                   {/* Workspace Main Area */}
                   <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-slate-100/50">
                     {/* Metric Controls */}
-                    <div className="flex flex-wrap gap-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-                      <div className="flex-1 min-w-[200px] space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reels Uploaded Count</label>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planned Reels</label>
                         <input
                           type="number"
-                          name="totalReelsUploaded"
+                          min="0"
+                          value={selectedCalendar.totalReels || ""}
+                          onChange={(e) => setSelectedCalendar((prev) => ({ ...prev, totalReels: e.target.value }))}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                          placeholder="e.g. 15"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planned Posts</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={selectedCalendar.totalPosts || ""}
+                          onChange={(e) => setSelectedCalendar((prev) => ({ ...prev, totalPosts: e.target.value }))}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                          placeholder="e.g. 10"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reels Uploaded</label>
+                        <input
+                          type="number"
                           min="0"
                           value={selectedCalendar.totalReelsUploaded || ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedCalendar((prev) => ({ ...prev, totalReelsUploaded: val }));
-                          }}
+                          onChange={(e) => setSelectedCalendar((prev) => ({ ...prev, totalReelsUploaded: e.target.value }))}
                           className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
                           placeholder="e.g. 5"
                         />
                       </div>
-                      <div className="flex-1 min-w-[200px] space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posts Uploaded Count</label>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posts Uploaded</label>
                         <input
                           type="number"
-                          name="totalPostsUploaded"
                           min="0"
                           value={selectedCalendar.totalPostsUploaded || ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedCalendar((prev) => ({ ...prev, totalPostsUploaded: val }));
-                          }}
+                          onChange={(e) => setSelectedCalendar((prev) => ({ ...prev, totalPostsUploaded: e.target.value }))}
                           className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
                           placeholder="e.g. 3"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-1 space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Moodboard Link</label>
+                        <input
+                          type="text"
+                          value={selectedCalendar.moodBoardLink || ""}
+                          onChange={(e) => setSelectedCalendar((prev) => ({ ...prev, moodBoardLink: e.target.value }))}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
+                          placeholder="https://..."
                         />
                       </div>
                     </div>
