@@ -213,6 +213,9 @@ export default function AttendanceCard() {
 
   // CLOCK OUT
   const handleClockOut = async () => {
+    const isConfirmed = window.confirm("Are you sure you want to end your attendance?");
+    if (!isConfirmed) return;
+
     try {
       setLoading(true);
 
