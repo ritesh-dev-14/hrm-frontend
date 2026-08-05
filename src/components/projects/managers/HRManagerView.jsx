@@ -65,7 +65,12 @@ const HRManagerView = ({ projectId }) => {
     linkedinEmail: '',
     linkedinPassword: '',
     twitterEmail: '',
-    twitterPassword: ''
+    twitterPassword: '',
+    // SEO fields
+    seoName: '',
+    seoContact: '',
+    seoEmail: '',
+    seoPassword: '',
   });
 
   const fetchProjectDetails = async () => {
@@ -103,7 +108,12 @@ const HRManagerView = ({ projectId }) => {
           linkedinEmail: projectData?.linkedinEmail || '',
           linkedinPassword: projectData?.linkedinPassword || '',
           twitterEmail: projectData?.twitterEmail || '',
-          twitterPassword: projectData?.twitterPassword || ''
+          twitterPassword: projectData?.twitterPassword || '',
+          // SEO fields
+          seoName: projectData?.seoName || '',
+          seoContact: projectData?.seoContact || '',
+          seoEmail: projectData?.seoEmail || '',
+          seoPassword: projectData?.seoPassword || '',
         });
       } else {
         setError(resData?.message || 'Failed to fetch project details.');
@@ -118,6 +128,29 @@ const HRManagerView = ({ projectId }) => {
   const [dailyReports, setDailyReports] = useState([]);
   const [loadingDailyReports, setLoadingDailyReports] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+
+  // SEO Reports
+  const [seoReports, setSeoReports] = useState([]);
+  const [seoReportsLoading, setSeoReportsLoading] = useState(false);
+
+  const isWebDev = project?.department?.name && ['web development', 'webdevelopment', 'it'].some(
+    (n) => project.department.name.toLowerCase().includes(n)
+  );
+  const isSeoDept = project?.department?.name?.toLowerCase().includes('seo');
+
+  const fetchSeoReports = async (pid) => {
+    try {
+      setSeoReportsLoading(true);
+      const res = await API.get(`/api/seo-reports?projectId=${pid}`);
+      if (res.data?.success) {
+        setSeoReports(res.data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch SEO reports:", err);
+    } finally {
+      setSeoReportsLoading(false);
+    }
+  };
 
   const fetchManagers = async () => {
     try {
@@ -162,6 +195,12 @@ const HRManagerView = ({ projectId }) => {
       setLoading(false);
     }
   }, [projectId]);
+
+  useEffect(() => {
+    if (isSeoDept && projectId) {
+      fetchSeoReports(projectId);
+    }
+  }, [isSeoDept, projectId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -232,7 +271,12 @@ const HRManagerView = ({ projectId }) => {
         linkedinEmail: formData.linkedinEmail?.trim() || null,
         linkedinPassword: formData.linkedinPassword || null,
         twitterEmail: formData.twitterEmail?.trim() || null,
-        twitterPassword: formData.twitterPassword || null
+        twitterPassword: formData.twitterPassword || null,
+        // SEO fields
+        seoName: formData.seoName?.trim() || null,
+        seoContact: formData.seoContact?.trim() || null,
+        seoEmail: formData.seoEmail?.trim() || null,
+        seoPassword: formData.seoPassword || null,
       };
 
       const config = { headers: { 'Content-Type': 'application/json' } };
@@ -317,10 +361,6 @@ const HRManagerView = ({ projectId }) => {
     );
   }
 
-  const isWebDev = project?.department?.name && ['web development', 'webdevelopment', 'it'].some(
-    (n) => project.department.name.toLowerCase().includes(n)
-  );
-
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-20">
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -395,6 +435,8 @@ const HRManagerView = ({ projectId }) => {
               <form onSubmit={handleUpdate} className="space-y-8">
 
                 <div className="flex flex-col lg:flex-row gap-8">
+                  {/* Logo upload — hidden for SEO dept */}
+                  {!isSeoDept && (
                   <div className="flex-shrink-0 flex flex-col items-center gap-4 w-full lg:w-64">
                     <label className="text-xs font-bold tracking-wider uppercase text-slate-400 self-start lg:self-center">Client Logo</label>
                     <input type="file" accept="image/*" style={{ display: "none" }} ref={logoInputRef} onChange={handleLogoFileSelected} />
@@ -416,6 +458,7 @@ const HRManagerView = ({ projectId }) => {
                       {isUploadingLogo ? "Uploading..." : project?.logo ? "Replace Logo" : "Select Logo"}
                     </button>
                   </div>
+                  )}
 
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col space-y-1.5 md:col-span-2">
@@ -479,8 +522,10 @@ const HRManagerView = ({ projectId }) => {
                   </div>
                 </div>
 
+                {/* Social Media Credentials — hidden for SEO dept */}
+                {!isSeoDept && (
                 <div className="pt-4 border-t border-slate-100">
-                  <h3 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-4">Social Media Credentials & Links</h3>
+                  <h3 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-4">Social Media Credentials &amp; Links</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="flex flex-col space-y-1.5">
@@ -535,6 +580,32 @@ const HRManagerView = ({ projectId }) => {
                     </div>
                   </div>
                 </div>
+                )}
+
+                {/* SEO Credentials — only for SEO dept */}
+                {isSeoDept && (
+                <div className="pt-4 border-t border-slate-100">
+                  <h3 className="text-xs font-bold tracking-widest uppercase text-emerald-600 mb-4">SEO Account Credentials</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Contact Name</label>
+                      <input type="text" name="seoName" value={formData.seoName || ''} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-emerald-200 bg-white/50 text-sm font-medium outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="e.g. John Doe" />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Contact Number</label>
+                      <input type="text" name="seoContact" value={formData.seoContact || ''} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-emerald-200 bg-white/50 text-sm font-medium outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="e.g. +91 9876543210" />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">SEO Account Email</label>
+                      <input type="email" name="seoEmail" value={formData.seoEmail || ''} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-emerald-200 bg-white/50 text-sm font-medium outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="seo@example.com" />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">SEO Account Password</label>
+                      <input type="text" name="seoPassword" value={formData.seoPassword || ''} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-emerald-200 bg-white/50 text-sm font-medium outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="Enter password" />
+                    </div>
+                  </div>
+                </div>
+                )}
 
                 <div className="flex justify-end pt-6 border-t border-slate-100">
                   <button type="submit" className="inline-flex items-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all">
@@ -551,6 +622,7 @@ const HRManagerView = ({ projectId }) => {
                 {/* Left Column: Core Info */}
                 <div className="lg:col-span-2 space-y-6">
 
+                  {!isSeoDept && (
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
                     <div className="flex items-start gap-6">
                       <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
@@ -579,7 +651,9 @@ const HRManagerView = ({ projectId }) => {
                       </div>
                     </div>
                   </motion.div>
+                  )}
 
+                  {!isSeoDept && (
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
                     <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Calendar size={20} className="text-indigo-500" /> Key Dates & Milestones</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
@@ -601,10 +675,12 @@ const HRManagerView = ({ projectId }) => {
                       </div>
                     </div>
                   </motion.div>
+                  )}
                 </div>
 
                 {/* Right Column: Stakeholders & Links */}
                 <div className="space-y-6">
+                  {!isSeoDept && (
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6">
                     <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><LinkIcon size={16} className="text-indigo-500" />References and Taste Links</h3>
                     <div className="space-y-3">
@@ -631,6 +707,7 @@ const HRManagerView = ({ projectId }) => {
                       )}
                     </div>
                   </motion.div>
+                  )}
 
                   <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6">
                     <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><User size={16} className="text-indigo-500" /> Assigned Managers</h3>
@@ -655,7 +732,8 @@ const HRManagerView = ({ projectId }) => {
                 </div>
               </div>
 
-              {/* Bottom Section: Social Credentials */}
+              {/* Bottom Section: Social Credentials — hidden for SEO dept */}
+              {!isSeoDept && (
               <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
                 <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><Settings size={20} className="text-indigo-500" /> Social Media Credentials</h3>
 
@@ -698,6 +776,84 @@ const HRManagerView = ({ projectId }) => {
                   ))}
                 </div>
               </motion.div>
+              )}
+
+              {/* SEO Credentials display — only for SEO dept */}
+              {isSeoDept && (
+              <motion.div variants={itemVariants} className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-[2rem] shadow-sm p-6 md:p-8">
+                <h3 className="text-lg font-bold text-emerald-800 mb-6 flex items-center gap-2">
+                  <Settings size={20} className="text-emerald-600" /> SEO Account Credentials
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Contact Name', value: project?.seoName },
+                    { label: 'Contact Number', value: project?.seoContact },
+                    { label: 'SEO Email', value: project?.seoEmail },
+                    { label: 'Password', value: project?.seoPassword, isPassword: true },
+                  ].map((field, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-white border border-emerald-100 shadow-sm">
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">{field.label}</p>
+                      <p className="text-sm font-semibold text-slate-800 break-all">
+                        {field.isPassword
+                          ? (field.value ? '••••••••' : <span className="text-slate-400 text-xs font-normal italic">Not set</span>)
+                          : (field.value || <span className="text-slate-400 text-xs font-normal italic">Not set</span>)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+              )}
+
+              {/* SEO Keyword Reports display */}
+              {isSeoDept && (
+                <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8 mt-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <FileText size={20} className="text-emerald-500" /> SEO Keyword Reports
+                    </h3>
+                    {seoReportsLoading && <Loader2 size={20} className="animate-spin text-slate-400" />}
+                  </div>
+
+                  {!seoReportsLoading && seoReports.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400">
+                      <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm font-medium">No SEO reports submitted yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {seoReports.map((report) => (
+                        <div key={report.id} className="p-5 rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md flex items-center gap-1">
+                                <Calendar size={12} /> {new Date(report.checkDate).toLocaleDateString()}
+                              </span>
+                              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                Rank: #{report.rankingNo}
+                              </span>
+                            </div>
+                            <div className="mb-3 flex flex-wrap gap-1.5">
+                              {report.keywords.map((kw, i) => (
+                                <span key={i} className="text-[10px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
+                                  {kw}
+                                </span>
+                              ))}
+                            </div>
+                            {report.remarks && (
+                              <p className="text-xs text-slate-500 italic mt-2">"{report.remarks}"</p>
+                            )}
+                          </div>
+                          {report.screenshotUrl && (
+                            <a href={report.screenshotUrl} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors w-fit bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                              <LinkIcon size={14} /> View Screenshot
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
               
               {isWebDev && (
                 <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8 mt-6">

@@ -6,9 +6,11 @@ import API from "../../services/api";
 import HRManagerView from "./managers/HRManagerView";
 import SMMManagerView from "./managers/SMMManagerView";
 import WebDevManagerView from "./managers/WebDevManagerView";
+import ProjectDetailsView from "./ProjectDetailsView";
 
 // Normalised department name matchers
 const WEB_DEV_DEPT_KEYS = ["web development", "webdevelopment", "it"];
+const SEO_DEPT_KEYS = ["seo"];
 
 const ProjectDetailsWrapper = () => {
   const { id } = useParams();
@@ -62,6 +64,17 @@ const ProjectDetailsWrapper = () => {
   // ── MANAGER: route by department ──
   if (user?.role === "MANAGER" && deptName !== null) {
     const normalised = deptName.replace(/\s*department\s*/gi, "").trim();
+
+    // SEO department → clean credential + reports view
+    if (SEO_DEPT_KEYS.some((key) => normalised.includes(key))) {
+      return (
+        <ProjectDetailsView
+          projectId={id}
+          userRole={user?.role}
+          onBack={() => window.history.back()}
+        />
+      );
+    }
 
     // Web Development department
     if (WEB_DEV_DEPT_KEYS.some((key) => normalised.includes(key.split(" ")[0]))) {
