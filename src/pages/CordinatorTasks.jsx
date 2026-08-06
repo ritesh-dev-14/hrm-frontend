@@ -57,8 +57,21 @@ export default function CordinatorTasks() {
     try {
       setLoading(true);
       const res = await API.get("/api/coordinator-assignments/my-tasks");
-      // Cleanly extracts the deep array from your response envelope
-      setTasks(res?.data?.data?.data || res?.data?.data || []);
+      let extracted = [];
+      if (res?.data?.data?.data && Array.isArray(res.data.data.data)) {
+        extracted = res.data.data.data;
+      } else if (res?.data?.data && Array.isArray(res.data.data)) {
+        extracted = res.data.data;
+      } else if (res?.data && Array.isArray(res.data)) {
+        extracted = res.data;
+      } else if (Array.isArray(res)) {
+        extracted = res;
+      }
+      
+      console.log("Coordinator Tasks API Response:", res);
+      console.log("Extracted Data:", extracted);
+      
+      setTasks(extracted);
     } catch (error) {
       console.error("Failed to compile coordinator workflow data matrix:", error);
     } finally {
