@@ -93,7 +93,7 @@ export default function AssignedActionsPage() {
       const endpoint = viewMode === "PERSONAL"
         ? `/api/coordinator-assignments/assigned-to/${user?.id}`
         : `/api/coordinator-assignments/my-created`;
-      
+
       const res = await API.get(endpoint);
       setActions(res?.data?.data?.data || res?.data?.data || []);
     } catch (error) {
@@ -158,7 +158,7 @@ export default function AssignedActionsPage() {
     e.preventDefault();
     try {
       setSubmittingRequirement(true);
-      
+
       const payload = {
         taskName: requirementForm.taskName.trim(),
         description: requirementForm.description.trim(),
@@ -312,7 +312,7 @@ export default function AssignedActionsPage() {
               Assigned Actions
             </h1>
             <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs font-semibold">
-              <button 
+              <button
                 onClick={() => {
                   setActiveTab("ALL");
                   setViewMode("PERSONAL");
@@ -321,7 +321,7 @@ export default function AssignedActionsPage() {
               >
                 My Actions
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setActiveTab("ALL");
                   setViewMode("DELEGATED");
@@ -333,7 +333,7 @@ export default function AssignedActionsPage() {
             </div>
           </div>
           <p className="text-sm text-slate-500 mt-0.5">
-            {viewMode === "PERSONAL" 
+            {viewMode === "PERSONAL"
               ? "Track, execute, and status update coordinator requests instantly."
               : "Track and review requirements you have assigned directly to coordinators."}
           </p>
@@ -422,19 +422,17 @@ export default function AssignedActionsPage() {
                   setActiveTab(tab.id);
                   setExceptionTargetId(null);
                 }}
-                className={`pb-3 text-sm font-medium relative whitespace-nowrap transition-colors ${
-                  isSelected
+                className={`pb-3 text-sm font-medium relative whitespace-nowrap transition-colors ${isSelected
                     ? "text-slate-900 font-semibold"
                     : "text-slate-400 hover:text-slate-600"
-                }`}
+                  }`}
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`ml-2 px-2 py-0.5 text-xs rounded-full font-bold ${
-                    isSelected
+                  className={`ml-2 px-2 py-0.5 text-xs rounded-full font-bold ${isSelected
                       ? "bg-slate-900 text-white"
                       : "bg-slate-100 text-slate-500"
-                  }`}
+                    }`}
                 >
                   {tab.count}
                 </span>
@@ -499,7 +497,7 @@ export default function AssignedActionsPage() {
                             <span className="text-slate-400">
                               {viewMode === "PERSONAL" ? "Assigned By - " : "Assigned To - "}
                             </span>
-                            {viewMode === "PERSONAL" 
+                            {viewMode === "PERSONAL"
                               ? (item?.assignedBy || "System Coordinator")
                               : (item?.assignedTo?.name || "Coordinator Target")}
                           </span>
@@ -511,9 +509,9 @@ export default function AssignedActionsPage() {
                             </span>
                             {item?.completionDate
                               ? new Date(item.completionDate).toLocaleString(
-                                  undefined,
-                                  { dateStyle: "short", timeStyle: "short" },
-                                )
+                                undefined,
+                                { dateStyle: "short", timeStyle: "short" },
+                              )
                               : "—"}
                           </span>
                         </div>
@@ -547,11 +545,10 @@ export default function AssignedActionsPage() {
                           {viewMode === "PERSONAL" && (
                             <button
                               onClick={() => handleOpenChatPanel(item)}
-                              className={`h-9 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${
-                                expandedTaskId === item.id
+                              className={`h-9 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${expandedTaskId === item.id
                                   ? "bg-indigo-600 text-white border-indigo-600"
                                   : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
-                              }`}
+                                }`}
                             >
                               <MessageSquare size={14} />
                               <span>
@@ -611,7 +608,7 @@ export default function AssignedActionsPage() {
                             </>
                           ) : (
                             <>
-                            
+
                             </>
                           )}
                         </>
@@ -822,7 +819,7 @@ export default function AssignedActionsPage() {
                 <h3 className="text-sm font-bold text-slate-900">Deploy Coordinator Requirement Pipeline</h3>
                 <p className="text-xs text-slate-400 mt-0.5">Initialize and assign a targeted operational project milestone directly.</p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsAssignModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition"
               >

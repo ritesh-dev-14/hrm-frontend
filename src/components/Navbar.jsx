@@ -32,7 +32,7 @@ const NAV_CONFIG = [
     label: "Dashboard",
     icon: LayoutGrid,
     path: "/dashboard",
-    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
+    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"],
   },
   {
     id: "reports-hr",
@@ -53,7 +53,7 @@ const NAV_CONFIG = [
     label: "Projects",
     icon: BriefcaseBusiness,
     path: "/projects",
-    roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR"],
+    roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"],
   },
   {
     id: "shoots",
@@ -88,14 +88,14 @@ const NAV_CONFIG = [
     label: "My Tasks",
     icon: BriefcaseBusiness,
     path: "/tasks", 
-    roles: ["COORDINATOR"],
+    roles: ["COORDINATOR", "EA"],
   },
   {
     id: "priority-actions",
     label: "Priority Actions",
     icon: Zap,
     path: "/priority-actions",
-    roles: ["COORDINATOR"],
+    roles: ["COORDINATOR", "EA"],
     notificationCount: 4,
   },
   {
@@ -110,7 +110,7 @@ const NAV_CONFIG = [
     label: "Attendance",
     icon: CalendarDays,
     path: "/attendance",
-    roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR"],
+    roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA"],
   },
   {
     id: "employee-attendance",
@@ -138,14 +138,14 @@ const NAV_CONFIG = [
     label: "Leave",
     icon: FileText,
     path: "/leave",
-    roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
+    roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"],
   },
   {
     id: "payslips",
     label: "Payslips",
     icon: CreditCard,
     path: "/payslips",
-    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR"],
+    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"],
   },
   {
     id: "admin-panel",

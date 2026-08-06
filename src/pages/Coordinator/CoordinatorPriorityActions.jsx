@@ -585,9 +585,9 @@ const CoordinatorPriorityActions = () => {
                       <td className="p-4 text-sm text-slate-500 font-mono whitespace-nowrap">
                         {item?.assignedTime
                           ? new Date(item.assignedTime).toLocaleString(
-                              undefined,
-                              { dateStyle: "short", timeStyle: "short" },
-                            )
+                            undefined,
+                            { dateStyle: "short", timeStyle: "short" },
+                          )
                           : "—"}
                       </td>
 
@@ -597,9 +597,9 @@ const CoordinatorPriorityActions = () => {
                           <span>
                             {item?.completionDate
                               ? new Date(item.completionDate).toLocaleString(
-                                  undefined,
-                                  { dateStyle: "short", timeStyle: "short" },
-                                )
+                                undefined,
+                                { dateStyle: "short", timeStyle: "short" },
+                              )
                               : "—"}
                           </span>
                         </div>
@@ -655,11 +655,10 @@ const CoordinatorPriorityActions = () => {
                           {/* Follow-Up button always available */}
                           <button
                             onClick={() => handleOpenFollowUpPanel(item)}
-                            className={`h-8 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${
-                              activeTaskForFollowUp?.id === item.id
+                            className={`h-8 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${activeTaskForFollowUp?.id === item.id
                                 ? "bg-indigo-600 text-white border-indigo-600"
                                 : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
-                            }`}
+                              }`}
                           >
                             <MessageSquarePlus size={13} />
                             <span>

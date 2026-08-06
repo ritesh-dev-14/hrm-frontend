@@ -212,7 +212,7 @@ export const AppRoutes = () => {
                 <HrHomePage />
               ) : role === "MANAGER" ? (
                 <ManagerHomePage />
-              ) : role === "COORDINATOR" ? (
+              ) : role === "COORDINATOR" || role === "EA" ? (
                 <CoordinatorHomePage />
               ) : (
                 <EmployeHomePage />
@@ -230,7 +230,7 @@ export const AppRoutes = () => {
                 <HrTaskCreation />
               ) : role === "MANAGER" ? (
                 <ManagerTaskPage />
-              ) : role === "COORDINATOR" ? (
+              ) : role === "COORDINATOR" || role === "EA" ? (
                 <HrTaskCreation />
               ) : (
                 <EmployeeTaskPage />
@@ -269,7 +269,7 @@ export const AppRoutes = () => {
           <Route
             path="/priority-actions"
             element={
-              role === "COORDINATOR" ? (
+              role === "COORDINATOR" || role === "EA" ? (
                 <CoordinatorPriorityActions />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -299,7 +299,7 @@ export const AppRoutes = () => {
                 <ManagerAttendence />
               ) : role === "HR" ? (
                 <HrAttendance />
-              ) : role === "COORDINATOR" ? (
+              ) : role === "COORDINATOR" || role === "EA" ? (
                 <EmployeeAttendence />
               ) : null
             }
@@ -315,7 +315,7 @@ export const AppRoutes = () => {
                 <ManagerLeave />
               ) : role === "HR" ? (
                 <HrLeaves />
-              ) : role === "COORDINATOR" ? (
+              ) : role === "COORDINATOR" || role === "EA" ? (
                 <EmployeeLeave />
               ) : null
             }
@@ -347,7 +347,7 @@ export const AppRoutes = () => {
                 <ManagerSettings />
               ) : role === "HR" ? (
                 <HrSettings />
-              ) : role === "COORDINATOR" ? (
+              ) : role === "COORDINATOR" || role === "EA" ? (
                 <EmployeeSettings />
               ) : null
             }
