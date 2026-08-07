@@ -341,7 +341,7 @@ export const AppRoutes = () => {
           <Route
             path="/uploads"
             element={
-              ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA"].includes(role) ? (
+              ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"].includes(role) ? (
                 <HrUploads />
               ) : (
                 <Navigate to="/dashboard" replace />

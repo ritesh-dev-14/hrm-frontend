@@ -26,6 +26,7 @@ import API, { API_URL } from "../services/api";
 import MainLogo from "../assets/logo.jpeg";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
+import TodayUploadPopup from "./TodayUploadPopup";
 
 const NAV_CONFIG = [
   {
@@ -153,7 +154,7 @@ const NAV_CONFIG = [
     label: "Uploads",
     icon: FolderOpen,
     path: "/uploads",
-    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA"],
+    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"],
   },
   {
     id: "admin-panel",
@@ -179,6 +180,7 @@ export default function ProfessionalSidebar({ children }) {
   const [assignedActionsCount, setAssignedActionsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState({ projects: 0, shoots: 0, creative: 0, editor: 0 });
   const [departmentName, setDepartmentName] = useState("");
+  const [uploadPopupData, setUploadPopupData] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -214,6 +216,23 @@ export default function ProfessionalSidebar({ children }) {
           By: {data.employeeName}
         </div>,
         { autoClose: false }
+      );
+    });
+
+    // Today's Upload notification
+    socketInstance.on("today-upload-popup", (data) => {
+      console.log("[Socket] today-upload-popup received:", data);
+      // Show on-screen popup
+      setUploadPopupData(data);
+      // Also bump unread count locally for uploads sidebar badge
+      setUnreadCounts((prev) => ({ ...prev, projects: (prev.projects || 0) + 1 }));
+      // Show a brief toast as well
+      toast.info(
+        <div>
+          <strong>📌 Today's Upload Alert</strong><br />
+          <span style={{ fontSize: 13 }}>{data.projectName} — {data.totalUploads} uploads</span>
+        </div>,
+        { autoClose: 6000 }
       );
     });
 
@@ -447,6 +466,12 @@ export default function ProfessionalSidebar({ children }) {
                       API.post("/api/sidebar-unread/reset", { menuId: "creative" }).catch(() => { });
                       API.post("/api/sidebar-unread/reset", { menuId: "editor" }).catch(() => { });
                     }
+                  } else if (item.id === "uploads") {
+                    // Reset uploads unread on visit (currently uses "projects" key on backend)
+                    if (unreadCounts.uploads > 0) {
+                      setUnreadCounts(prev => ({ ...prev, uploads: 0 }));
+                      menuIdToReset = "projects";
+                    }
                   }
 
                   if (menuIdToReset) {
@@ -488,6 +513,9 @@ export default function ProfessionalSidebar({ children }) {
                         {item.id === "editor" && (unreadCounts.creative > 0 || unreadCounts.editor > 0) && (
                           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-slate-950 block" />
                         )}
+                        {item.id === "uploads" && unreadCounts.projects > 0 && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-purple-500 border-2 border-slate-950 block" />
+                        )}
                       </>
                     )}
                   </div>
@@ -528,6 +556,12 @@ export default function ProfessionalSidebar({ children }) {
                     {item.id === "editor" && (unreadCounts.creative > 0 || unreadCounts.editor > 0) && (
                       <span className="min-w-6 h-6 px-1.5 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] flex items-center justify-center font-bold">
                         {unreadCounts.creative + unreadCounts.editor}
+                      </span>
+                    )}
+
+                    {item.id === "uploads" && unreadCounts.projects > 0 && (
+                      <span className="min-w-6 h-6 px-1.5 rounded-md bg-purple-500/20 border border-purple-500/30 text-purple-400 text-[10px] flex items-center justify-center font-bold">
+                        NEW
                       </span>
                     )}
                   </div>
@@ -645,6 +679,12 @@ export default function ProfessionalSidebar({ children }) {
 
       {/* CONTENT */}
       <main className="flex-1 pt-16 lg:pt-0 relative">{children}</main>
+
+      {/* TODAY UPLOAD POPUP — shown globally for all roles */}
+      <TodayUploadPopup
+        data={uploadPopupData}
+        onClose={() => setUploadPopupData(null)}
+      />
     </div>
   );
 }
