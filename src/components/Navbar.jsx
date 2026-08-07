@@ -19,6 +19,7 @@ import {
   Keyboard,
   CreditCard,
   FolderOpen,
+  Layers,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -155,6 +156,13 @@ const NAV_CONFIG = [
     icon: FolderOpen,
     path: "/uploads",
     roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"],
+  },
+  {
+    id: "complete-details",
+    label: "Complete Details",
+    icon: Layers,
+    path: "/admin/complete-details",
+    roles: ["ADMIN"],
   },
   {
     id: "admin-panel",

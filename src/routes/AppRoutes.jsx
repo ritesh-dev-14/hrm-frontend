@@ -8,6 +8,7 @@ import Login from "../auth/login";
 
 import AdminHomePage from "../pages/Admin/AdminHomePage";
 import AdminTaskCreation from "../pages/Admin/AdminTaskCreation";
+import AdminCompleteDetailsPage from "../pages/Admin/AdminCompleteDetailsPage";
 
 // Shared Task Detail
 import TaskDetailPage from "../components/taskCreation/TaskDetailPage.jsx";
@@ -410,7 +411,10 @@ export const AppRoutes = () => {
 
           {/* ADMIN */}
           {role === "ADMIN" && (
-            <Route path="/admin/settings" element={<AdminHomePage />} />
+            <>
+              <Route path="/admin/settings" element={<AdminHomePage />} />
+              <Route path="/admin/complete-details" element={<AdminCompleteDetailsPage />} />
+            </>
           )}
 
           {/* ROOT */}
