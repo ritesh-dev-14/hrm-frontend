@@ -153,7 +153,7 @@ const NAV_CONFIG = [
     label: "Uploads",
     icon: FolderOpen,
     path: "/uploads",
-    roles: ["HR", "MANAGER", "EMPLOYEE", "EA"],
+    roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA"],
   },
   {
     id: "admin-panel",
