@@ -17,6 +17,7 @@ import HrHomePage from "../pages/HR/HrHomePage";
 import HrTeamPage from "../pages/HR/HrTeamPage";
 import HrLeaveManagement from "../pages/HR/HrEmployeeLeaves";
 import HrPayslips from "../pages/HR/HrPaySlips";
+import HrUploads from "../pages/HR/HrUploads";
 import HrSettings from "../pages/HR/HrSettigns";
 import HrAttendance from "../pages/HR/HrAttendance.jsx";
 import HrLeaves from "../pages/HR/HrLeaves.jsx";
@@ -334,6 +335,17 @@ export const AppRoutes = () => {
               ) : role === "COORDINATOR" ? (
                 <EmployeePayslips />
               ) : null
+            }
+          />
+
+          <Route
+            path="/uploads"
+            element={
+              ["HR", "MANAGER", "EMPLOYEE", "EA"].includes(role) ? (
+                <HrUploads />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
             }
           />
 

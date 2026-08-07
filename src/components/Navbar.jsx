@@ -18,6 +18,7 @@ import {
   Camera,
   Keyboard,
   CreditCard,
+  FolderOpen,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -146,6 +147,13 @@ const NAV_CONFIG = [
     icon: CreditCard,
     path: "/payslips",
     roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"],
+  },
+  {
+    id: "uploads",
+    label: "Uploads",
+    icon: FolderOpen,
+    path: "/uploads",
+    roles: ["HR", "MANAGER", "EMPLOYEE", "EA"],
   },
   {
     id: "admin-panel",
