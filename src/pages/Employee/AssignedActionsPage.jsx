@@ -95,7 +95,7 @@ export default function AssignedActionsPage() {
         : `/api/coordinator-assignments/my-created`;
 
       const res = await API.get(endpoint, {
-        params: { limit: 1000, pageSize: 1000, all: true },
+        params: { take: 1000, limit: 1000, pageSize: 1000, all: true },
       });
       setActions(res?.data?.data?.data || res?.data?.data || res?.data || []);
     } catch (error) {

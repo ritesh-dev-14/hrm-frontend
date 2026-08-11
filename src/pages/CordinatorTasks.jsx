@@ -57,7 +57,7 @@ export default function CordinatorTasks() {
     try {
       setLoading(true);
       const res = await API.get("/api/coordinator-assignments/my-tasks", {
-        params: { limit: 1000, pageSize: 1000, all: true },
+        params: { take: 1000, limit: 1000, pageSize: 1000, all: true },
       });
       let extracted = [];
       if (res?.data?.data?.data && Array.isArray(res.data.data.data)) {

@@ -75,7 +75,7 @@ const CoordinatorPriorityActions = () => {
   const fetchEmployees = async () => {
     try {
       const res = await API.get("/api/coordinator-assignments/users/list", {
-        params: { limit: 1000, pageSize: 1000, all: true },
+        params: { take: 1000, limit: 1000, pageSize: 1000, all: true },
       });
       const list = res?.data?.data?.data || res?.data?.data || res?.data || [];
       setEmployees(Array.isArray(list) ? list : []);
@@ -88,7 +88,7 @@ const CoordinatorPriorityActions = () => {
     try {
       setTableLoading(true);
       const res = await API.get("/api/coordinator-assignments/my-assignments", {
-        params: { limit: 1000, pageSize: 1000, all: true },
+        params: { take: 1000, limit: 1000, pageSize: 1000, all: true },
       });
       const list = res?.data?.data?.data || res?.data?.data || res?.data || [];
       setAssignments(Array.isArray(list) ? list : []);
