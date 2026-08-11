@@ -16,6 +16,8 @@ import {
   History,
   ThumbsUp,
   ThumbsDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -33,10 +35,12 @@ const CoordinatorPriorityActions = () => {
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
 
-  // Filter States
+  // Filter & Pagination States
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState({
     task: "",
@@ -70,8 +74,11 @@ const CoordinatorPriorityActions = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await API.get("/api/coordinator-assignments/users/list");
-      setEmployees(res?.data?.data?.data || []);
+      const res = await API.get("/api/coordinator-assignments/users/list", {
+        params: { limit: 1000, pageSize: 1000, all: true },
+      });
+      const list = res?.data?.data?.data || res?.data?.data || res?.data || [];
+      setEmployees(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error("Failed to fetch employees:", error);
     }
@@ -80,8 +87,11 @@ const CoordinatorPriorityActions = () => {
   const fetchAssignments = async () => {
     try {
       setTableLoading(true);
-      const res = await API.get("/api/coordinator-assignments/my-assignments");
-      setAssignments(res?.data?.data?.data || []);
+      const res = await API.get("/api/coordinator-assignments/my-assignments", {
+        params: { limit: 1000, pageSize: 1000, all: true },
+      });
+      const list = res?.data?.data?.data || res?.data?.data || res?.data || [];
+      setAssignments(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error("Failed to fetch assignments:", error);
     } finally {
@@ -276,10 +286,32 @@ const CoordinatorPriorityActions = () => {
     });
   }, [assignments, search, statusFilter, employeeFilter]);
 
+  // Reset page on filter/limit changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, employeeFilter, itemsPerPage]);
+
+  const paginatedAssignments = useMemo(() => {
+    if (itemsPerPage === "ALL" || itemsPerPage >= filteredAssignments.length) {
+      return filteredAssignments;
+    }
+    const startIndex = (currentPage - 1) * Number(itemsPerPage);
+    return filteredAssignments.slice(
+      startIndex,
+      startIndex + Number(itemsPerPage),
+    );
+  }, [filteredAssignments, currentPage, itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    if (itemsPerPage === "ALL" || itemsPerPage <= 0) return 1;
+    return Math.ceil(filteredAssignments.length / Number(itemsPerPage)) || 1;
+  }, [filteredAssignments, itemsPerPage]);
+
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("");
     setEmployeeFilter("");
+    setCurrentPage(1);
   };
 
   const getStatusStyle = (status) => {
@@ -548,8 +580,8 @@ const CoordinatorPriorityActions = () => {
                     </div>
                   </td>
                 </tr>
-              ) : filteredAssignments.length > 0 ? (
-                filteredAssignments.map((item) => (
+              ) : paginatedAssignments.length > 0 ? (
+                paginatedAssignments.map((item) => (
                   <React.Fragment key={item.id}>
                     <tr className="hover:bg-slate-50/50 transition duration-150">
                       <td className="p-4 text-sm font-medium text-slate-900">
@@ -931,6 +963,99 @@ const CoordinatorPriorityActions = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Table Pagination Controls */}
+        {filteredAssignments.length > 0 && (
+          <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span>
+                Showing{" "}
+                <span className="font-semibold text-slate-700">
+                  {itemsPerPage === "ALL" || filteredAssignments.length === 0
+                    ? 1
+                    : (currentPage - 1) * Number(itemsPerPage) + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-semibold text-slate-700">
+                  {itemsPerPage === "ALL"
+                    ? filteredAssignments.length
+                    : Math.min(
+                        currentPage * Number(itemsPerPage),
+                        filteredAssignments.length,
+                      )}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-slate-700">
+                  {filteredAssignments.length}
+                </span>{" "}
+                entries
+              </span>
+
+              <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
+                <span className="text-slate-400">Rows per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    const val =
+                      e.target.value === "ALL" ? "ALL" : Number(e.target.value);
+                    setItemsPerPage(val);
+                  }}
+                  className="h-7 text-xs rounded border border-slate-200 bg-white px-2 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value="ALL">All</option>
+                </select>
+              </div>
+            </div>
+
+            {itemsPerPage !== "ALL" && totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition flex items-center gap-1"
+                >
+                  <ChevronLeft size={14} />
+                  <span>Previous</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`h-8 w-8 rounded-lg text-xs font-medium transition ${
+                          currentPage === pageNum
+                            ? "bg-slate-900 text-white shadow-sm"
+                            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ),
+                  )}
+                </div>
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition flex items-center gap-1"
+                >
+                  <span>Next</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

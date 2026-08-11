@@ -56,7 +56,9 @@ export default function CordinatorTasks() {
   const fetchCoordinatorTasks = async () => {
     try {
       setLoading(true);
-      const res = await API.get("/api/coordinator-assignments/my-tasks");
+      const res = await API.get("/api/coordinator-assignments/my-tasks", {
+        params: { limit: 1000, pageSize: 1000, all: true },
+      });
       let extracted = [];
       if (res?.data?.data?.data && Array.isArray(res.data.data.data)) {
         extracted = res.data.data.data;

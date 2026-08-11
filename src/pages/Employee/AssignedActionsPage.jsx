@@ -94,8 +94,10 @@ export default function AssignedActionsPage() {
         ? `/api/coordinator-assignments/assigned-to/${user?.id}`
         : `/api/coordinator-assignments/my-created`;
 
-      const res = await API.get(endpoint);
-      setActions(res?.data?.data?.data || res?.data?.data || []);
+      const res = await API.get(endpoint, {
+        params: { limit: 1000, pageSize: 1000, all: true },
+      });
+      setActions(res?.data?.data?.data || res?.data?.data || res?.data || []);
     } catch (error) {
       console.error("Data pipeline execution failure:", error);
     } finally {
