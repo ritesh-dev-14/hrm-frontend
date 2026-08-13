@@ -61,6 +61,7 @@ import CoordinatorPriorityActions from "../pages/Coordinator/CoordinatorPriority
 import AssignedActionsPage from "../pages/Employee/AssignedActionsPage.jsx";
 import CordinatorTasks from "../pages/CordinatorTasks.jsx";
 import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
+import MarketingReportsPage from "../pages/Manager/MarketingReportsPage.jsx";
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -279,6 +280,17 @@ export const AppRoutes = () => {
             }
           />
           <Route path="/tasks" element={<CordinatorTasks />} />
+
+          <Route
+            path="/marketing"
+            element={
+              role === "MANAGER" ? (
+                <MarketingReportsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
 
           <Route
             path="/assigned-actions"

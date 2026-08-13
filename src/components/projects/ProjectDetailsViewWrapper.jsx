@@ -6,11 +6,13 @@ import API from "../../services/api";
 import HRManagerView from "./managers/HRManagerView";
 import SMMManagerView from "./managers/SMMManagerView";
 import WebDevManagerView from "./managers/WebDevManagerView";
+import PerformanceMarketingManagerView from "./managers/PerformanceMarketingManagerView";
 import ProjectDetailsView from "./ProjectDetailsView";
 
 // Normalised department name matchers
 const WEB_DEV_DEPT_KEYS = ["web development", "webdevelopment", "it"];
 const SEO_DEPT_KEYS = ["seo"];
+const MARKETING_DEPT_KEYS = ["marketing", "performance marketing"];
 
 const ProjectDetailsWrapper = () => {
   const { id } = useParams();
@@ -73,6 +75,13 @@ const ProjectDetailsWrapper = () => {
           userRole={user?.role}
           onBack={() => window.history.back()}
         />
+      );
+    }
+
+    // Marketing department → Performance Marketing View
+    if (MARKETING_DEPT_KEYS.some((key) => normalised.includes(key))) {
+      return (
+        <PerformanceMarketingManagerView projectId={id} />
       );
     }
 

@@ -20,6 +20,7 @@ import {
   CreditCard,
   FolderOpen,
   Layers,
+  TrendingUp,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -156,6 +157,14 @@ const NAV_CONFIG = [
     icon: FolderOpen,
     path: "/uploads",
     roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"],
+  },
+  {
+    id: "marketing",
+    label: "Marketing",
+    icon: TrendingUp,
+    path: "/marketing",
+    roles: ["MANAGER"],
+    departments: ["marketing", "marketing department", "performance marketing"],
   },
   {
     id: "complete-details",
