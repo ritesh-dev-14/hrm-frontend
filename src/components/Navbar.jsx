@@ -64,35 +64,35 @@ const NAV_CONFIG = [
     id: "shoots",
     label: "Shoots",
     icon: Camera,
-    path: "/shoot", 
+    path: "/shoot",
     roles: ["MANAGER", "EMPLOYEE"],
   },
   {
     id: "editor",
     label: "Creative and Editors",
     icon: Keyboard,
-    path: "/editor", 
+    path: "/editor",
     roles: ["MANAGER"],
   },
   {
     id: "tasks-emp",
     label: "Tasks",
     icon: BriefcaseBusiness,
-    path: "/projects", 
+    path: "/projects",
     roles: ["EMPLOYEE"],
   },
   {
     id: "daily-reports",
     label: "Daily Reports",
     icon: FileText,
-    path: "/employee-daily-reports", 
+    path: "/employee-daily-reports",
     roles: ["EMPLOYEE"],
   },
   {
     id: "tasks-cor",
     label: "My Tasks",
     icon: BriefcaseBusiness,
-    path: "/tasks", 
+    path: "/tasks",
     roles: ["COORDINATOR", "EA"],
   },
   {
@@ -169,7 +169,7 @@ const NAV_CONFIG = [
   },
   {
     id: "marketing-projects",
-    label: "Marketing Projects",
+    label: "Meta Ads",
     icon: Megaphone,
     path: "/marketing-projects",
     roles: ["ADMIN", "HR", "EA", "MANAGER"],
@@ -450,9 +450,9 @@ export default function ProfessionalSidebar({ children }) {
           <img src={MainLogo} className="w-10 h-10 rounded-xl shadow-lg shadow-indigo-500/20 object-cover border border-white/10" />
 
           {(!collapsed || mobile) && (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="flex flex-col overflow-hidden whitespace-nowrap"
             >
@@ -503,9 +503,8 @@ export default function ProfessionalSidebar({ children }) {
                     API.post("/api/sidebar-unread/reset", { menuId: menuIdToReset }).catch(console.error);
                   }
                 }}
-                className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-colors relative overflow-hidden group ${
-                  active ? "text-white" : "text-slate-400 hover:text-white"
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-colors relative overflow-hidden group ${active ? "text-white" : "text-slate-400 hover:text-white"
+                  }`}
               >
                 {active && (
                   <motion.div
@@ -514,7 +513,7 @@ export default function ProfessionalSidebar({ children }) {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
-                
+
                 {/* Fallback hover effect */}
                 {!active && (
                   <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
@@ -523,7 +522,7 @@ export default function ProfessionalSidebar({ children }) {
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="relative shrink-0 flex items-center justify-center">
                     <item.icon size={20} className={`transition-colors ${active ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"}`} />
-                    
+
                     {(collapsed && !mobile) && (
                       <>
                         {item.id === "assigned-actions" && assignedActionsCount > 0 && (
@@ -544,11 +543,11 @@ export default function ProfessionalSidebar({ children }) {
                       </>
                     )}
                   </div>
-                  
+
                   {(!collapsed || mobile) && (
-                    <motion.span 
-                      initial={{ opacity: 0 }} 
-                      animate={{ opacity: 1 }} 
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className="text-sm font-semibold whitespace-nowrap"
                     >
@@ -607,12 +606,12 @@ export default function ProfessionalSidebar({ children }) {
             className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors group"
           >
             <div className="relative shrink-0 flex items-center justify-center">
-               <LogOut size={20} className="group-hover:scale-110 transition-transform" />
+              <LogOut size={20} className="group-hover:scale-110 transition-transform" />
             </div>
             {(!collapsed || mobile) && (
-              <motion.span 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="text-sm font-semibold whitespace-nowrap"
               >
@@ -651,7 +650,7 @@ export default function ProfessionalSidebar({ children }) {
           <span className="text-base font-black tracking-tight text-slate-900">We-Promote</span>
         </div>
 
-        <button 
+        <button
           onClick={() => setMobileOpen(true)}
           className="p-2 -mr-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
         >
@@ -662,7 +661,7 @@ export default function ProfessionalSidebar({ children }) {
       {/* MOBILE SIDEBAR */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div 
+          <motion.div
             key="mobile-sidebar-container"
             className="fixed inset-0 z-[60] lg:hidden"
           >

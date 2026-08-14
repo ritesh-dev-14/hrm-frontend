@@ -112,7 +112,7 @@ const MarketingProjectsPage = () => {
               Marketing Department
             </span>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
-              Marketing Projects
+              Meta Ads
             </h1>
             <p className="text-sm text-slate-500 mt-1 font-medium">
               All projects assigned to the Marketing Department
@@ -152,7 +152,7 @@ const MarketingProjectsPage = () => {
             />
             <input
               type="text"
-              placeholder="Search marketing projects..."
+              placeholder="Search meta ads..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 transition-all bg-white"
@@ -165,7 +165,7 @@ const MarketingProjectsPage = () => {
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm">
             <Loader2 size={32} className="animate-spin text-pink-500 mb-4" />
             <p className="text-sm font-semibold text-pink-900 tracking-wide">
-              Loading marketing projects...
+              Loading meta ads...
             </p>
           </div>
         ) : filteredProjects.length === 0 ? (
@@ -174,7 +174,7 @@ const MarketingProjectsPage = () => {
               <ClipboardList size={40} />
             </div>
             <h3 className="text-xl font-bold text-slate-700 mb-2">
-              No Marketing Projects Found
+              No Meta Ads Found
             </h3>
             <p className="text-sm font-medium text-slate-500 max-w-sm">
               {searchQuery

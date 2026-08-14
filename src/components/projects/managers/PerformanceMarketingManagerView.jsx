@@ -15,7 +15,9 @@ import {
   Eye,
   Calendar,
   ArrowLeft,
+  Trash2,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const fmt = (n) =>
@@ -45,6 +47,7 @@ const INITIAL_FORM = {
 /* ─── component ───────────────────────────────────────────────────────────── */
 export default function PerformanceMarketingManagerView({ projectId }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [project, setProject] = useState(null);
   const [reports, setReports] = useState([]);
@@ -60,6 +63,17 @@ export default function PerformanceMarketingManagerView({ projectId }) {
   const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleDeleteProject = async () => {
+    if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+      try {
+        await API.delete(`/api/projects/${projectId}`);
+        navigate("/projects");
+      } catch (err) {
+        showToast("error", err.response?.data?.message || err.message || "Failed to delete project.");
+      }
+    }
   };
 
   /* ─── load project & reports ─────────────────────────────────────────── */
@@ -209,13 +223,25 @@ export default function PerformanceMarketingManagerView({ projectId }) {
           Back to Projects
         </button>
 
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition shadow-sm"
-        >
-          <Plus size={16} />
-          Add Marketing Report
-        </button>
+        <div className="flex items-center gap-3">
+          {["ADMIN", "HR", "EA", "COORDINATOR"].includes(user?.role) && (
+            <button
+              onClick={handleDeleteProject}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium transition shadow-sm"
+            >
+              <Trash2 size={16} />
+              Delete Project
+            </button>
+          )}
+
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition shadow-sm"
+          >
+            <Plus size={16} />
+            Add Marketing Report
+          </button>
+        </div>
       </div>
 
       {loading && (
