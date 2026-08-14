@@ -21,6 +21,7 @@ import {
   FolderOpen,
   Layers,
   TrendingUp,
+  Megaphone,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -165,6 +166,13 @@ const NAV_CONFIG = [
     path: "/marketing",
     roles: ["MANAGER"],
     departments: ["marketing", "marketing department", "performance marketing"],
+  },
+  {
+    id: "marketing-projects",
+    label: "Marketing Projects",
+    icon: Megaphone,
+    path: "/marketing-projects",
+    roles: ["ADMIN", "HR", "EA", "MANAGER"],
   },
   {
     id: "complete-details",

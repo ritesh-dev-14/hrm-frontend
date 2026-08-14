@@ -22,13 +22,13 @@ const ProjectDetailsWrapper = () => {
   const [loadingDept, setLoadingDept] = useState(true);
 
   useEffect(() => {
-    // HR, ADMIN, COORDINATOR: no need to look up department
-    if (!id || ["HR", "ADMIN", "COORDINATOR"].includes(user?.role)) {
+    // COORDINATOR: no department lookup needed, always HRManagerView
+    if (!id || user?.role === "COORDINATOR") {
       setLoadingDept(false);
       return;
     }
 
-    // MANAGER: fetch project to determine department
+    // All other roles (HR, ADMIN, MANAGER, EA): fetch project department
     const fetchDept = async () => {
       try {
         const res = await API.get(`/api/projects/${id}`);
@@ -45,17 +45,13 @@ const ProjectDetailsWrapper = () => {
     fetchDept();
   }, [id, user]);
 
-  // ── HR / ADMIN / COORDINATOR → HRManagerView ──
-  if (
-    user?.role === "HR" ||
-    user?.role === "ADMIN" ||
-    user?.role === "COORDINATOR"
-  ) {
+  // ── COORDINATOR → always HRManagerView ──
+  if (user?.role === "COORDINATOR") {
     return <HRManagerView projectId={id} />;
   }
 
-  // ── MANAGER: wait for department fetch ──
-  if (user?.role === "MANAGER" && loadingDept) {
+  // ── Wait for department fetch (HR, ADMIN, MANAGER, EA) ──
+  if (loadingDept) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
@@ -63,39 +59,49 @@ const ProjectDetailsWrapper = () => {
     );
   }
 
-  // ── MANAGER: route by department ──
-  if (user?.role === "MANAGER" && deptName !== null) {
+  // ── Route by department for all roles ──
+  if (deptName !== null) {
     const normalised = deptName.replace(/\s*department\s*/gi, "").trim();
 
-    // SEO department → clean credential + reports view
-    if (SEO_DEPT_KEYS.some((key) => normalised.includes(key))) {
-      return (
-        <ProjectDetailsView
-          projectId={id}
-          userRole={user?.role}
-          onBack={() => window.history.back()}
-        />
-      );
-    }
-
-    // Marketing department → Performance Marketing View
+    // Marketing department → Performance Marketing View (for ALL roles)
     if (MARKETING_DEPT_KEYS.some((key) => normalised.includes(key))) {
-      return (
-        <PerformanceMarketingManagerView projectId={id} />
-      );
+      return <PerformanceMarketingManagerView projectId={id} />;
     }
 
-    // Web Development department
-    if (WEB_DEV_DEPT_KEYS.some((key) => normalised.includes(key.split(" ")[0]))) {
-      return <WebDevManagerView projectId={id} />;
+    // HR / ADMIN / EA → HRManagerView for all non-marketing projects
+    if (
+      user?.role === "HR" ||
+      user?.role === "ADMIN" ||
+      user?.role === "EA"
+    ) {
+      return <HRManagerView projectId={id} />;
     }
 
-    // Default: Social Media / all other departments
-    return <SMMManagerView projectId={id} />;
+    // MANAGER: route by department
+    if (user?.role === "MANAGER") {
+      // SEO department → clean credential + reports view
+      if (SEO_DEPT_KEYS.some((key) => normalised.includes(key))) {
+        return (
+          <ProjectDetailsView
+            projectId={id}
+            userRole={user?.role}
+            onBack={() => window.history.back()}
+          />
+        );
+      }
+
+      // Web Development department
+      if (WEB_DEV_DEPT_KEYS.some((key) => normalised.includes(key.split(" ")[0]))) {
+        return <WebDevManagerView projectId={id} />;
+      }
+
+      // Default: Social Media / all other departments
+      return <SMMManagerView projectId={id} />;
+    }
   }
 
-  // Final fallback (shouldn't normally reach here)
-  return <SMMManagerView projectId={id} />;
+  // Final fallback
+  return <HRManagerView projectId={id} />;
 };
 
 export default ProjectDetailsWrapper;

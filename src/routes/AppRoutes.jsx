@@ -62,6 +62,7 @@ import AssignedActionsPage from "../pages/Employee/AssignedActionsPage.jsx";
 import CordinatorTasks from "../pages/CordinatorTasks.jsx";
 import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
 import MarketingReportsPage from "../pages/Manager/MarketingReportsPage.jsx";
+import MarketingProjectsPage from "../pages/MarketingProjectsPage.jsx";
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -286,6 +287,17 @@ export const AppRoutes = () => {
             element={
               role === "MANAGER" ? (
                 <MarketingReportsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/marketing-projects"
+            element={
+              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+                <MarketingProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )
