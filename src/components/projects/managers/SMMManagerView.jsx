@@ -750,6 +750,19 @@ const SMMManagerView = ({ projectId }) => {
     </div>
   );
 
+  const tasteItems = (() => {
+    const rawTaste = Array.isArray(project?.taste)
+      ? project.taste.join(",")
+      : project?.taste || formData.taste || "";
+
+    return String(rawTaste)
+      .split(/[\n,]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  })();
+
+  const primaryTaste = tasteItems[0] || "No taste direction added yet.";
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
       {/* Background ambient glows */}
@@ -791,6 +804,32 @@ const SMMManagerView = ({ projectId }) => {
             </svg>
             Create Content Calendar
           </button>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="relative overflow-hidden rounded-[2rem] border border-rose-200/70 bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 p-7 md:p-9 shadow-sm"
+        >
+          <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-rose-500 via-orange-500 to-amber-500" />
+          <div className="pl-4 md:pl-6">
+            <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.18em] text-rose-700 mb-3">
+              Important Taste Priority
+            </p>
+            <h2 className="text-xl md:text-2xl font-semibold leading-snug text-slate-900 break-words">
+              {primaryTaste}
+            </h2>
+            {tasteItems.length > 1 && (
+              <div className="mt-4 space-y-2">
+                {tasteItems.slice(1).map((item, index) => (
+                  <p key={`taste-line-${index}`} className="text-sm md:text-base font-semibold text-slate-700 break-words">
+                    {item}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* TOP SECTION: LOGO, SUMMARY, METRICS */}
