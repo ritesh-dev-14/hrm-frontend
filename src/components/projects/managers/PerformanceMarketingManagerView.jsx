@@ -429,14 +429,6 @@ export default function PerformanceMarketingManagerView({ projectId }) {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Campaign Start</label>
-                  <input type="date" value={form.campaignStartDate} onChange={(e) => setForm((f) => ({ ...f, campaignStartDate: e.target.value }))} className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Campaign End</label>
-                  <input type="date" value={form.campaignEndDate} onChange={(e) => setForm((f) => ({ ...f, campaignEndDate: e.target.value }))} className={inputCls} />
-                </div>
-                <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Report Date</label>
                   <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} />
                 </div>
