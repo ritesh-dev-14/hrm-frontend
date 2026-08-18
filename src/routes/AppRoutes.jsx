@@ -63,6 +63,8 @@ import CordinatorTasks from "../pages/CordinatorTasks.jsx";
 import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
 import MarketingReportsPage from "../pages/Manager/MarketingReportsPage.jsx";
 import MarketingProjectsPage from "../pages/MarketingProjectsPage.jsx";
+import SocialMediaProjectsPage from "../pages/SocialMediaProjectsPage.jsx";
+import SEOProjectsPage from "../pages/SEOProjectsPage.jsx";
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -298,6 +300,28 @@ export const AppRoutes = () => {
             element={
               ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
                 <MarketingProjectsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/social-media-projects"
+            element={
+              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+                <SocialMediaProjectsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/seo-projects"
+            element={
+              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+                <SEOProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

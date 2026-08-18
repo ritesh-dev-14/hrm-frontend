@@ -175,6 +175,20 @@ const NAV_CONFIG = [
     roles: ["ADMIN", "HR", "EA", "MANAGER"],
   },
   {
+    id: "social-media-projects",
+    label: "Social Media",
+    icon: Megaphone,
+    path: "/social-media-projects",
+    roles: ["ADMIN", "HR", "EA", "MANAGER"],
+  },
+  {
+    id: "seo-projects",
+    label: "SEO",
+    icon: Megaphone,
+    path: "/seo-projects",
+    roles: ["ADMIN", "HR", "EA", "MANAGER"],
+  },
+  {
     id: "complete-details",
     label: "Complete Details",
     icon: Layers,
