@@ -41,7 +41,7 @@ const NAV_CONFIG = [
   },
   {
     id: "reports-hr",
-    label: "Reports",
+    label: "Employee Reports",
     icon: FileText,
     path: "/reports/hr",
     roles: ["ADMIN", "HR"],
@@ -188,13 +188,13 @@ const NAV_CONFIG = [
     path: "/seo-projects",
     roles: ["ADMIN", "HR", "EA", "MANAGER"],
   },
-    {
-      id: "daily-reports",
-      label: "Daily Reports",
-      icon: Megaphone,
-      path: "/daily-reports",
-      roles: ["ADMIN", "HR", "EA", "MANAGER"],
-    },
+  {
+    id: "daily-reports",
+    label: "Daily Reports",
+    icon: Megaphone,
+    path: "/daily-reports",
+    roles: ["ADMIN", "HR", "EA", "MANAGER"],
+  },
   {
     id: "complete-details",
     label: "Complete Details",

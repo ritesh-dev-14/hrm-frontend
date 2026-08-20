@@ -42,7 +42,7 @@ export default function HrReports() {
   }
 
   const totalEmployees = employees.length;
-  
+
   // General Tasks Metrics
   const overallTasksCompleted = employees.reduce((sum, emp) => sum + (emp.completedTasks || 0), 0);
   const overallTasksTotal = employees.reduce((sum, emp) => sum + (emp.totalTasks || 0), 0);
@@ -69,7 +69,7 @@ export default function HrReports() {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
             <Layers className="w-8 h-8 text-indigo-600" />
-            Organization & Shoot Reports
+            Employee Report
           </h1>
           <p className="text-slate-500 mt-1">
             Complete operational analytics for General Project Tasks and Shoot Employee Tasks.
@@ -80,31 +80,28 @@ export default function HrReports() {
         <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
           <button
             onClick={() => setActiveTab("ALL")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === "ALL"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "ALL"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             All Reports
           </button>
           <button
             onClick={() => setActiveTab("PROJECTS")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === "PROJECTS"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "PROJECTS"
                 ? "bg-white text-indigo-600 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             Project Tasks
           </button>
           <button
             onClick={() => setActiveTab("SHOOTS")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeTab === "SHOOTS"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "SHOOTS"
                 ? "bg-white text-purple-600 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             <Camera className="w-3.5 h-3.5 text-purple-500" />
             Shoot Tasks
