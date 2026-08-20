@@ -25,6 +25,7 @@ import HrLeaves from "../pages/HR/HrLeaves.jsx";
 import HrAllEmployeeAttendence from "../pages/HR/HrAllEmployeeAttendence.jsx";
 import HrTaskCreation from "../pages/HR/HrTaskCreation";
 import HrReports from "../pages/HR/HrReports";
+import ProjectsReportsOverviewPage from "../pages/HR/ProjectsReportsOverviewPage";
 import HrEmployeeProjectReport from "../pages/HR/HrEmployeeProjectReport";
 import HrEmployeeDetailedAttendance from "../pages/HR/HrEmployeeDetailedAttendance";
 import HrWhatsappMessages from "../pages/HR/HrWhatsappMessages.jsx";
@@ -432,6 +433,7 @@ export const AppRoutes = () => {
               />
               <Route path="/hr/team" element={<HrTeamPage />} />
               <Route path="/reports/hr" element={<HrReports />} />
+              <Route path="/reports/overview" element={<ProjectsReportsOverviewPage />} />
               <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
               <Route path="/hr/whatsapp-messages" element={<HrWhatsappMessages />} />
             </>
@@ -451,6 +453,7 @@ export const AppRoutes = () => {
               />
               <Route path="/hr/team" element={<HrTeamPage />} />
               <Route path="/reports/hr" element={<HrReports />} />
+              <Route path="/reports/overview" element={<ProjectsReportsOverviewPage />} />
               <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
               <Route path="/hr/whatsapp-messages" element={<HrWhatsappMessages />} />
             </>

@@ -22,6 +22,7 @@ import {
   Layers,
   TrendingUp,
   Megaphone,
+  BarChart2,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -194,6 +195,13 @@ const NAV_CONFIG = [
     icon: Megaphone,
     path: "/daily-reports",
     roles: ["ADMIN", "HR", "EA", "MANAGER"],
+  },
+  {
+    id: "reports-overview",
+    label: "Reports",
+    icon: BarChart2,
+    path: "/reports/overview",
+    roles: ["ADMIN", "HR"],
   },
   {
     id: "complete-details",
