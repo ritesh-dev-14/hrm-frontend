@@ -17,6 +17,7 @@ import API from "../../services/api";
 
 const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
   const [keywords, setKeywords] = useState([""]);
+  const [clientContactNumber, setClientContactNumber] = useState("");
   const [rankingNo, setRankingNo] = useState("");
   const [checkDate, setCheckDate] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -81,6 +82,7 @@ const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
       formData.append("rankingNo", rankingNo);
       formData.append("checkDate", checkDate);
       if (remarks) formData.append("remarks", remarks);
+      if (clientContactNumber) formData.append("clientContactNumber", clientContactNumber);
       formData.append("screenshot", screenshot);
 
       await API.post("/api/seo-reports", formData, {
@@ -158,7 +160,13 @@ const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
 
             {/* Keywords */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Client Contact Number
+              </label>
+              <input type="text" value={clientContactNumber} onChange={(e) => setClientContactNumber(e.target.value)} placeholder="Contact Number" className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition mb-4" />
+            </div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                 <Search size={12} />
                 Keywords
                 <span className="text-red-400">*</span>

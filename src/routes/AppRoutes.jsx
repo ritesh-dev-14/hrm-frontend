@@ -27,6 +27,7 @@ import HrTaskCreation from "../pages/HR/HrTaskCreation";
 import HrReports from "../pages/HR/HrReports";
 import HrEmployeeProjectReport from "../pages/HR/HrEmployeeProjectReport";
 import HrEmployeeDetailedAttendance from "../pages/HR/HrEmployeeDetailedAttendance";
+import HrWhatsappMessages from "../pages/HR/HrWhatsappMessages.jsx";
 
 import EmployeeDetails from "../pages/HR/employeeDetailsHr/EmployeeDetails";
 import EmployeHomePage from "../pages/Employee/EmployeeHomePage";
@@ -44,6 +45,7 @@ import ManagerLeave from "../pages/Manager/ManagerLeave";
 import ManagerPayslips from "../pages/Manager/ManagerPayslips";
 import ManagerSettings from "../pages/Manager/ManagerSettings";
 import ManagerTaskPage from "../pages/Manager/ManagerTasksPage.jsx";
+import ManagerWhatsappMessages from "../pages/Manager/ManagerWhatsappMessages.jsx";
 
 // shoots
 import ShootPage from "../components/shoots/ShootPage.jsx";
@@ -65,6 +67,7 @@ import MarketingReportsPage from "../pages/Manager/MarketingReportsPage.jsx";
 import MarketingProjectsPage from "../pages/MarketingProjectsPage.jsx";
 import SocialMediaProjectsPage from "../pages/SocialMediaProjectsPage.jsx";
 import SEOProjectsPage from "../pages/SEOProjectsPage.jsx";
+import DailyDepartmentReportPage from '../pages/DailyDepartmentReportPage';
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -430,6 +433,7 @@ export const AppRoutes = () => {
               <Route path="/hr/team" element={<HrTeamPage />} />
               <Route path="/reports/hr" element={<HrReports />} />
               <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
+              <Route path="/hr/whatsapp-messages" element={<HrWhatsappMessages />} />
             </>
           )}
 
@@ -448,6 +452,7 @@ export const AppRoutes = () => {
               <Route path="/hr/team" element={<HrTeamPage />} />
               <Route path="/reports/hr" element={<HrReports />} />
               <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
+              <Route path="/hr/whatsapp-messages" element={<HrWhatsappMessages />} />
             </>
           )}
 
@@ -480,8 +485,21 @@ export const AppRoutes = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </>
       )}
-    </Routes>
+    
+          <Route
+            path="/daily-reports"
+            element={
+              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+                <DailyDepartmentReportPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+</Routes>
   );
 };
 
 export default AppRoutes;
+

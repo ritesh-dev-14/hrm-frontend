@@ -31,6 +31,7 @@ const fmtDate = (d) =>
 
 const INITIAL_FORM = {
   clientName: "",
+  clientContactNumber: "",
   videoLink: "",
   areaName: "",
   isAdRunning: "",
@@ -116,6 +117,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
     setEditTarget(report);
     setForm({
       clientName: report.clientName || "",
+      clientContactNumber: report.clientContactNumber || "",
       videoLink: report.videoLink || "",
       areaName: report.areaName || "",
       isAdRunning:
@@ -322,7 +324,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 <table className="w-full min-w-[1000px] text-sm">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200">
-                      {["Date","Client","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Campaign Period","Actions"].map((h) => (
+                      {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Campaign Period","Actions"].map((h) => (
                         <th key={h} className="text-left px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -334,6 +336,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                           <span className="flex items-center gap-1.5"><Calendar size={13} className="text-slate-400" />{fmtDate(r.date)}</span>
                         </td>
                         <td className="px-5 py-4 text-slate-900 font-semibold">{r.clientName || "—"}</td>
+                        <td className="px-5 py-4 text-slate-500 font-mono text-xs">{r.clientContactNumber || "—"}</td>
                         <td className="px-5 py-4 text-slate-600">{r.areaName || "—"}</td>
                         <td className="px-5 py-4">
                           {r.isAdRunning === true ? (
@@ -374,7 +377,11 @@ export default function PerformanceMarketingManagerView({ projectId }) {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Client Contact Number</label>
+                  <input type="text" name="clientContactNumber" value={form.clientContactNumber || ''} onChange={(e) => setForm((f) => ({ ...f, clientContactNumber: e.target.value }))} placeholder="e.g. 9876543210" className={inputCls} />
+                </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Client Name</label>
                   <input value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. ABC Corp" className={inputCls} />

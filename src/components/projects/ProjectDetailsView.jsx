@@ -656,6 +656,12 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
                                 <TrendingUp size={12} className="text-emerald-500" />
                                 Rank #{report.rankingNo}
                               </span>
+                              {report.clientContactNumber && (
+                                <span className="flex items-center gap-1">
+                                  <Phone size={11} className="text-emerald-500" />
+                                  {report.clientContactNumber}
+                                </span>
+                              )}
                               <span className="flex items-center gap-1">
                                 <Calendar size={11} />
                                 {formatDate(report.checkDate)}

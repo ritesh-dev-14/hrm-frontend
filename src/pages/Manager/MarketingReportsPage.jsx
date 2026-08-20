@@ -31,6 +31,7 @@ const fmtDate = (d) =>
 const INITIAL_FORM = {
   projectId: "",
   clientName: "",
+  clientContactNumber: "",
   videoLink: "",
   areaName: "",
   isAdRunning: "",
@@ -121,6 +122,7 @@ export default function MarketingReportsPage() {
     setForm({
       projectId: report.projectId || "",
       clientName: report.clientName || "",
+      clientContactNumber: report.clientContactNumber || "",
       videoLink: report.videoLink || "",
       areaName: report.areaName || "",
       isAdRunning:
@@ -352,7 +354,7 @@ export default function MarketingReportsPage() {
             <table className="w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="bg-slate-800/80 border-b border-slate-700/40">
-                  {["Date","Client","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Campaign Period","Actions"].map((h) => (
+                  {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Campaign Period","Actions"].map((h) => (
                     <th key={h} className="text-left px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -364,6 +366,7 @@ export default function MarketingReportsPage() {
                       <span className="flex items-center gap-1.5"><Calendar size={13} className="text-slate-500" />{fmtDate(r.date)}</span>
                     </td>
                     <td className="px-4 py-3.5 text-white font-semibold">{r.clientName || "—"}</td>
+                    <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{r.clientContactNumber || "—"}</td>
                     <td className="px-4 py-3.5 text-slate-300">{r.areaName || "—"}</td>
                     <td className="px-4 py-3.5">
                       {r.isAdRunning === true ? (
@@ -415,6 +418,10 @@ export default function MarketingReportsPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Client Contact Number</label>
+                  <input type="text" name="clientContactNumber" value={form.clientContactNumber || ''} onChange={(e) => setForm((f) => ({ ...f, clientContactNumber: e.target.value }))} placeholder="e.g. 9876543210" className={inputCls} />
+                </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Client Name</label>
                   <input value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. ABC Corp" className={inputCls} />
