@@ -1,10 +1,25 @@
 import React, { useEffect, useState } from "react";
 import API from "../../services/api";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+} from "recharts";
 import { BriefcaseBusiness, CheckCircle, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
+import ProfessionalLoader from "../../components/ProfessionalLoader";
 
 export default function HrEmployeeProjectReport() {
   const { employeeId } = useParams();
@@ -19,7 +34,9 @@ export default function HrEmployeeProjectReport() {
   const fetchProjectStats = async () => {
     try {
       setLoading(true);
-      const res = await API.get(`/api/reports/hr/employee/${employeeId}/projects`);
+      const res = await API.get(
+        `/api/reports/hr/employee/${employeeId}/projects`,
+      );
       if (res.data?.success) {
         setData(res.data.data);
       } else {
@@ -34,27 +51,26 @@ export default function HrEmployeeProjectReport() {
   };
 
   if (loading) {
-    return (
-      <div className="p-8 h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <ProfessionalLoader text="Loading. Please wait..." />;
   }
 
   if (!data) return <div className="p-8">No data available</div>;
 
-  const projectStats = data.map(p => ({
+  const projectStats = data.map((p) => ({
     ...p,
-    pending: p.totalTasks - p.completedTasks
+    pending: p.totalTasks - p.completedTasks,
   }));
 
   const totalProjects = projectStats.length;
   const totalTasks = projectStats.reduce((sum, p) => sum + p.totalTasks, 0);
-  const totalCompleted = projectStats.reduce((sum, p) => sum + p.completedTasks, 0);
+  const totalCompleted = projectStats.reduce(
+    (sum, p) => sum + p.completedTasks,
+    0,
+  );
 
   return (
     <div className="p-8 max-w-7xl mx-auto h-full overflow-y-auto">
-      <button 
+      <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors mb-6 font-semibold"
       >
@@ -82,8 +98,12 @@ export default function HrEmployeeProjectReport() {
               <BriefcaseBusiness size={24} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-500">Active Projects</p>
-              <p className="text-2xl font-black text-slate-900">{totalProjects}</p>
+              <p className="text-sm font-semibold text-slate-500">
+                Active Projects
+              </p>
+              <p className="text-2xl font-black text-slate-900">
+                {totalProjects}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -99,7 +119,9 @@ export default function HrEmployeeProjectReport() {
               <CheckCircle size={24} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-500">Total Tasks Assigned</p>
+              <p className="text-sm font-semibold text-slate-500">
+                Total Tasks Assigned
+              </p>
               <p className="text-2xl font-black text-slate-900">{totalTasks}</p>
             </div>
           </div>
@@ -116,8 +138,12 @@ export default function HrEmployeeProjectReport() {
               <CheckCircle size={24} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-500">Total Tasks Completed</p>
-              <p className="text-2xl font-black text-slate-900">{totalCompleted}</p>
+              <p className="text-sm font-semibold text-slate-500">
+                Total Tasks Completed
+              </p>
+              <p className="text-2xl font-black text-slate-900">
+                {totalCompleted}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -125,7 +151,9 @@ export default function HrEmployeeProjectReport() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Task Completion by Project & Shoot Workspace</h2>
+          <h2 className="text-lg font-bold text-slate-900 mb-6">
+            Task Completion by Project & Shoot Workspace
+          </h2>
           <div className="h-[350px]">
             {projectStats.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -134,16 +162,45 @@ export default function HrEmployeeProjectReport() {
                   layout="vertical"
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
-                  <XAxis type="number" tick={{fill: '#64748b', fontSize: 12}} />
-                  <YAxis dataKey="projectName" type="category" width={120} tick={{fill: '#64748b', fontSize: 12}} />
-                  <Tooltip 
-                    cursor={{fill: '#f8fafc'}}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal={true}
+                    vertical={false}
+                    stroke="#e2e8f0"
+                  />
+                  <XAxis
+                    type="number"
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                  />
+                  <YAxis
+                    dataKey="projectName"
+                    type="category"
+                    width={120}
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "#f8fafc" }}
+                    contentStyle={{
+                      borderRadius: "8px",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
                   />
                   <Legend />
-                  <Bar dataKey="completedTasks" name="Completed / Approved" stackId="a" fill="#4ade80" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="pending" name="Pending" stackId="a" fill="#f87171" radius={[0, 4, 4, 0]} />
+                  <Bar
+                    dataKey="completedTasks"
+                    name="Completed / Approved"
+                    stackId="a"
+                    fill="#4ade80"
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="pending"
+                    name="Pending"
+                    stackId="a"
+                    fill="#f87171"
+                    radius={[0, 4, 4, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -155,23 +212,48 @@ export default function HrEmployeeProjectReport() {
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Performance Radar</h2>
+          <h2 className="text-lg font-bold text-slate-900 mb-6">
+            Performance Radar
+          </h2>
           <div className="h-[350px]">
             {projectStats.length > 2 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={projectStats}>
+                <RadarChart
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="80%"
+                  data={projectStats}
+                >
                   <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="projectName" tick={{fill: '#64748b', fontSize: 12}} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <Radar name="Completion %" dataKey="completionPercentage" stroke="#6366f1" fill="#818cf8" fillOpacity={0.5} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  <PolarAngleAxis
+                    dataKey="projectName"
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[0, 100]}
+                    tick={{ fill: "#94a3b8", fontSize: 10 }}
+                  />
+                  <Radar
+                    name="Completion %"
+                    dataKey="completionPercentage"
+                    stroke="#6366f1"
+                    fill="#818cf8"
+                    fillOpacity={0.5}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "8px",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
                   />
                 </RadarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-500 text-center px-4">
-                Radar chart requires at least 3 workspaces/projects to display effectively.
+                Radar chart requires at least 3 workspaces/projects to display
+                effectively.
               </div>
             )}
           </div>
@@ -180,7 +262,9 @@ export default function HrEmployeeProjectReport() {
 
       {/* Projects & Shoot Workspaces Table */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
-        <h2 className="text-lg font-bold text-slate-900 mb-6">Projects & Shoot Workspaces Breakdown</h2>
+        <h2 className="text-lg font-bold text-slate-900 mb-6">
+          Projects & Shoot Workspaces Breakdown
+        </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -195,7 +279,9 @@ export default function HrEmployeeProjectReport() {
             <tbody className="divide-y divide-slate-100">
               {projectStats.map((item, index) => (
                 <tr key={index} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-4 font-bold text-slate-900 text-sm">{item.projectName}</td>
+                  <td className="py-4 font-bold text-slate-900 text-sm">
+                    {item.projectName}
+                  </td>
                   <td className="py-4">
                     <span
                       className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
@@ -204,11 +290,17 @@ export default function HrEmployeeProjectReport() {
                           : "bg-indigo-100 text-indigo-800 border border-indigo-200"
                       }`}
                     >
-                      {item.type === "SHOOT" ? "SHOOT WORKSPACE" : "GENERAL PROJECT"}
+                      {item.type === "SHOOT"
+                        ? "SHOOT WORKSPACE"
+                        : "GENERAL PROJECT"}
                     </span>
                   </td>
-                  <td className="py-4 text-center font-semibold text-slate-700 text-xs">{item.totalTasks}</td>
-                  <td className="py-4 text-center font-semibold text-emerald-600 text-xs">{item.completedTasks}</td>
+                  <td className="py-4 text-center font-semibold text-slate-700 text-xs">
+                    {item.totalTasks}
+                  </td>
+                  <td className="py-4 text-center font-semibold text-emerald-600 text-xs">
+                    {item.completedTasks}
+                  </td>
                   <td className="py-4">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -217,7 +309,9 @@ export default function HrEmployeeProjectReport() {
                           style={{ width: `${item.completionPercentage}%` }}
                         />
                       </div>
-                      <span className="text-xs font-extrabold text-slate-700">{item.completionPercentage}%</span>
+                      <span className="text-xs font-extrabold text-slate-700">
+                        {item.completionPercentage}%
+                      </span>
                     </div>
                   </td>
                 </tr>
