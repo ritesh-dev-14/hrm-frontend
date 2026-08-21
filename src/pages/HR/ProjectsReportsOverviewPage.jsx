@@ -372,7 +372,7 @@ function SocialMediaTab({ data, search }) {
                               className="text-xs text-amber-700 mt-2 max-w-xs truncate"
                               title={latestReason.reason || latestReason.text}
                             >
-                              Latest reason:{" "}
+                              Deviation :{" "}
                               {latestReason.reason || latestReason.text || "—"}
                             </p>
                           )}
