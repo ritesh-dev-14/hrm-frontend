@@ -366,9 +366,7 @@ function SocialMediaTab({ data, search }) {
                           <p className="font-semibold text-slate-900">
                             {p.projectName || "—"}
                           </p>
-                          <p className="text-xs font-medium text-slate-500 mt-0.5">
-                            {p.clientName}
-                          </p>
+                         
                           {latestReason && (
                             <p
                               className="text-xs text-amber-700 mt-2 max-w-xs truncate"
