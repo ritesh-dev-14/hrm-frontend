@@ -1,20 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
-import { 
-  Download, 
-  Search, 
-  Plus, 
-  Calendar, 
-  FileText, 
-  Trash2, 
-  Eye, 
-  X, 
-  Upload, 
-  CheckCircle, 
+import {
+  Download,
+  Search,
+  Plus,
+  Calendar,
+  FileText,
+  Trash2,
+  Eye,
+  X,
+  Upload,
+  CheckCircle,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from "lucide-react";
 import API from "../../services/api";
 import { notifySuccess, notifyError } from "../../utils/toast";
+import ProfessionalLoader from "../../components/ProfessionalLoader";
 
 const MONTHS = [
   { value: 1, label: "January" },
@@ -77,7 +78,11 @@ const HrPayslips = () => {
     setLoadingEmployees(true);
     try {
       const res = await API.get("/api/payslips/users").catch(() => null);
-      if (res?.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (
+        res?.data?.success &&
+        Array.isArray(res.data.data) &&
+        res.data.data.length > 0
+      ) {
         setEmployees(res.data.data);
         return;
       }
@@ -90,7 +95,9 @@ const HrPayslips = () => {
       const empList = empRes.data?.data || empRes.data || [];
       const mgrList = mgrRes.data?.data || mgrRes.data || [];
       const combined = [...empList, ...mgrList];
-      const uniqueUsers = Array.from(new Map(combined.map((u) => [u.id || u._id, u])).values());
+      const uniqueUsers = Array.from(
+        new Map(combined.map((u) => [u.id || u._id, u])).values(),
+      );
       setEmployees(uniqueUsers);
     } catch (err) {
       console.error("Error loading employees for payslip upload:", err);
@@ -111,7 +118,9 @@ const HrPayslips = () => {
       const res = await API.get("/api/payslips", { params });
       if (res.data?.success) {
         setPayslips(res.data.data || []);
-        setTotalCount(res.data.pagination?.total || (res.data.data || []).length);
+        setTotalCount(
+          res.data.pagination?.total || (res.data.data || []).length,
+        );
       }
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to load payslips";
@@ -138,7 +147,9 @@ const HrPayslips = () => {
   const handleDownload = async (slip) => {
     if (!slip?.imageUrl) return;
     const monthName = getMonthName(slip.month);
-    const empName = slip.user?.name ? slip.user.name.replace(/\s+/g, "_") : "Employee";
+    const empName = slip.user?.name
+      ? slip.user.name.replace(/\s+/g, "_")
+      : "Employee";
     const fileName = `Payslip_${empName}_${monthName}_${slip.year}.png`;
     setDownloadingId(slip.id);
 
@@ -231,7 +242,8 @@ const HrPayslips = () => {
 
   // Handle Delete
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this payslip?")) return;
+    if (!window.confirm("Are you sure you want to delete this payslip?"))
+      return;
 
     setDeletingId(id);
     try {
@@ -276,8 +288,12 @@ const HrPayslips = () => {
             <FileText size={22} />
           </div>
           <div>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Total Uploaded</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-0.5">{totalCount}</h3>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
+              Total Uploaded
+            </p>
+            <h3 className="text-2xl font-black text-slate-900 mt-0.5">
+              {totalCount}
+            </h3>
           </div>
         </div>
 
@@ -286,8 +302,12 @@ const HrPayslips = () => {
             <CheckCircle size={22} />
           </div>
           <div>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Active Staff</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-0.5">{employees.length}</h3>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
+              Active Staff
+            </p>
+            <h3 className="text-2xl font-black text-slate-900 mt-0.5">
+              {employees.length}
+            </h3>
           </div>
         </div>
 
@@ -296,7 +316,9 @@ const HrPayslips = () => {
             <Calendar size={22} />
           </div>
           <div>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Current Period</p>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
+              Current Period
+            </p>
             <h3 className="text-lg font-bold text-slate-900 mt-0.5">
               {getMonthName(currentMonthNum)} {currentYearNum}
             </h3>
@@ -307,7 +329,10 @@ const HrPayslips = () => {
       {/* Search & Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={18} />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+            size={18}
+          />
           <input
             type="text"
             value={search}
@@ -349,15 +374,16 @@ const HrPayslips = () => {
       {/* Payslips Table */}
       <div className="bg-white rounded-2xl border border-[#F1F5F9] shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
-            <p className="text-slate-500 font-medium text-sm">Loading payslips...</p>
-          </div>
+          <ProfessionalLoader text="Loading. Please wait..." />
         ) : payslips.length === 0 ? (
           <div className="py-16 text-center">
             <ImageIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-slate-800 font-bold text-base">No payslips found</h3>
-            <p className="text-slate-400 text-sm mt-1">Upload a payslip to get started.</p>
+            <h3 className="text-slate-800 font-bold text-base">
+              No payslips found
+            </h3>
+            <p className="text-slate-400 text-sm mt-1">
+              Upload a payslip to get started.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -387,12 +413,17 @@ const HrPayslips = () => {
               <tbody className="divide-y divide-[#F1F5F9]">
                 {payslips.map((slip) => {
                   const empName = slip.user?.name || "Unknown";
-                  const empCode = slip.user?.employeeId ? `(#${slip.user.employeeId})` : "";
+                  const empCode = slip.user?.employeeId
+                    ? `(#${slip.user.employeeId})`
+                    : "";
                   const monthName = getMonthName(slip.month);
                   const isDownloading = downloadingId === slip.id;
 
                   return (
-                    <tr key={slip.id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr
+                      key={slip.id}
+                      className="hover:bg-slate-50/70 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0">
@@ -403,7 +434,10 @@ const HrPayslips = () => {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900 text-sm">
-                              {empName} <span className="text-slate-400 font-normal text-xs">{empCode}</span>
+                              {empName}{" "}
+                              <span className="text-slate-400 font-normal text-xs">
+                                {empCode}
+                              </span>
                             </p>
                             <p className="text-xs text-slate-400 font-medium">
                               {slip.user?.position || slip.user?.email}
@@ -419,9 +453,13 @@ const HrPayslips = () => {
                       </td>
 
                       <td className="px-6 py-4">
-                        <p className="font-semibold text-slate-800 text-sm">{slip.title || `Payslip ${monthName}`}</p>
+                        <p className="font-semibold text-slate-800 text-sm">
+                          {slip.title || `Payslip ${monthName}`}
+                        </p>
                         {slip.remarks && (
-                          <p className="text-xs text-slate-500 truncate max-w-xs">{slip.remarks}</p>
+                          <p className="text-xs text-slate-500 truncate max-w-xs">
+                            {slip.remarks}
+                          </p>
                         )}
                       </td>
 
@@ -484,8 +522,12 @@ const HrPayslips = () => {
                   <Upload size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900">Upload Payslip</h3>
-                  <p className="text-xs text-slate-400">Send payslip image to an employee / staff member</p>
+                  <h3 className="font-bold text-lg text-slate-900">
+                    Upload Payslip
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Send payslip image to an employee / staff member
+                  </p>
                 </div>
               </div>
               <button
@@ -501,11 +543,14 @@ const HrPayslips = () => {
               {/* Employee Selection */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Select Employee / Staff <span className="text-rose-500">*</span>
+                  Select Employee / Staff{" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.userId}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, userId: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, userId: e.target.value }))
+                  }
                   required
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all cursor-pointer"
                 >
@@ -526,7 +571,12 @@ const HrPayslips = () => {
                   </label>
                   <select
                     value={formData.month}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, month: Number(e.target.value) }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        month: Number(e.target.value),
+                      }))
+                    }
                     required
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all cursor-pointer"
                   >
@@ -544,7 +594,12 @@ const HrPayslips = () => {
                   </label>
                   <select
                     value={formData.year}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, year: Number(e.target.value) }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        year: Number(e.target.value),
+                      }))
+                    }
                     required
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all cursor-pointer"
                   >
@@ -565,7 +620,9 @@ const HrPayslips = () => {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, title: e.target.value }))
+                  }
                   placeholder={`e.g. Payslip for ${getMonthName(formData.month)} ${formData.year}`}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all"
                 />
@@ -578,7 +635,12 @@ const HrPayslips = () => {
                 </label>
                 <textarea
                   value={formData.remarks}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, remarks: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      remarks: e.target.value,
+                    }))
+                  }
                   placeholder="Optional note for the employee..."
                   rows={2}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all resize-none"
@@ -605,13 +667,19 @@ const HrPayslips = () => {
                         alt="Payslip preview"
                         className="max-h-36 mx-auto rounded-lg object-contain shadow-sm border border-slate-200"
                       />
-                      <p className="text-xs font-medium text-indigo-600 truncate">{formData.file?.name}</p>
+                      <p className="text-xs font-medium text-indigo-600 truncate">
+                        {formData.file?.name}
+                      </p>
                     </div>
                   ) : (
                     <div className="py-4 space-y-1">
                       <Upload className="w-8 h-8 text-slate-400 mx-auto group-hover:text-indigo-600 transition-colors" />
-                      <p className="text-sm font-semibold text-slate-700">Click or drag image file here</p>
-                      <p className="text-xs text-slate-400">Supports PNG, JPG, WEBP formats</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        Click or drag image file here
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Supports PNG, JPG, WEBP formats
+                      </p>
                     </div>
                   )}
                 </div>
@@ -623,10 +691,18 @@ const HrPayslips = () => {
                   type="checkbox"
                   id="sendEmail"
                   checked={formData.sendEmail}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, sendEmail: e.target.checked }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      sendEmail: e.target.checked,
+                    }))
+                  }
                   className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
                 />
-                <label htmlFor="sendEmail" className="text-sm font-medium text-slate-700 cursor-pointer">
+                <label
+                  htmlFor="sendEmail"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
+                >
                   Send email notification with payslip link to employee
                 </label>
               </div>
@@ -667,9 +743,12 @@ const HrPayslips = () => {
           <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <div>
-                <h3 className="font-bold text-lg text-slate-900">{viewingPayslip.title || "Payslip Detail"}</h3>
+                <h3 className="font-bold text-lg text-slate-900">
+                  {viewingPayslip.title || "Payslip Detail"}
+                </h3>
                 <p className="text-xs text-slate-400">
-                  {viewingPayslip.user?.name} — {getMonthName(viewingPayslip.month)} {viewingPayslip.year}
+                  {viewingPayslip.user?.name} —{" "}
+                  {getMonthName(viewingPayslip.month)} {viewingPayslip.year}
                 </p>
               </div>
               <button
@@ -691,8 +770,12 @@ const HrPayslips = () => {
 
               {viewingPayslip.remarks && (
                 <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3.5">
-                  <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">HR Remarks</p>
-                  <p className="text-sm text-slate-700 mt-1">{viewingPayslip.remarks}</p>
+                  <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    HR Remarks
+                  </p>
+                  <p className="text-sm text-slate-700 mt-1">
+                    {viewingPayslip.remarks}
+                  </p>
                 </div>
               )}
 
@@ -707,7 +790,9 @@ const HrPayslips = () => {
                   ) : (
                     <Download size={16} />
                   )}
-                  {downloadingId === viewingPayslip.id ? "Downloading..." : "Download Image File"}
+                  {downloadingId === viewingPayslip.id
+                    ? "Downloading..."
+                    : "Download Image File"}
                 </button>
                 <button
                   onClick={() => setViewingPayslip(null)}

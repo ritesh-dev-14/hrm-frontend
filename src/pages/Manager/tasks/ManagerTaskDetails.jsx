@@ -24,6 +24,7 @@ import {
 import API from "../../../services/api";
 import { assignMainTaskToMe } from "./taskDetails";
 import { notifySuccess, notifyError } from "../../../utils/toast";
+import ProfessionalLoader from "../../../components/ProfessionalLoader";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-700 border border-slate-200",
@@ -405,14 +406,7 @@ const ManagerTaskDetailPage = () => {
   }, [summary]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center relative overflow-hidden">
-        <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <Loader2 size={36} className="animate-spin text-indigo-500 mb-4" />
-        <p className="text-sm font-semibold text-indigo-900 tracking-wide">Loading project details...</p>
-      </div>
-    );
+    return <ProfessionalLoader text="Loading. Please wait..." />;
   }
 
   if (!task) return null;
@@ -428,7 +422,11 @@ const ManagerTaskDetailPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
         {/* TOP BAR */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between mb-2">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center justify-between mb-2"
+        >
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors"
@@ -439,9 +437,13 @@ const ManagerTaskDetailPage = () => {
         </motion.div>
 
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 md:p-10 shadow-sm relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 md:p-10 shadow-sm relative overflow-hidden"
+        >
           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-             <Building2 size={200} />
+            <Building2 size={200} />
           </div>
           <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-8 relative z-10">
             <div className="flex-1">
@@ -469,12 +471,17 @@ const ManagerTaskDetailPage = () => {
             <button
               onClick={handleAssignToMe}
               disabled={assigningToMe || isMainTaskAssignedToMe}
-              className={`h-14 px-8 rounded-2xl text-sm font-bold flex items-center gap-3 transition-all shadow-sm ${isMainTaskAssignedToMe
+              className={`h-14 px-8 rounded-2xl text-sm font-bold flex items-center gap-3 transition-all shadow-sm ${
+                isMainTaskAssignedToMe
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                   : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5"
-                }`}
+              }`}
             >
-              {isMainTaskAssignedToMe ? <Check size={18} /> : <UserPlus size={18} />}
+              {isMainTaskAssignedToMe ? (
+                <Check size={18} />
+              ) : (
+                <UserPlus size={18} />
+              )}
 
               {isMainTaskAssignedToMe
                 ? "Assigned to You"
@@ -486,7 +493,11 @@ const ManagerTaskDetailPage = () => {
         </motion.div>
 
         {/* STATS */}
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="grid grid-cols-2 xl:grid-cols-4 gap-5"
+        >
           {stats.map((item, index) => (
             <div
               key={index}
@@ -494,7 +505,10 @@ const ManagerTaskDetailPage = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors">
-                  <item.icon size={24} className="text-indigo-500 group-hover:text-white transition-colors" />
+                  <item.icon
+                    size={24}
+                    className="text-indigo-500 group-hover:text-white transition-colors"
+                  />
                 </div>
 
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">
@@ -506,13 +520,19 @@ const ManagerTaskDetailPage = () => {
                 {item.value}
               </h2>
 
-              <p className="text-sm font-semibold text-slate-500 mt-1 uppercase tracking-wider">{item.title}</p>
+              <p className="text-sm font-semibold text-slate-500 mt-1 uppercase tracking-wider">
+                {item.title}
+              </p>
             </div>
           ))}
         </motion.div>
 
         {/* ACTION BAR */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 md:p-8 shadow-sm">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] p-6 md:p-8 shadow-sm"
+        >
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
@@ -521,7 +541,8 @@ const ManagerTaskDetailPage = () => {
               </h2>
 
               <p className="text-sm font-medium text-slate-500 mt-1">
-                Manage assignments, review submissions, and track subtask progress.
+                Manage assignments, review submissions, and track subtask
+                progress.
               </p>
             </div>
 
@@ -638,10 +659,11 @@ const ManagerTaskDetailPage = () => {
                           await handleLoadMyEmployees();
                         }
                       }}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${!selectedDepartment
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                        !selectedDepartment
                           ? "bg-black text-white"
                           : "text-slate-600 hover:bg-slate-100"
-                        }`}
+                      }`}
                     >
                       My Employees
                     </button>
@@ -657,10 +679,11 @@ const ManagerTaskDetailPage = () => {
                           setSelectedDepartment(departmentEmployees[0]);
                         }
                       }}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${selectedDepartment
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                        selectedDepartment
                           ? "bg-black text-white"
                           : "text-slate-600 hover:bg-slate-100"
-                        }`}
+                      }`}
                     >
                       Other Department
                     </button>
@@ -674,10 +697,11 @@ const ManagerTaskDetailPage = () => {
                           key={department.id}
                           type="button"
                           onClick={() => setSelectedDepartment(department)}
-                          className={`px-3 py-2 rounded-lg text-sm transition ${selectedDepartment.id === department.id
+                          className={`px-3 py-2 rounded-lg text-sm transition ${
+                            selectedDepartment.id === department.id
                               ? "bg-black text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            }`}
+                          }`}
                         >
                           {department.name}
                         </button>
@@ -704,8 +728,9 @@ const ManagerTaskDetailPage = () => {
                                   employeeId: emp.employeeId,
                                 }));
                               }}
-                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${selected ? "bg-slate-100" : "hover:bg-slate-50"
-                                }`}
+                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${
+                                selected ? "bg-slate-100" : "hover:bg-slate-50"
+                              }`}
                             >
                               <div className="text-left">
                                 <p className="text-sm font-medium text-slate-900">
@@ -748,8 +773,9 @@ const ManagerTaskDetailPage = () => {
                                   employeeId: emp.employeeId,
                                 }));
                               }}
-                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${selected ? "bg-slate-100" : "hover:bg-slate-50"
-                                }`}
+                              className={`w-full px-4 py-4 flex items-center justify-between border-b border-slate-100 transition ${
+                                selected ? "bg-slate-100" : "hover:bg-slate-50"
+                              }`}
                             >
                               <div className="text-left">
                                 <p className="text-sm font-medium text-slate-900">
@@ -852,10 +878,11 @@ const ManagerTaskDetailPage = () => {
                           priority: level,
                         })
                       }
-                      className={`h-11 px-5 rounded-xl border text-sm font-medium transition ${subtaskForm.priority === level
+                      className={`h-11 px-5 rounded-xl border text-sm font-medium transition ${
+                        subtaskForm.priority === level
                           ? "bg-black text-white border-black"
                           : "border-slate-300 hover:border-black text-slate-700"
-                        }`}
+                      }`}
                     >
                       {level}
                     </button>
@@ -892,7 +919,11 @@ const ManagerTaskDetailPage = () => {
         )}
 
         {/* TABLE */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] shadow-sm overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] shadow-sm overflow-hidden"
+        >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1200px]">
               <thead className="bg-slate-50/80 border-b border-slate-100/60 backdrop-blur-sm">
@@ -1085,7 +1116,7 @@ const ManagerTaskDetailPage = () => {
                                   className="p-1.5 bg-white text-emerald-600 hover:bg-emerald-50 rounded-lg border border-slate-200 shadow-sm transition"
                                 >
                                   {actionLoadingId ===
-                                    assignment.assignmentId ? (
+                                  assignment.assignmentId ? (
                                     <Loader2
                                       size={13}
                                       className="animate-spin"
@@ -1161,10 +1192,11 @@ const ManagerTaskDetailPage = () => {
                 return (
                   <label
                     key={employee.id}
-                    className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer bg-white transition-all ${checked
+                    className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer bg-white transition-all ${
+                      checked
                         ? "border-black ring-1 ring-black"
                         : "border-slate-200"
-                      }`}
+                    }`}
                   >
                     <input
                       type="checkbox"
@@ -1212,7 +1244,6 @@ const ManagerTaskDetailPage = () => {
           </div>
         </div>
       )}
-
 
       {/* REJECT MODAL */}
       {rejectModal.open && (

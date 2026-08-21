@@ -14,6 +14,7 @@ import {
 
 import API from "../services/api";
 import ReasonModal from "../components/projects/ReasonModal";
+import ProfessionalLoader from "../components/ProfessionalLoader";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -85,7 +86,7 @@ const SocialMediaProjectsPage = () => {
     return allProjects.filter(
       (p) =>
         p.projectName?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q)
+        p.description?.toLowerCase().includes(q),
     );
   }, [allProjects, searchQuery]);
 
@@ -117,7 +118,6 @@ const SocialMediaProjectsPage = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-
         {/* HEADER */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -180,12 +180,7 @@ const SocialMediaProjectsPage = () => {
 
         {/* PROJECTS GRID */}
         {isLoading ? (
-          <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm">
-            <Loader2 size={32} className="animate-spin text-cyan-500 mb-4" />
-            <p className="text-sm font-semibold text-slate-700 tracking-wide">
-              Loading projects...
-            </p>
-          </div>
+          <ProfessionalLoader text="Loading. Please wait..." />
         ) : filteredProjects.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm text-center">
             <div className="w-20 h-20 bg-cyan-50 text-cyan-300 rounded-full flex items-center justify-center mb-6">

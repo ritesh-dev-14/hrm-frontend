@@ -17,6 +17,7 @@ import {
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
+import ProfessionalLoader from "../../components/ProfessionalLoader";
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -38,10 +39,11 @@ const formatDate = (d) =>
 // ─────────────────────────────────────────────────────────
 function UploadCard({ item, user, onUpdateStatus }) {
   const [expanded, setExpanded] = useState(false);
-  
-  const isToday = new Date(item.uploadDate).toISOString().slice(0, 10) === todayISO();
+
+  const isToday =
+    new Date(item.uploadDate).toISOString().slice(0, 10) === todayISO();
   const canManage = ["MANAGER", "HR"].includes(user?.role);
-  
+
   const contentLinks = item.contentUploadLinks || [];
   const videoLinks = item.videoUploadLinks || [];
   const hasLinks = contentLinks.length > 0 || videoLinks.length > 0;
@@ -69,10 +71,14 @@ function UploadCard({ item, user, onUpdateStatus }) {
   }
 
   return (
-    <div className={`rounded-2xl border shadow-sm transition-all ${cardStyles}`}>
+    <div
+      className={`rounded-2xl border shadow-sm transition-all ${cardStyles}`}
+    >
       {isToday && (!item.uploadStatus || item.uploadStatus === "PENDING") && (
         <div className="flex items-center gap-2 rounded-t-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2">
-          <span className="text-xs font-bold text-white tracking-wide">📌 TODAY'S UPLOAD</span>
+          <span className="text-xs font-bold text-white tracking-wide">
+            📌 TODAY'S UPLOAD
+          </span>
         </div>
       )}
 
@@ -88,14 +94,32 @@ function UploadCard({ item, user, onUpdateStatus }) {
               </span>
               {statusBadge}
             </div>
-            
+
             <div className="flex flex-wrap gap-4 text-sm text-slate-500 mb-3">
               <span className="flex items-center gap-1.5">
-                <CalendarDays size={14} className={item.uploadStatus === "APPROVED" ? "text-green-500" : item.uploadStatus === "REJECTED" ? "text-red-500" : "text-indigo-400"} />
+                <CalendarDays
+                  size={14}
+                  className={
+                    item.uploadStatus === "APPROVED"
+                      ? "text-green-500"
+                      : item.uploadStatus === "REJECTED"
+                        ? "text-red-500"
+                        : "text-indigo-400"
+                  }
+                />
                 {formatDate(item.uploadDate)}
               </span>
               <span className="flex items-center gap-1.5">
-                <Package size={14} className={item.uploadStatus === "APPROVED" ? "text-green-500" : item.uploadStatus === "REJECTED" ? "text-red-500" : "text-indigo-400"} />
+                <Package
+                  size={14}
+                  className={
+                    item.uploadStatus === "APPROVED"
+                      ? "text-green-500"
+                      : item.uploadStatus === "REJECTED"
+                        ? "text-red-500"
+                        : "text-indigo-400"
+                  }
+                />
                 {item.title || "Uploaded Content"}
               </span>
             </div>
@@ -108,24 +132,25 @@ function UploadCard({ item, user, onUpdateStatus }) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {canManage && (!item.uploadStatus || item.uploadStatus === "PENDING") && (
-              <div className="flex gap-2 mr-2">
-                <button
-                  onClick={() => onUpdateStatus(item, "APPROVED")}
-                  className="p-1.5 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-100 transition"
-                  title="Approve Upload"
-                >
-                  <CheckCircle size={20} />
-                </button>
-                <button
-                  onClick={() => onUpdateStatus(item, "REJECTED")}
-                  className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-100 transition"
-                  title="Reject Upload"
-                >
-                  <XCircle size={20} />
-                </button>
-              </div>
-            )}
+            {canManage &&
+              (!item.uploadStatus || item.uploadStatus === "PENDING") && (
+                <div className="flex gap-2 mr-2">
+                  <button
+                    onClick={() => onUpdateStatus(item, "APPROVED")}
+                    className="p-1.5 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-100 transition"
+                    title="Approve Upload"
+                  >
+                    <CheckCircle size={20} />
+                  </button>
+                  <button
+                    onClick={() => onUpdateStatus(item, "REJECTED")}
+                    className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-100 transition"
+                    title="Reject Upload"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+              )}
 
             {hasLinks && (
               <button
@@ -199,7 +224,7 @@ const HrUploads = () => {
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [filterMode, setFilterMode] = useState("date"); // "date" | "all"
-  
+
   // Rejection Modal State
   const [rejectItem, setRejectItem] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -215,7 +240,9 @@ const HrUploads = () => {
       const results = await Promise.all(
         projects.map(async (project) => {
           try {
-            const sheetRes = await API.get(`/api/projects/${project.id}/monthly-sheets`);
+            const sheetRes = await API.get(
+              `/api/projects/${project.id}/monthly-sheets`,
+            );
             const sheets = sheetRes.data?.data || [];
 
             return (sheets || []).flatMap((sheet) =>
@@ -232,16 +259,18 @@ const HrUploads = () => {
                 videoUploadLinks: day.videoUploadLinks || [],
                 uploadStatus: day.uploadStatus || "PENDING",
                 uploadRejectReason: day.uploadRejectReason,
-              }))
+              })),
             );
           } catch (err) {
             return [];
           }
-        })
+        }),
       );
 
       // Sort globally by date (descending)
-      const flatResults = results.flat().sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+      const flatResults = results
+        .flat()
+        .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
       setUploads(flatResults);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load uploads");
@@ -269,20 +298,20 @@ const HrUploads = () => {
         {
           uploadStatus: status,
           uploadRejectReason: reason,
-        }
+        },
       );
-      
+
       toast.success(`Upload ${status.toLowerCase()} successfully`);
-      
+
       // Update local state instantly
-      setUploads((prev) => 
-        prev.map((u) => 
-          u.id === item.id 
-            ? { ...u, uploadStatus: status, uploadRejectReason: reason } 
-            : u
-        )
+      setUploads((prev) =>
+        prev.map((u) =>
+          u.id === item.id
+            ? { ...u, uploadStatus: status, uploadRejectReason: reason }
+            : u,
+        ),
       );
-      
+
       setRejectItem(null);
       setRejectReason("");
     } catch (err) {
@@ -314,8 +343,17 @@ const HrUploads = () => {
     if (search.trim()) {
       const term = search.toLowerCase();
       list = list.filter((u) =>
-        [u.projectName, u.clientName, u.title, ...(u.contentUploadLinks || []), ...(u.videoUploadLinks || [])]
-          .some((v) => String(v || "").toLowerCase().includes(term))
+        [
+          u.projectName,
+          u.clientName,
+          u.title,
+          ...(u.contentUploadLinks || []),
+          ...(u.videoUploadLinks || []),
+        ].some((v) =>
+          String(v || "")
+            .toLowerCase()
+            .includes(term),
+        ),
       );
     }
 
@@ -333,7 +371,8 @@ const HrUploads = () => {
             Content Calendar Uploads
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            View and manage uploads sourced directly from the Content Calendar (Monthly Sheets).
+            View and manage uploads sourced directly from the Content Calendar
+            (Monthly Sheets).
           </p>
         </div>
       </div>
@@ -342,7 +381,10 @@ const HrUploads = () => {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            size={16}
+          />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -377,7 +419,10 @@ const HrUploads = () => {
 
         {filterMode === "date" && (
           <div className="relative">
-            <CalendarDays className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <CalendarDays
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={16}
+            />
             <input
               type="date"
               value={selectedDate}
@@ -390,10 +435,7 @@ const HrUploads = () => {
 
       {/* Results */}
       {loading ? (
-        <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-12 shadow-sm">
-          <Loader2 className="mr-3 animate-spin text-indigo-600" size={22} />
-          <span className="text-slate-500">Loading uploads from content calendar…</span>
-        </div>
+        <ProfessionalLoader text="Loading. Please wait..." />
       ) : filteredUploads.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
           <FolderOpen className="mx-auto mb-3 text-slate-300" size={40} />
@@ -407,14 +449,15 @@ const HrUploads = () => {
       ) : (
         <div className="space-y-4">
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-            {filteredUploads.length} result{filteredUploads.length !== 1 ? "s" : ""}
+            {filteredUploads.length} result
+            {filteredUploads.length !== 1 ? "s" : ""}
           </p>
           {filteredUploads.map((item) => (
-            <UploadCard 
-              key={item.id} 
-              item={item} 
-              user={user} 
-              onUpdateStatus={handleUpdateStatus} 
+            <UploadCard
+              key={item.id}
+              item={item}
+              user={user}
+              onUpdateStatus={handleUpdateStatus}
             />
           ))}
         </div>
@@ -437,7 +480,9 @@ const HrUploads = () => {
             </div>
             <div className="p-5 flex-1 overflow-y-auto">
               <p className="text-sm text-slate-600 mb-4">
-                Please provide a reason for rejecting this upload for <strong>{rejectItem.projectName}</strong> on {formatDate(rejectItem.uploadDate)}.
+                Please provide a reason for rejecting this upload for{" "}
+                <strong>{rejectItem.projectName}</strong> on{" "}
+                {formatDate(rejectItem.uploadDate)}.
               </p>
               <textarea
                 autoFocus
@@ -460,7 +505,9 @@ const HrUploads = () => {
                 disabled={isUpdating || !rejectReason.trim()}
                 className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition"
               >
-                {isUpdating ? <Loader2 className="animate-spin" size={16} /> : null}
+                {isUpdating ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : null}
                 Reject
               </button>
             </div>

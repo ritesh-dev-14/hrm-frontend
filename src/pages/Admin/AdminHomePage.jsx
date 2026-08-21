@@ -2,21 +2,35 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, Briefcase, FileText, CheckCircle2, Clock3, XCircle, TrendingUp, ChevronRight, ChevronDown, ChevronUp
+  Users,
+  Briefcase,
+  FileText,
+  CheckCircle2,
+  Clock3,
+  XCircle,
+  TrendingUp,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import API from "../../services/api";
+import ProfessionalLoader from "../../components/ProfessionalLoader";
 
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
+    transition: { staggerChildren: 0.1 },
+  },
 };
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  show: {
+    y: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 },
+  },
 };
 
 const AdminPage = () => {
@@ -40,12 +54,13 @@ const AdminPage = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [overviewRes, employeesRes, sheetsRes, projectsRes] = await Promise.all([
-          API.get("/api/hr/dashboard/admin-overview"),
-          API.get("/api/hr/dashboard/employees"),
-          API.get("/api/hr/dashboard/monthly-sheets"),
-          API.get("/api/hr/dashboard/projects"),
-        ]);
+        const [overviewRes, employeesRes, sheetsRes, projectsRes] =
+          await Promise.all([
+            API.get("/api/hr/dashboard/admin-overview"),
+            API.get("/api/hr/dashboard/employees"),
+            API.get("/api/hr/dashboard/monthly-sheets"),
+            API.get("/api/hr/dashboard/projects"),
+          ]);
 
         const overviewData = overviewRes.data || overviewRes;
         const employeesData = employeesRes.data || employeesRes;
@@ -56,7 +71,6 @@ const AdminPage = () => {
         if (employeesData.success) setEmployees(employeesData.data);
         if (sheetsData.success) setMonthlySheets(sheetsData.data);
         if (projectsData.success) setProjects(projectsData.data);
-
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError("Failed to load dashboard data. Please try again later.");
@@ -69,15 +83,7 @@ const AdminPage = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <ProfessionalLoader text="Loading. Please wait..." />;
   }
 
   if (error) {
@@ -85,7 +91,9 @@ const AdminPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-red-100 shadow-2xl max-w-md w-full text-center">
           <XCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Oops! Something went wrong</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">
+            Oops! Something went wrong
+          </h2>
           <p className="text-slate-500 text-sm">{error}</p>
         </div>
       </div>
@@ -108,12 +116,17 @@ const AdminPage = () => {
         className="max-w-7xl mx-auto space-y-8 relative z-10"
       >
         {/* Header */}
-        <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+        >
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              Admin Control Center
+              Welcome Admin!
             </h1>
-            <p className="text-slate-500 text-sm mt-1 font-medium">Real-time overview of your organization's performance.</p>
+            <p className="text-slate-500 text-sm mt-1 font-medium">
+              Real-time overview of your organization's performance.
+            </p>
           </div>
           <div className="bg-indigo-50 text-indigo-700 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest border border-indigo-100 shadow-sm flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
@@ -122,83 +135,127 @@ const AdminPage = () => {
         </motion.div>
 
         {/* SECTION 1: CORE STATS */}
-        <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div
+          variants={containerVariants}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
           <Link to="/hr/team?role=MANAGER">
-            <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden">
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -4 }}
+              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-purple-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
                   <Users size={24} />
                 </div>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Managers</p>
-              <h3 className="text-4xl font-black text-slate-900">{counts.totalManagers || 0}</h3>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+                Total Managers
+              </p>
+              <h3 className="text-4xl font-black text-slate-900">
+                {counts.totalManagers || 0}
+              </h3>
             </motion.div>
           </Link>
 
           <Link to="/hr/team?role=EMPLOYEE">
-            <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden">
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -4 }}
+              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
                   <Users size={24} />
                 </div>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Employees</p>
-              <h3 className="text-4xl font-black text-slate-900">{counts.totalEmployees || 0}</h3>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+                Total Employees
+              </p>
+              <h3 className="text-4xl font-black text-slate-900">
+                {counts.totalEmployees || 0}
+              </h3>
             </motion.div>
           </Link>
 
           <Link to="/projects">
-            <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden">
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -4 }}
+              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-violet-50 rounded-2xl text-violet-600">
                   <Briefcase size={24} />
                 </div>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Active Projects</p>
-              <h3 className="text-4xl font-black text-slate-900">{counts.totalProjects || 0}</h3>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+                Active Projects
+              </p>
+              <h3 className="text-4xl font-black text-slate-900">
+                {counts.totalProjects || 0}
+              </h3>
             </motion.div>
           </Link>
 
-          <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all group relative overflow-hidden">
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -4 }}
+            className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all group relative overflow-hidden"
+          >
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
             <div className="flex justify-between items-start mb-4">
               <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
                 <FileText size={24} />
               </div>
             </div>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Monthly Sheets</p>
-            <h3 className="text-4xl font-black text-slate-900">{counts.totalMonthlySheets || 0}</h3>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+              Monthly Sheets
+            </p>
+            <h3 className="text-4xl font-black text-slate-900">
+              {counts.totalMonthlySheets || 0}
+            </h3>
           </motion.div>
         </motion.div>
 
-
-
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Projects Catalog */}
-          <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col h-[500px]">
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col h-[500px]"
+          >
             <div className="p-6 md:p-8 border-b border-slate-100/50 pb-6">
               <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Briefcase size={20} className="text-indigo-500" /> Project Catalog
+                <Briefcase size={20} className="text-indigo-500" /> Project
+                Catalog
               </h2>
             </div>
             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
               <div className="space-y-6">
                 {(() => {
-                  const recurringProjects = projects.filter(
-                    (proj) => proj.department?.name?.toLowerCase().includes("social media")
+                  const recurringProjects = projects.filter((proj) =>
+                    proj.department?.name
+                      ?.toLowerCase()
+                      .includes("social media"),
                   );
                   const otherProjects = projects.filter(
-                    (proj) => !proj.department?.name?.toLowerCase().includes("social media")
+                    (proj) =>
+                      !proj.department?.name
+                        ?.toLowerCase()
+                        .includes("social media"),
                   );
 
                   return (
                     <>
                       {recurringProjects.length > 0 && (
                         <div className="space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-500 pl-2">Recurring Projects</h3>
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-500 pl-2">
+                            Recurring Projects
+                          </h3>
                           {recurringProjects.map((proj, i) => (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
@@ -209,10 +266,22 @@ const AdminPage = () => {
                               className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
                             >
                               <div>
-                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proj.projectName}</h4>
-                                <p className="text-xs text-slate-500 mt-1">{proj.department?.name || "General"} • {new Date(proj.startDate).toLocaleDateString()} to {new Date(proj.endDate).toLocaleDateString()}</p>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
+                                  {proj.projectName}
+                                </h4>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  {proj.department?.name || "General"} •{" "}
+                                  {new Date(
+                                    proj.startDate,
+                                  ).toLocaleDateString()}{" "}
+                                  to{" "}
+                                  {new Date(proj.endDate).toLocaleDateString()}
+                                </p>
                               </div>
-                              <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                              <ChevronRight
+                                size={16}
+                                className="text-slate-300 group-hover:text-indigo-500 transition-colors"
+                              />
                             </motion.div>
                           ))}
                         </div>
@@ -220,7 +289,9 @@ const AdminPage = () => {
 
                       {otherProjects.length > 0 && (
                         <div className="space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-2">Other Projects</h3>
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-2">
+                            Other Projects
+                          </h3>
                           {otherProjects.map((proj, i) => (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
@@ -231,17 +302,31 @@ const AdminPage = () => {
                               className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
                             >
                               <div>
-                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{proj.projectName}</h4>
-                                <p className="text-xs text-slate-500 mt-1">{proj.department?.name || "General"} • {new Date(proj.startDate).toLocaleDateString()} to {new Date(proj.endDate).toLocaleDateString()}</p>
+                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
+                                  {proj.projectName}
+                                </h4>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  {proj.department?.name || "General"} •{" "}
+                                  {new Date(
+                                    proj.startDate,
+                                  ).toLocaleDateString()}{" "}
+                                  to{" "}
+                                  {new Date(proj.endDate).toLocaleDateString()}
+                                </p>
                               </div>
-                              <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                              <ChevronRight
+                                size={16}
+                                className="text-slate-300 group-hover:text-indigo-500 transition-colors"
+                              />
                             </motion.div>
                           ))}
                         </div>
                       )}
-                      
+
                       {projects.length === 0 && (
-                        <div className="text-center py-10 text-slate-400 font-medium">No projects listed.</div>
+                        <div className="text-center py-10 text-slate-400 font-medium">
+                          No projects listed.
+                        </div>
                       )}
                     </>
                   );
@@ -251,10 +336,14 @@ const AdminPage = () => {
           </motion.div>
 
           {/* Monthly Sheets */}
-          <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col h-[500px]">
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col h-[500px]"
+          >
             <div className="p-6 md:p-8 border-b border-slate-100/50 pb-6">
               <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <FileText size={20} className="text-violet-500" /> Content Calendar
+                <FileText size={20} className="text-violet-500" /> Content
+                Calendar
               </h2>
             </div>
             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
@@ -269,8 +358,15 @@ const AdminPage = () => {
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-bold text-slate-800 text-sm">{sheet.project?.projectName}</h4>
-                        <p className="text-xs text-slate-400 mt-1">Period: <span className="font-semibold text-slate-600">{sheet.month}/{sheet.year}</span></p>
+                        <h4 className="font-bold text-slate-800 text-sm">
+                          {sheet.project?.projectName}
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Period:{" "}
+                          <span className="font-semibold text-slate-600">
+                            {sheet.month}/{sheet.year}
+                          </span>
+                        </p>
                       </div>
                       {sheet.moodBoardLink && (
                         <a
@@ -285,26 +381,44 @@ const AdminPage = () => {
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-slate-400 mb-1">Reels TGT</span>
-                        <span className="text-sm font-black text-slate-700">{sheet.totalReels}</span>
+                        <span className="block text-[9px] uppercase font-bold text-slate-400 mb-1">
+                          Reels TGT
+                        </span>
+                        <span className="text-sm font-black text-slate-700">
+                          {sheet.totalReels}
+                        </span>
                       </div>
                       <div className="bg-emerald-50 p-2 rounded-xl border border-emerald-100/50 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-1">Reels Live</span>
-                        <span className="text-sm font-black text-emerald-700">{sheet.totalReelsUploaded}</span>
+                        <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-1">
+                          Reels Live
+                        </span>
+                        <span className="text-sm font-black text-emerald-700">
+                          {sheet.totalReelsUploaded}
+                        </span>
                       </div>
                       <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-slate-400 mb-1">Posts TGT</span>
-                        <span className="text-sm font-black text-slate-700">{sheet.totalPosts}</span>
+                        <span className="block text-[9px] uppercase font-bold text-slate-400 mb-1">
+                          Posts TGT
+                        </span>
+                        <span className="text-sm font-black text-slate-700">
+                          {sheet.totalPosts}
+                        </span>
                       </div>
                       <div className="bg-emerald-50 p-2 rounded-xl border border-emerald-100/50 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-1">Posts Live</span>
-                        <span className="text-sm font-black text-emerald-700">{sheet.totalPostsUploaded}</span>
+                        <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-1">
+                          Posts Live
+                        </span>
+                        <span className="text-sm font-black text-emerald-700">
+                          {sheet.totalPostsUploaded}
+                        </span>
                       </div>
                     </div>
                   </motion.div>
                 ))}
                 {monthlySheets.length === 0 && (
-                  <div className="text-center py-10 text-slate-400 font-medium">No monthly data metrics logged.</div>
+                  <div className="text-center py-10 text-slate-400 font-medium">
+                    No monthly data metrics logged.
+                  </div>
                 )}
               </div>
             </div>
@@ -312,10 +426,15 @@ const AdminPage = () => {
         </div>
 
         {/* Employee Roster */}
-        <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100/60">
+        <motion.div
+          variants={itemVariants}
+          className="bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100/60"
+        >
           <div className="flex items-center gap-3 mb-6">
             <Users className="text-indigo-500" size={20} />
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">Team Roster & Performance</h2>
+            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+              Team Roster & Performance
+            </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {visibleEmployees.map((emp, i) => (
@@ -328,7 +447,9 @@ const AdminPage = () => {
               >
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-slate-800 text-sm truncate pr-2">{emp.name}</h3>
+                    <h3 className="font-bold text-slate-800 text-sm truncate pr-2">
+                      {emp.name}
+                    </h3>
                     <span className="bg-slate-100 text-slate-500 text-[9px] px-2 py-1 rounded-md font-bold tracking-wider uppercase">
                       {emp.employeeId}
                     </span>
@@ -338,13 +459,19 @@ const AdminPage = () => {
 
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Avg Progress</span>
-                    <span className="text-sm font-black text-indigo-600">{emp.assignmentStats?.averageProgress || 0}%</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                      Avg Progress
+                    </span>
+                    <span className="text-sm font-black text-indigo-600">
+                      {emp.assignmentStats?.averageProgress || 0}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      whileInView={{ width: `${emp.assignmentStats?.averageProgress || 0}%` }}
+                      whileInView={{
+                        width: `${emp.assignmentStats?.averageProgress || 0}%`,
+                      }}
                       transition={{ duration: 1, ease: "easeOut" }}
                       viewport={{ once: true }}
                       className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full"
@@ -354,7 +481,9 @@ const AdminPage = () => {
               </motion.div>
             ))}
             {employees.length === 0 && (
-              <div className="col-span-full text-center py-8 text-slate-400 font-medium">No employee data found.</div>
+              <div className="col-span-full text-center py-8 text-slate-400 font-medium">
+                No employee data found.
+              </div>
             )}
           </div>
 
@@ -368,12 +497,21 @@ const AdminPage = () => {
                 {isEmployeesExpanded ? (
                   <>
                     <span>Show Less</span>
-                    <ChevronUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                    <ChevronUp
+                      size={16}
+                      className="group-hover:-translate-y-0.5 transition-transform"
+                    />
                   </>
                 ) : (
                   <>
-                    <span>Expand Team Roster ({employees.length - INITIAL_EMP_COUNT} More)</span>
-                    <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                    <span>
+                      Expand Team Roster ({employees.length - INITIAL_EMP_COUNT}{" "}
+                      More)
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className="group-hover:translate-y-0.5 transition-transform"
+                    />
                   </>
                 )}
               </button>

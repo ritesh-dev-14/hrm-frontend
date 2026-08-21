@@ -8,7 +8,7 @@ import {
   User2,
   ChevronRight,
   Search,
-  Filter
+  Filter,
 } from "lucide-react";
 
 import TaskStats from "../../components/taskCreation/TaskStats";
@@ -16,6 +16,7 @@ import CreateTaskButton from "../../components/taskCreation/CreateTaskButton";
 import CreateTaskModal from "../../components/taskCreation/CreateTaskModal";
 
 import API from "../../services/api";
+import ProfessionalLoader from "../../components/ProfessionalLoader";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -28,13 +29,17 @@ const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
+    transition: { staggerChildren: 0.1 },
+  },
 };
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  show: {
+    y: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 },
+  },
 };
 
 const HrTaskCreation = () => {
@@ -81,8 +86,10 @@ const HrTaskCreation = () => {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      return task.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      return (
+        task.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     });
   }, [tasks, searchQuery]);
 
@@ -93,27 +100,45 @@ const HrTaskCreation = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5"
+        >
           <div>
-            <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">Project Management</span>
+            <span className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1 block">
+              Project Management
+            </span>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
               Projects
             </h1>
           </div>
-          <CreateTaskButton title="Create Project" onClick={() => setOpenModal(true)} />
+          <CreateTaskButton
+            title="Create Project"
+            onClick={() => setOpenModal(true)}
+          />
         </motion.div>
 
         {/* STATS */}
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
           <TaskStats tasks={tasks} />
         </motion.div>
 
         {/* FILTERS & SEARCH */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-4 md:p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-4 md:p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4"
+        >
           <div className="relative w-full group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
+            />
             <input
               type="text"
               placeholder="Search projects..."
@@ -126,25 +151,25 @@ const HrTaskCreation = () => {
 
         {/* PROJECTS SECTIONS */}
         {isLoading ? (
-          <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm">
-            <Loader2 size={32} className="animate-spin text-indigo-500 mb-4" />
-            <p className="text-sm font-semibold text-indigo-900 tracking-wide">Loading projects...</p>
-          </div>
+          <ProfessionalLoader text="Loading. Please wait..." />
         ) : filteredTasks.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm text-center">
             <div className="w-20 h-20 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-6">
               <ClipboardList size={40} />
             </div>
-            <h3 className="text-xl font-bold text-slate-700 mb-2">No Projects Found</h3>
+            <h3 className="text-xl font-bold text-slate-700 mb-2">
+              No Projects Found
+            </h3>
             <p className="text-sm font-medium text-slate-500 max-w-sm">
-              We couldn't find any projects matching your current filters. Adjust your search or create a new project.
+              We couldn't find any projects matching your current filters.
+              Adjust your search or create a new project.
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             {/* TABS */}
             <div className="flex gap-2 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-slate-200/60 shadow-sm self-start">
-              {['ALL', 'RECURRING', 'OTHER'].map((tab) => (
+              {["ALL", "RECURRING", "OTHER"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -154,14 +179,20 @@ const HrTaskCreation = () => {
                       : "text-slate-500 hover:text-slate-800 hover:bg-white"
                   }`}
                 >
-                  {tab === 'ALL' ? 'All Projects' : tab === 'RECURRING' ? 'Recurring Projects' : 'Other Projects'}
+                  {tab === "ALL"
+                    ? "All Projects"
+                    : tab === "RECURRING"
+                      ? "Recurring Projects"
+                      : "Other Projects"}
                 </button>
               ))}
             </div>
 
             {(() => {
               const displayTasks = filteredTasks.filter((task) => {
-                const isRecurring = task.department?.name?.toLowerCase().includes("social media");
+                const isRecurring = task.department?.name
+                  ?.toLowerCase()
+                  .includes("social media");
                 if (activeTab === "RECURRING") return isRecurring;
                 if (activeTab === "OTHER") return !isRecurring;
                 return true;
@@ -170,14 +201,23 @@ const HrTaskCreation = () => {
               if (displayTasks.length === 0) {
                 return (
                   <div className="py-20 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2.5rem] border border-dashed border-slate-200 shadow-sm text-center">
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">No Projects Found</h3>
-                    <p className="text-sm text-slate-500">There are no projects in this category.</p>
+                    <h3 className="text-xl font-bold text-slate-700 mb-2">
+                      No Projects Found
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      There are no projects in this category.
+                    </p>
                   </div>
                 );
               }
 
               return (
-                <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <motion.div
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                >
                   <AnimatePresence>
                     {displayTasks.map((task) => (
                       <motion.div
@@ -189,17 +229,24 @@ const HrTaskCreation = () => {
                         key={task.id}
                         onClick={() => handleTaskClick(task)}
                         className={`bg-white/90 backdrop-blur-xl border rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full ${
-                          task.department?.name?.toLowerCase().includes("social media")
+                          task.department?.name
+                            ?.toLowerCase()
+                            .includes("social media")
                             ? "border-indigo-100/50"
                             : "border-slate-100"
                         }`}
                       >
                         <div className="flex justify-between items-start mb-4">
-                          <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusStyles[task.status]}`}>
+                          <span
+                            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusStyles[task.status]}`}
+                          >
                             {task.status}
                           </span>
                           <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ChevronRight size={16} className="text-indigo-500" />
+                            <ChevronRight
+                              size={16}
+                              className="text-indigo-500"
+                            />
                           </div>
                         </div>
 
@@ -207,18 +254,25 @@ const HrTaskCreation = () => {
                           {task.projectName}
                         </h3>
                         <p className="text-sm font-medium text-slate-500 mb-6 line-clamp-3 flex-1">
-                          {task.description || "No detailed description provided for this project."}
+                          {task.description ||
+                            "No detailed description provided for this project."}
                         </p>
 
                         <div className="space-y-4 mt-auto border-t border-slate-100 pt-5">
                           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
                             <div className="flex items-center gap-1.5">
-                              <CalendarDays size={14} className="text-slate-400" />
+                              <CalendarDays
+                                size={14}
+                                className="text-slate-400"
+                              />
                               <span>{formatDate(task.startDate)}</span>
                             </div>
                             <span className="text-slate-300">→</span>
                             <div className="flex items-center gap-1.5">
-                              <CalendarDays size={14} className="text-slate-400" />
+                              <CalendarDays
+                                size={14}
+                                className="text-slate-400"
+                              />
                               <span>{formatDate(task.endDate)}</span>
                             </div>
                           </div>

@@ -10,7 +10,7 @@ import {
   Search,
   ClipboardList,
 } from "lucide-react";
-
+import ProfessionalLoader from "../components/ProfessionalLoader";
 import API from "../services/api";
 
 const statusStyles = {
@@ -79,7 +79,7 @@ const MarketingProjectsPage = () => {
     return allProjects.filter(
       (p) =>
         p.projectName?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q)
+        p.description?.toLowerCase().includes(q),
     );
   }, [allProjects, searchQuery]);
 
@@ -99,7 +99,6 @@ const MarketingProjectsPage = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-
         {/* HEADER */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -162,12 +161,7 @@ const MarketingProjectsPage = () => {
 
         {/* PROJECTS GRID */}
         {isLoading ? (
-          <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm">
-            <Loader2 size={32} className="animate-spin text-pink-500 mb-4" />
-            <p className="text-sm font-semibold text-pink-900 tracking-wide">
-              Loading meta ads...
-            </p>
-          </div>
+          <ProfessionalLoader text="Loading. Please wait..." />
         ) : filteredProjects.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm text-center">
             <div className="w-20 h-20 bg-pink-50 text-pink-300 rounded-full flex items-center justify-center mb-6">

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import API from "../services/api";
+import ProfessionalLoader from "../components/ProfessionalLoader";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -38,10 +39,7 @@ const itemVariants = {
 };
 
 // Keywords that identify the SEO Department
-const SEO_KEYWORDS = [
-  "seo",
-  "seo department",
-];
+const SEO_KEYWORDS = ["seo", "seo department"];
 
 const isSEOProject = (project) => {
   const deptName = project?.department?.name?.toLowerCase()?.trim() ?? "";
@@ -78,7 +76,7 @@ const SEOProjectsPage = () => {
     return allProjects.filter(
       (p) =>
         p.projectName?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q)
+        p.description?.toLowerCase().includes(q),
     );
   }, [allProjects, searchQuery]);
 
@@ -98,7 +96,6 @@ const SEOProjectsPage = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-
         {/* HEADER */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -161,12 +158,7 @@ const SEOProjectsPage = () => {
 
         {/* PROJECTS GRID */}
         {isLoading ? (
-          <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm">
-            <Loader2 size={32} className="animate-spin text-emerald-500 mb-4" />
-            <p className="text-sm font-semibold text-slate-700 tracking-wide">
-              Loading projects...
-            </p>
-          </div>
+          <ProfessionalLoader text="Loading. Please wait..." />
         ) : filteredProjects.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm text-center">
             <div className="w-20 h-20 bg-emerald-50 text-emerald-300 rounded-full flex items-center justify-center mb-6">
