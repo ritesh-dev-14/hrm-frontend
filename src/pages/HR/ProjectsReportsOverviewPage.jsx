@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const fmt = (n) => n == null ? "—" : Number(n).toLocaleString("en-IN");
 const fmtCurrency = (n) => n == null ? "—" : "₹" + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -25,105 +25,135 @@ const getPreset = (preset) => {
 function exportToExcel(tab, data, startDate, endDate) {
   let rows = [];
   const range = startDate && endDate ? `${startDate} to ${endDate}` : "All Time";
-  rows.push(`"Reports Overview - ${tab.toUpperCase()}"`);
-  rows.push(`"Date Range: ${range}"`);
+  const escapeCell = (val) => `"${String(val || "").replace(/"/g, '""')}"`;
+
+  rows.push(escapeCell(`Reports Overview - ${tab.toUpperCase()}`));
+  rows.push(escapeCell(`Date Range: ${range}`));
   rows.push("");
+
   if (tab === "social-media") {
-    rows.push(["Project", "Client", "Reels Planned", "Reels Posted", "Posts Planned", "Posts Posted"].join(","));
-    (data.socialMedia || []).forEach(p => rows.push([`"${p.projectName || ""}"`, `"${p.clientName || ""}"`, p.reelsPlanned ?? 0, p.reelsPosted ?? 0, p.postsPlanned ?? 0, p.postsPosted ?? 0].join(",")));
+    rows.push(["Project", "Total Planned", "Reels Planned", "Reels Uploaded", "Post Planned", "Post Uploaded", "Total Uploads"].join(","));
+    (data.socialMedia || []).forEach(p => {
+      const totalPlanned = (p.reelsPlanned || 0) + (p.postsPlanned || 0);
+      const totalUploaded = (p.reelsPosted || 0) + (p.postsPosted || 0);
+      rows.push([escapeCell(p.projectName), totalPlanned, p.reelsPlanned ?? 0, p.reelsPosted ?? 0, p.postsPlanned ?? 0, p.postsPosted ?? 0, totalUploaded].join(","));
+    });
   } else if (tab === "meta-ads") {
     rows.push(["Project", "Client", "Total Reach", "Total Spend", "Total Leads", "Reports"].join(","));
-    (data.metaAds || []).forEach(p => rows.push([`"${p.projectName || ""}"`, `"${p.clientName || ""}"`, p.totalReach ?? 0, p.totalSpend ?? 0, p.totalLeads ?? 0, p.reportCount ?? 0].join(",")));
+    (data.metaAds || []).forEach(p => rows.push([escapeCell(p.projectName), escapeCell(p.clientName), p.totalReach ?? 0, p.totalSpend ?? 0, p.totalLeads ?? 0, p.reportCount ?? 0].join(",")));
   } else if (tab === "seo") {
     rows.push(["Project", "Client", "Keywords", "Ranking", "Last Checked", "Remarks", "Manager"].join(","));
     (data.seo || []).forEach(p => {
       const lr = p.latestReport;
-      rows.push([`"${p.projectName || ""}"`, `"${p.clientName || ""}"`, `"${(lr?.keywords || []).join(", ")}"`, lr?.rankingNo ?? "—", lr ? fmtDate(lr.checkDate) : "—", `"${lr?.remarks || ""}"`, `"${lr?.managerName || ""}"`].join(","));
+      rows.push([escapeCell(p.projectName), escapeCell(p.clientName), escapeCell((lr?.keywords || []).join(", ")), lr?.rankingNo ?? "—", lr ? fmtDate(lr.checkDate) : "—", escapeCell(lr?.remarks), escapeCell(lr?.managerName)].join(","));
     });
   }
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  
+  const blob = new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = `${tab}-report-${new Date().toISOString().split("T")[0]}.csv`;
   a.click(); URL.revokeObjectURL(url);
 }
 
-function StatCard({ icon: Icon, label, value, color, bgColor }) {
+// Elevated Stat Card with subtle glowing backgrounds and precise typography
+function StatCard({ icon: Icon, label, value, colorClass, bgClass }) {
   return (
-    <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center gap-4 transition-all hover:shadow-md relative overflow-hidden">
-      <div className={`p-4 rounded-2xl ${bgColor} ${color}`}>
-        <Icon size={24} />
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col gap-4 relative overflow-hidden group hover:border-slate-200 transition-all duration-300"
+    >
+      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-slate-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+      <div className="flex items-center gap-3 relative z-10">
+        <div className={`p-2.5 rounded-xl ${bgClass} ${colorClass} shadow-sm border border-white/50`}>
+          <Icon size={18} strokeWidth={2.5} />
+        </div>
+        <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
       </div>
-      <div>
-        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
-        <p className="text-3xl font-black text-slate-900 mt-1">{value}</p>
-      </div>
+      <p className="text-3xl font-bold text-slate-900 tracking-tight relative z-10">{value}</p>
     </motion.div>
   );
 }
 
 function EmptyState({ label }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-slate-500 bg-white rounded-3xl border border-slate-200 border-dashed shadow-sm">
-      <div className="p-4 bg-slate-50 rounded-full mb-4">
-        <BarChart3 size={40} className="text-slate-300" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-24 text-slate-400 bg-white/50 rounded-2xl border border-slate-200 border-dashed backdrop-blur-sm">
+      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4 shadow-inner">
+        <BarChart3 size={28} className="text-slate-300" />
       </div>
-      <p className="font-bold text-slate-800 text-lg">{label}</p>
-      <p className="text-sm mt-1 text-slate-500">Try adjusting the date range or filters.</p>
-    </div>
+      <p className="font-semibold text-slate-700 text-lg">{label}</p>
+      <p className="text-sm mt-1 text-slate-500">Adjust the date range or try a different filter.</p>
+    </motion.div>
   );
 }
 
 function SocialMediaTab({ data, search }) {
   const projects = (data?.socialMedia || []).filter(p => !search || p.projectName?.toLowerCase().includes(search.toLowerCase()) || p.clientName?.toLowerCase().includes(search.toLowerCase()));
-  const totals = projects.reduce((acc, p) => ({ reelsPlanned: acc.reelsPlanned + (p.reelsPlanned || 0), reelsPosted: acc.reelsPosted + (p.reelsPosted || 0), postsPlanned: acc.postsPlanned + (p.postsPlanned || 0), postsPosted: acc.postsPosted + (p.postsPosted || 0) }), { reelsPlanned: 0, reelsPosted: 0, postsPlanned: 0, postsPosted: 0 });
+  
+  const totals = projects.reduce((acc, p) => ({ 
+    reelsPlanned: acc.reelsPlanned + (p.reelsPlanned || 0), 
+    reelsPosted: acc.reelsPosted + (p.reelsPosted || 0), 
+    postsPlanned: acc.postsPlanned + (p.postsPlanned || 0), 
+    postsPosted: acc.postsPosted + (p.postsPosted || 0) 
+  }), { reelsPlanned: 0, reelsPosted: 0, postsPlanned: 0, postsPosted: 0 });
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Film} label="Reels Planned" value={fmt(totals.reelsPlanned)} color="text-indigo-600" bgColor="bg-indigo-50" />
-        <StatCard icon={Film} label="Reels Posted" value={fmt(totals.reelsPosted)} color="text-indigo-500" bgColor="bg-indigo-50/60" />
-        <StatCard icon={ImageIcon} label="Posts Planned" value={fmt(totals.postsPlanned)} color="text-purple-600" bgColor="bg-purple-50" />
-        <StatCard icon={ImageIcon} label="Posts Posted" value={fmt(totals.postsPosted)} color="text-purple-500" bgColor="bg-purple-50/60" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard icon={Film} label="Reels Planned" value={fmt(totals.reelsPlanned)} colorClass="text-indigo-600" bgClass="bg-indigo-50" />
+        <StatCard icon={Film} label="Reels Uploaded" value={fmt(totals.reelsPosted)} colorClass="text-blue-600" bgClass="bg-blue-50" />
+        <StatCard icon={ImageIcon} label="Posts Planned" value={fmt(totals.postsPlanned)} colorClass="text-purple-600" bgClass="bg-purple-50" />
+        <StatCard icon={ImageIcon} label="Posts Uploaded" value={fmt(totals.postsPosted)} colorClass="text-pink-600" bgClass="bg-pink-50" />
       </div>
+
       {projects.length === 0 ? <EmptyState label="No Social Media projects found" /> : (
-        <div className="overflow-x-auto rounded-3xl bg-white border border-slate-200 shadow-sm">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-2xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <table className="w-full text-sm text-left">
             <thead>
-              <tr className="bg-slate-50 text-left border-b border-slate-200">
-                {["Project", "Client", "Reels Planned", "Reels Posted", "Posts Planned", "Posts Posted", "Progress"].map(h => (
-                  <th key={h} className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
+              <tr className="bg-slate-50/80 border-b border-slate-100">
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Project Details</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Total Planned</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Reels Planned</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Reels Uploaded</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Post Planned</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Post Uploaded</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Total Uploads</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {projects.map(p => {
-                const reelPct = p.reelsPlanned ? Math.round((p.reelsPosted / p.reelsPlanned) * 100) : 0;
-                const postPct = p.postsPlanned ? Math.round((p.postsPosted / p.postsPlanned) * 100) : 0;
-                const avg = Math.round((reelPct + postPct) / 2);
+            <tbody className="divide-y divide-slate-50">
+              {projects.map((p, i) => {
+                const totalPlanned = (p.reelsPlanned || 0) + (p.postsPlanned || 0);
+                const totalUploaded = (p.reelsPosted || 0) + (p.postsPosted || 0);
+                const uploadPct = totalPlanned > 0 ? Math.round((totalUploaded / totalPlanned) * 100) : 0;
+
                 return (
-                  <tr key={p.projectId} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900">{p.projectName || "—"}</td>
-                    <td className="px-6 py-4 text-slate-600">{p.clientName || "—"}</td>
-                    <td className="px-6 py-4 text-indigo-700 font-bold">{fmt(p.reelsPlanned)}</td>
-                    <td className="px-6 py-4 text-indigo-600 font-bold">{fmt(p.reelsPosted)}</td>
-                    <td className="px-6 py-4 text-purple-700 font-bold">{fmt(p.postsPlanned)}</td>
-                    <td className="px-6 py-4 text-purple-600 font-bold">{fmt(p.postsPosted)}</td>
-                    <td className="px-6 py-4 min-w-[150px]">
+                  <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={p.projectId} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <p className="font-semibold text-slate-900">{p.projectName || "—"}</p>
+                      <p className="text-xs font-medium text-slate-500 mt-0.5">{p.clientName}</p>
+                    </td>
+                    <td className="px-6 py-4 text-center font-semibold text-slate-700 bg-slate-50/30">{fmt(totalPlanned)}</td>
+                    <td className="px-6 py-4 text-center font-medium text-slate-500">{fmt(p.reelsPlanned)}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-slate-900">{fmt(p.reelsPosted)}</td>
+                    <td className="px-6 py-4 text-center font-medium text-slate-500">{fmt(p.postsPlanned)}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-slate-900">{fmt(p.postsPosted)}</td>
+                    <td className="px-6 py-4 min-w-[160px]">
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${Math.min(avg, 100)}%` }} />
+                        <span className="font-bold text-slate-900 w-8">{fmt(totalUploaded)}</span>
+                        <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden hidden sm:block shadow-inner">
+                          <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(uploadPct, 100)}%` }} />
                         </div>
-                        <span className="text-xs font-black text-slate-700 w-8 text-right">{avg}%</span>
+                        <span className="text-xs font-semibold text-slate-400 w-8 text-right hidden sm:block">{uploadPct}%</span>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>
           </table>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -131,120 +161,146 @@ function MetaAdsTab({ data, search }) {
   const [expanded, setExpanded] = useState(null);
   const projects = (data?.metaAds || []).filter(p => !search || p.projectName?.toLowerCase().includes(search.toLowerCase()) || p.clientName?.toLowerCase().includes(search.toLowerCase()));
   const totals = projects.reduce((acc, p) => ({ reach: acc.reach + (p.totalReach || 0), spend: acc.spend + (p.totalSpend || 0), leads: acc.leads + (p.totalLeads || 0) }), { reach: 0, spend: 0, leads: 0 });
+  
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <StatCard icon={Eye} label="Total Reach" value={fmt(totals.reach)} color="text-blue-600" bgColor="bg-blue-50" />
-        <StatCard icon={DollarSign} label="Total Spend" value={fmtCurrency(totals.spend)} color="text-emerald-600" bgColor="bg-emerald-50" />
-        <StatCard icon={Users} label="Total Leads" value={fmt(totals.leads)} color="text-amber-600" bgColor="bg-amber-50" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <StatCard icon={Eye} label="Total Reach" value={fmt(totals.reach)} colorClass="text-blue-600" bgClass="bg-blue-50" />
+        <StatCard icon={DollarSign} label="Total Spend" value={fmtCurrency(totals.spend)} colorClass="text-emerald-600" bgClass="bg-emerald-50" />
+        <StatCard icon={Users} label="Total Leads" value={fmt(totals.leads)} colorClass="text-amber-600" bgClass="bg-amber-50" />
       </div>
+      
       {projects.length === 0 ? <EmptyState label="No Meta Ads reports found" /> : (
         <div className="space-y-4">
-          {projects.map(p => (
-            <div key={p.projectId} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:border-slate-300">
-              <button className="w-full flex items-center justify-between px-6 py-5 hover:bg-slate-50 transition-colors" onClick={() => setExpanded(expanded === p.projectId ? null : p.projectId)}>
-                <div className="flex items-center gap-4 text-left">
-                  <div className="p-3 rounded-2xl bg-blue-50"><Megaphone size={20} className="text-blue-600" /></div>
+          {projects.map((p, i) => (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={p.projectId} className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${expanded === p.projectId ? 'border-blue-200 shadow-[0_8px_30px_rgb(59,130,246,0.08)]' : 'border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200'}`}>
+              <button className="w-full flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors" onClick={() => setExpanded(expanded === p.projectId ? null : p.projectId)}>
+                <div className="flex items-center gap-4 text-left mb-4 md:mb-0">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm"><Megaphone size={20} className="text-blue-600" /></div>
                   <div>
-                    <p className="font-bold text-slate-900 text-lg">{p.projectName}</p>
-                    <p className="text-sm text-slate-500 font-medium">{p.clientName || "—"}</p>
+                    <p className="font-bold text-slate-900 text-[15px]">{p.projectName}</p>
+                    <p className="text-sm font-medium text-slate-500 mt-0.5">{p.clientName || "—"}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-8 text-right pr-4">
-                  <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Reach</p><p className="font-black text-blue-700 text-lg">{fmt(p.totalReach)}</p></div>
-                  <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Spend</p><p className="font-black text-emerald-700 text-lg">{fmtCurrency(p.totalSpend)}</p></div>
-                  <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Leads</p><p className="font-black text-amber-600 text-lg">{fmt(p.totalLeads)}</p></div>
-                  <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Reports</p><p className="font-black text-slate-700 text-lg">{p.reportCount}</p></div>
-                  <ChevronDown size={20} className={`text-slate-400 transition-transform ${expanded === p.projectId ? "rotate-180" : ""}`} />
+                <div className="flex items-center gap-6 text-right pr-2">
+                  <div className="hidden sm:block"><p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">Reach</p><p className="font-semibold text-slate-900">{fmt(p.totalReach)}</p></div>
+                  <div className="hidden sm:block"><p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">Spend</p><p className="font-semibold text-slate-900">{fmtCurrency(p.totalSpend)}</p></div>
+                  <div><p className="text-[11px] text-blue-500 uppercase tracking-widest font-bold mb-1">Leads</p><p className="font-bold text-blue-600 text-lg">{fmt(p.totalLeads)}</p></div>
+                  <div className={`p-2 rounded-full transition-colors ${expanded === p.projectId ? 'bg-blue-50' : 'bg-slate-50'}`}>
+                    <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${expanded === p.projectId ? "rotate-180 text-blue-600" : ""}`} />
+                  </div>
                 </div>
               </button>
-              {expanded === p.projectId && (
-                <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-5">
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-4">Daily Breakdown</p>
-                  <div className="overflow-x-auto bg-white rounded-2xl border border-slate-200">
-                    <table className="w-full text-sm">
-                      <thead><tr className="bg-slate-50 border-b border-slate-200">{["Date", "Reach", "Spend", "Leads", "Ad Running", "Type", "Area"].map(h => <th key={h} className="px-4 py-3 text-left font-bold text-slate-500 uppercase text-xs">{h}</th>)}</tr></thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {(p.reports || []).map(r => (
-                          <tr key={r.id} className="text-slate-700 hover:bg-slate-50">
-                            <td className="px-4 py-3 font-semibold">{fmtDate(r.date)}</td>
-                            <td className="px-4 py-3 text-blue-700 font-bold">{fmt(r.reach)}</td>
-                            <td className="px-4 py-3 text-emerald-700 font-bold">{fmtCurrency(r.spend)}</td>
-                            <td className="px-4 py-3 text-amber-700 font-bold">{fmt(r.leads)}</td>
-                            <td className="px-4 py-3">{r.isAdRunning === null ? "—" : r.isAdRunning ? <span className="flex items-center gap-1.5 text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg w-fit"><CheckCircle2 size={14} />Yes</span> : <span className="flex items-center gap-1.5 text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-lg w-fit"><AlertCircle size={14} />No</span>}</td>
-                            <td className="px-4 py-3 font-medium">{r.typeOfAds || "—"}</td>
-                            <td className="px-4 py-3 text-slate-500">{r.areaName || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
+              
+              <AnimatePresence>
+                {expanded === p.projectId && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }}>
+                    <div className="border-t border-slate-100 bg-slate-50/50 p-5">
+                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-4 ml-1">Daily Breakdown</p>
+                      <div className="overflow-hidden bg-white rounded-xl border border-slate-200/60 shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead><tr className="bg-slate-50/50 border-b border-slate-100">{["Date", "Reach", "Spend", "Leads", "Status", "Type", "Area"].map(h => <th key={h} className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">{h}</th>)}</tr></thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {(p.reports || []).map(r => (
+                              <tr key={r.id} className="text-slate-600 hover:bg-slate-50/80 transition-colors">
+                                <td className="px-5 py-3.5 text-slate-900 font-semibold">{fmtDate(r.date)}</td>
+                                <td className="px-5 py-3.5 font-medium">{fmt(r.reach)}</td>
+                                <td className="px-5 py-3.5 font-medium">{fmtCurrency(r.spend)}</td>
+                                <td className="px-5 py-3.5 font-bold text-blue-600">{fmt(r.leads)}</td>
+                                <td className="px-5 py-3.5">
+                                  {r.isAdRunning === null ? "—" : r.isAdRunning ? 
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full"><CheckCircle2 size={12} strokeWidth={3} /> Running</span> : 
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-full"><AlertCircle size={12} strokeWidth={3} /> Paused</span>
+                                  }
+                                </td>
+                                <td className="px-5 py-3.5 font-medium">{r.typeOfAds || "—"}</td>
+                                <td className="px-5 py-3.5 text-slate-500">{r.areaName || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
 function SeoTab({ data, search }) {
   const [expanded, setExpanded] = useState(null);
   const projects = (data?.seo || []).filter(p => !search || p.projectName?.toLowerCase().includes(search.toLowerCase()) || p.clientName?.toLowerCase().includes(search.toLowerCase()));
+  
   return (
-    <div className="space-y-4">
-      {projects.length === 0 ? <EmptyState label="No SEO reports found" /> : projects.map(p => {
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      {projects.length === 0 ? <EmptyState label="No SEO reports found" /> : projects.map((p, i) => {
         const lr = p.latestReport;
-        const rankColor = !lr?.rankingNo ? "text-slate-400" : lr.rankingNo <= 3 ? "text-amber-500" : lr.rankingNo <= 10 ? "text-emerald-600" : "text-slate-600";
+        const rankColor = !lr?.rankingNo ? "text-slate-400" : lr.rankingNo <= 3 ? "text-blue-600" : lr.rankingNo <= 10 ? "text-emerald-600" : "text-slate-700";
+        
         return (
-          <div key={p.projectId} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:border-slate-300">
-            <button className="w-full flex items-center justify-between px-6 py-5 hover:bg-slate-50 transition-colors" onClick={() => setExpanded(expanded === p.projectId ? null : p.projectId)}>
-              <div className="flex items-center gap-4 text-left">
-                <div className="p-3 rounded-2xl bg-teal-50"><TrendingUp size={20} className="text-teal-600" /></div>
-                <div><p className="font-bold text-slate-900 text-lg">{p.projectName}</p><p className="text-sm text-slate-500 font-medium">{p.clientName || "—"}</p></div>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={p.projectId} className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${expanded === p.projectId ? 'border-emerald-200 shadow-[0_8px_30px_rgb(16,185,129,0.08)]' : 'border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200'}`}>
+            <button className="w-full flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors" onClick={() => setExpanded(expanded === p.projectId ? null : p.projectId)}>
+              <div className="flex items-center gap-4 text-left mb-4 md:mb-0">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 shadow-sm"><TrendingUp size={20} className="text-emerald-600" /></div>
+                <div><p className="font-bold text-slate-900 text-[15px]">{p.projectName}</p><p className="text-sm font-medium text-slate-500 mt-0.5">{p.clientName || "—"}</p></div>
               </div>
-              <div className="flex items-center gap-8 text-right pr-4">
-                <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Ranking</p><p className={`font-black text-2xl ${rankColor}`}>{lr?.rankingNo ? `#${lr.rankingNo}` : "—"}</p></div>
-                <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Last Checked</p><p className="font-bold text-slate-800 text-base">{fmtDate(lr?.checkDate)}</p></div>
-                <div><p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Reports</p><p className="font-black text-slate-700 text-xl">{p.reports?.length || 0}</p></div>
-                <ChevronDown size={20} className={`text-slate-400 transition-transform ${expanded === p.projectId ? "rotate-180" : ""}`} />
-              </div>
-            </button>
-            {expanded === p.projectId && (
-              <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-5 space-y-6">
-                {lr && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <div><p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2"><Search size={14}/> Top Keywords</p><div className="flex flex-wrap gap-2">{(lr.keywords || []).map((kw, i) => <span key={i} className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">{kw}</span>)}</div></div>
-                    <div><p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2"><TrendingUp size={14}/> Analyst Remarks</p><p className="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">{lr.remarks || "No remarks logged."}</p></div>
-                    {lr.screenshotUrl && <div className="col-span-2 pt-2 border-t border-slate-100"><a href={lr.screenshotUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-bold bg-teal-50 px-4 py-2 rounded-xl transition-colors"><ExternalLink size={16} />View Latest Screenshot Report</a></div>}
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-4">Historical Checks</p>
-                  <div className="overflow-x-auto bg-white rounded-2xl border border-slate-200">
-                    <table className="w-full text-sm">
-                      <thead><tr className="bg-slate-50 border-b border-slate-200">{["Date Checked", "Ranking #", "Keywords", "Manager", "Screenshot"].map(h => <th key={h} className="px-4 py-3 text-left font-bold text-slate-500 uppercase text-xs">{h}</th>)}</tr></thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {(p.reports || []).map(r => (
-                          <tr key={r.id} className="text-slate-700 hover:bg-slate-50">
-                            <td className="px-4 py-3 font-semibold">{fmtDate(r.checkDate)}</td>
-                            <td className={`px-4 py-3 font-black text-lg ${!r.rankingNo ? "text-slate-400" : r.rankingNo <= 3 ? "text-amber-500" : r.rankingNo <= 10 ? "text-emerald-600" : ""}`}>{r.rankingNo ? `#${r.rankingNo}` : "—"}</td>
-                            <td className="px-4 py-3 font-medium text-slate-600">{(r.keywords || []).slice(0, 2).join(", ")}{r.keywords?.length > 2 ? "…" : ""}</td>
-                            <td className="px-4 py-3 text-slate-600">{r.managerName || "—"}</td>
-                            <td className="px-4 py-3">{r.screenshotUrl ? <a href={r.screenshotUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100"><ExternalLink size={14} /></a> : "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="flex items-center gap-6 text-right pr-2">
+                <div><p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">Ranking</p><p className={`font-bold text-xl ${rankColor}`}>{lr?.rankingNo ? `#${lr.rankingNo}` : "—"}</p></div>
+                <div className="hidden sm:block"><p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">Last Checked</p><p className="font-semibold text-slate-900">{fmtDate(lr?.checkDate)}</p></div>
+                <div className={`p-2 rounded-full transition-colors ${expanded === p.projectId ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+                    <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${expanded === p.projectId ? "rotate-180 text-emerald-600" : ""}`} />
                 </div>
               </div>
-            )}
-          </div>
+            </button>
+            
+            <AnimatePresence>
+              {expanded === p.projectId && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }}>
+                  <div className="border-t border-slate-100 bg-slate-50/50 p-5 space-y-5">
+                    {lr && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm">
+                          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><Search size={14} className="text-emerald-500"/> Top Keywords</p>
+                          <div className="flex flex-wrap gap-2">{(lr.keywords || []).map((kw, idx) => <span key={idx} className="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/60 shadow-sm">{kw}</span>)}</div>
+                        </div>
+                        <div className="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm">
+                          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><TrendingUp size={14} className="text-blue-500"/> Remarks</p>
+                          <p className="text-[13px] text-slate-600 leading-relaxed font-medium">{lr.remarks || "No remarks logged."}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-3 ml-1">Historical Data</p>
+                      <div className="overflow-hidden bg-white rounded-xl border border-slate-200/60 shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead><tr className="bg-slate-50/50 border-b border-slate-100">{["Date", "Rank", "Keywords", "Manager", "Report"].map(h => <th key={h} className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">{h}</th>)}</tr></thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {(p.reports || []).map(r => (
+                              <tr key={r.id} className="text-slate-600 hover:bg-slate-50/80 transition-colors">
+                                <td className="px-5 py-3.5 font-semibold text-slate-900">{fmtDate(r.checkDate)}</td>
+                                <td className="px-5 py-3.5 font-bold text-slate-800">{r.rankingNo ? `#${r.rankingNo}` : "—"}</td>
+                                <td className="px-5 py-3.5 font-medium truncate max-w-[250px]">{(r.keywords || []).join(", ")}</td>
+                                <td className="px-5 py-3.5 font-medium">{r.managerName || "—"}</td>
+                                <td className="px-5 py-3.5">{r.screenshotUrl ? <a href={r.screenshotUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-xs font-bold text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"><ExternalLink size={14} /> View</a> : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }
 
@@ -258,9 +314,9 @@ export default function ProjectsReportsOverviewPage() {
   const [preset, setPreset] = useState("");
 
   const tabs = [
-    { id: "social-media", label: "Social Media", icon: Share2, color: "text-indigo-600", activeBg: "bg-indigo-600", activeText: "text-white" },
-    { id: "meta-ads", label: "Meta Ads", icon: Megaphone, color: "text-blue-600", activeBg: "bg-blue-600", activeText: "text-white" },
-    { id: "seo", label: "SEO", icon: TrendingUp, color: "text-teal-600", activeBg: "bg-teal-600", activeText: "text-white" },
+    { id: "social-media", label: "Social Media", icon: Share2, activeClass: "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-900/5", inactiveClass: "text-slate-500 hover:text-slate-800 hover:bg-slate-100" },
+    { id: "meta-ads", label: "Meta Ads", icon: Megaphone, activeClass: "bg-white text-blue-600 shadow-sm ring-1 ring-slate-900/5", inactiveClass: "text-slate-500 hover:text-slate-800 hover:bg-slate-100" },
+    { id: "seo", label: "SEO", icon: TrendingUp, activeClass: "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-900/5", inactiveClass: "text-slate-500 hover:text-slate-800 hover:bg-slate-100" },
   ];
 
   const load = useCallback(async () => {
@@ -278,94 +334,84 @@ export default function ProjectsReportsOverviewPage() {
   useEffect(() => { load(); }, [load]);
 
   const applyPreset = (p) => { setPreset(p); const r = getPreset(p); setStart(r.startDate); setEnd(r.endDate); };
-  const activeTab = tabs.find(t => t.id === tab);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans relative overflow-hidden">
-      {/* Background ambient glows */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+    <div className="min-h-screen bg-[#FAFBFC] p-4 md:p-8 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+      <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        {/* Header - Premium SaaS styling */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-4">
-              {activeTab && (
-                <div className={`p-3 rounded-2xl ${activeTab.activeBg} shadow-lg shadow-slate-200`}>
-                  <activeTab.icon size={24} className="text-white" />
-                </div>
-              )}
-              Reports Overview
-            </h1>
-            <p className="text-sm text-slate-500 mt-2 font-medium">Social Media · Meta Ads · SEO — filter by date &amp; export your performance data easily.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Reports Overview</h1>
+            <p className="text-[15px] text-slate-500 mt-1.5 font-medium">Monitor and export project performance metrics.</p>
           </div>
-          <div className="flex items-center gap-3 self-start md:self-auto">
-            <button onClick={load} disabled={loading} className="p-3 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all">
-              <RefreshCw size={18} className={loading ? "animate-spin text-indigo-600" : ""} />
+          <div className="flex items-center gap-3">
+            <button onClick={load} disabled={loading} className="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 shadow-sm transition-all duration-200">
+              <RefreshCw size={18} className={loading ? "animate-spin text-blue-600" : ""} />
             </button>
-            <button onClick={() => exportToExcel(tab, data, startDate, endDate)} className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-indigo-600 transition-all shadow-md hover:shadow-indigo-500/20 active:scale-95">
-              <Download size={18} /> Export CSV
+            <button onClick={() => exportToExcel(tab, data, startDate, endDate)} className="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-b from-slate-800 to-slate-900 text-white font-semibold text-sm shadow-[0_4px_14px_0_rgb(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:from-slate-700 hover:to-slate-800 active:scale-[0.98] transition-all duration-200">
+              <Download size={16} className="text-slate-300 group-hover:text-white transition-colors" /> Export CSV
             </button>
           </div>
         </div>
 
-        {/* Filters Panel */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-6">
-          <div className="flex flex-col xl:flex-row gap-6 xl:items-center xl:justify-between">
-            {/* Presets */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {[{ id: "today", label: "Today" }, { id: "3days", label: "3 Days" }, { id: "weekly", label: "Weekly" }, { id: "monthly", label: "Monthly" }, { id: "", label: "All Time" }].map(p => (
-                <button key={p.id} onClick={() => applyPreset(p.id)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${preset === p.id ? "bg-slate-900 text-white border-slate-900 shadow-md" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}>{p.label}</button>
-              ))}
+        {/* Filters Panel - Clean & Integrated */}
+        <div className="bg-white rounded-2xl p-2 border border-slate-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.02)] flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between">
+          <div className="flex items-center gap-1 p-2">
+            {[{ id: "today", label: "Today" }, { id: "3days", label: "3 Days" }, { id: "weekly", label: "Weekly" }, { id: "monthly", label: "Monthly" }, { id: "", label: "All Time" }].map(p => (
+              <button key={p.id} onClick={() => applyPreset(p.id)} className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 ${preset === p.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto p-2 pt-0 xl:p-2 xl:pl-0">
+            <div className="flex items-center gap-2.5 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3.5 py-2 flex-1 md:flex-none focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
+              <Calendar size={16} className="text-slate-400" />
+              <input type="date" value={startDate} onChange={e => { setStart(e.target.value); setPreset(""); }} className="bg-transparent text-[13px] font-semibold text-slate-700 outline-none w-full md:w-32 cursor-pointer" />
+            </div>
+            <span className="text-slate-300 font-medium">—</span>
+            <div className="flex items-center gap-2.5 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3.5 py-2 flex-1 md:flex-none focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
+              <Calendar size={16} className="text-slate-400" />
+              <input type="date" value={endDate} onChange={e => { setEnd(e.target.value); setPreset(""); }} className="bg-transparent text-[13px] font-semibold text-slate-700 outline-none w-full md:w-32 cursor-pointer" />
             </div>
             
-            {/* Custom Range & Search */}
-            <div className="flex flex-col md:flex-row items-center gap-4 flex-wrap w-full xl:w-auto">
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 flex-1 md:flex-none">
-                <Calendar size={16} className="text-slate-400" />
-                <input type="date" value={startDate} onChange={e => { setStart(e.target.value); setPreset(""); }} className="bg-transparent text-sm font-semibold text-slate-700 outline-none w-full md:w-36 cursor-pointer" />
-              </div>
-              <span className="text-slate-400 font-bold text-sm hidden md:block">TO</span>
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 flex-1 md:flex-none">
-                <Calendar size={16} className="text-slate-400" />
-                <input type="date" value={endDate} onChange={e => { setEnd(e.target.value); setPreset(""); }} className="bg-transparent text-sm font-semibold text-slate-700 outline-none w-full md:w-36 cursor-pointer" />
-              </div>
-              
-              <div className="w-px h-8 bg-slate-200 hidden md:block mx-2"></div>
-              
-              <div className="flex items-center gap-2 bg-white border border-slate-200 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 rounded-2xl px-4 py-2 flex-1 transition-all">
-                <Search size={16} className="text-slate-400" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search projects or clients..." className="bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder-slate-400 w-full md:w-48" />
-              </div>
+            <div className="w-px h-6 bg-slate-200 hidden md:block mx-1"></div>
+            
+            <div className="flex items-center gap-2.5 bg-slate-50/80 border border-slate-200/60 rounded-xl px-4 py-2 flex-1 focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
+              <Search size={16} className="text-slate-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search records..." className="bg-transparent text-[13px] font-semibold text-slate-700 outline-none placeholder-slate-400 w-full md:w-48" />
             </div>
           </div>
+        </div>
 
-          {/* Tabs Navigation */}
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none pt-4 border-t border-slate-100">
+        {/* Floating Segmented Control */}
+        <div className="flex items-center justify-center md:justify-start">
+          <div className="inline-flex bg-slate-100 p-1 rounded-xl">
             {tabs.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold transition-all border whitespace-nowrap ${tab === t.id ? `${t.activeBg} ${t.activeText} border-transparent shadow-md` : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}>
-                <t.icon size={18} className={tab === t.id ? "text-white" : t.color} />
+              <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2.5 px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all duration-200 ${tab === t.id ? t.activeClass : t.inactiveClass}`}>
+                <t.icon size={16} />
                 {t.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Dynamic Tab Content */}
-        <div className="animate-fadeIn">
+        {/* Main Content Area */}
+        <div className="min-h-[400px]">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-32 bg-white/50 backdrop-blur-sm rounded-3xl border border-slate-200/50">
-              <Loader2 size={48} className="animate-spin text-indigo-500 mb-4" />
-              <p className="text-slate-500 font-medium">Fetching reports overview...</p>
-            </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200/50">
+              <Loader2 size={36} className="animate-spin text-blue-500 mb-4" />
+              <p className="text-[13px] font-bold tracking-wide uppercase text-slate-400">Syncing Data...</p>
+            </motion.div>
           ) : (
-            <>
-              {tab === "social-media" && <SocialMediaTab data={data} search={search} />}
-              {tab === "meta-ads" && <MetaAdsTab data={data} search={search} />}
-              {tab === "seo" && <SeoTab data={data} search={search} />}
-            </>
+            <AnimatePresence mode="wait">
+              <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+                {tab === "social-media" && <SocialMediaTab data={data} search={search} />}
+                {tab === "meta-ads" && <MetaAdsTab data={data} search={search} />}
+                {tab === "seo" && <SeoTab data={data} search={search} />}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
       </div>
