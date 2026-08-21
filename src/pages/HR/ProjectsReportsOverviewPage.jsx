@@ -210,6 +210,10 @@ function EmptyState({ label }) {
 }
 
 function SocialMediaTab({ data, search }) {
+  const [expanded, setExpanded] = useState(null);
+  const [projectReasons, setProjectReasons] = useState({});
+  const [loadingReasons, setLoadingReasons] = useState(null);
+
   const projects = (data?.socialMedia || []).filter(
     (p) =>
       !search ||
@@ -226,6 +230,41 @@ function SocialMediaTab({ data, search }) {
     }),
     { reelsPlanned: 0, reelsPosted: 0, postsPlanned: 0, postsPosted: 0 },
   );
+
+  const getReasons = (project) => {
+    const reasons = projectReasons[project.projectId] ?? project.reasons ?? [];
+    return [...reasons].sort(
+      (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
+    );
+  };
+
+  const toggleProject = async (project) => {
+    if (expanded === project.projectId) {
+      setExpanded(null);
+      return;
+    }
+
+    setExpanded(project.projectId);
+    if (projectReasons[project.projectId]) return;
+
+    setLoadingReasons(project.projectId);
+    try {
+      const response = await API.get(`/api/projects/${project.projectId}`);
+      const projectData = response.data?.data || response.data || {};
+      setProjectReasons((current) => ({
+        ...current,
+        [project.projectId]: projectData.reasons || [],
+      }));
+    } catch (error) {
+      console.error("Failed to load project reasons:", error);
+      setProjectReasons((current) => ({
+        ...current,
+        [project.projectId]: project.reasons || [],
+      }));
+    } finally {
+      setLoadingReasons(null);
+    }
+  };
 
   return (
     <motion.div
@@ -304,22 +343,38 @@ function SocialMediaTab({ data, search }) {
                   totalPlanned > 0
                     ? Math.round((totalUploaded / totalPlanned) * 100)
                     : 0;
+                const reasons = getReasons(p);
+                const latestReason = reasons[0];
 
-                return (
+                return [
                   <motion.tr
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     key={p.projectId}
-                    className="hover:bg-slate-50/50 transition-colors group"
+                    onClick={() => toggleProject(p)}
+                    className={`cursor-pointer hover:bg-slate-50/50 transition-colors group ${expanded === p.projectId ? "bg-slate-50/70" : ""}`}
                   >
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-slate-900">
+                      <div className="flex items-start gap-3">
+                        <ChevronDown
+                          size={18}
+                          className={`mt-0.5 shrink-0 text-indigo-500 transition-transform ${expanded === p.projectId ? "rotate-180" : ""}`}
+                        />
+                        <div>
+                          <p className="font-semibold text-slate-900">
                         {p.projectName || "—"}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500 mt-0.5">
+                          </p>
+                          <p className="text-xs font-medium text-slate-500 mt-0.5">
                         {p.clientName}
-                      </p>
+                          </p>
+                          {latestReason && (
+                            <p className="text-xs text-amber-700 mt-2 max-w-xs truncate" title={latestReason.reason || latestReason.text}>
+                              Latest reason: {latestReason.reason || latestReason.text || "—"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center font-semibold text-slate-700 bg-slate-50/30">
                       {fmt(totalPlanned)}
@@ -353,7 +408,45 @@ function SocialMediaTab({ data, search }) {
                       </div>
                     </td>
                   </motion.tr>
-                );
+                  , expanded === p.projectId && (
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={`${p.projectId}-reasons`}
+                      className="bg-amber-50/40"
+                    >
+                      <td colSpan={7} className="px-6 py-5">
+                        <div className="ml-9 rounded-xl border border-amber-100 bg-white p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-bold text-slate-800">Project Reasons</h4>
+                            <span className="text-xs font-semibold text-amber-700">
+                              {reasons.length} {reasons.length === 1 ? "reason" : "reasons"}
+                            </span>
+                          </div>
+                          {loadingReasons === p.projectId ? (
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                              <Loader2 size={16} className="animate-spin" /> Loading reasons...
+                            </div>
+                          ) : reasons.length === 0 ? (
+                            <p className="text-sm text-slate-500">No reasons added for this project.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {reasons.map((reason, reasonIndex) => (
+                                <div key={reason.id || `${p.projectId}-${reasonIndex}`} className="flex items-start gap-3 border-t border-slate-100 pt-3 first:border-t-0 first:pt-0">
+                                  <Calendar size={15} className="mt-0.5 shrink-0 text-amber-500" />
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-700">{reason.reason || reason.text || "—"}</p>
+                                    <p className="text-xs text-slate-400 mt-1">{fmtDate(reason.date)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ),
+                ];
               })}
             </tbody>
           </table>
