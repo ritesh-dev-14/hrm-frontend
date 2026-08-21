@@ -11,13 +11,15 @@ import {
   ImageIcon,
   DollarSign,
   Users,
-  Eye,
   BarChart3,
   ChevronDown,
   ExternalLink,
   AlertCircle,
   Loader2,
   CheckCircle2,
+  Activity,
+  Layers,
+  X,
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -165,28 +167,37 @@ function exportToExcel(tab, data, startDate, endDate) {
   URL.revokeObjectURL(url);
 }
 
-// Elevated Stat Card with subtle glowing backgrounds and precise typography
-function StatCard({ icon: Icon, label, value, colorClass, bgClass }) {
+function StatCard({ icon: Icon, label, value, subValue, secondaryLabel, secondaryValue, colorClass, bgClass }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col gap-4 relative overflow-hidden group hover:border-slate-200 transition-all duration-300"
+      className="bg-white rounded-xl p-5 border border-slate-200/70 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-all duration-200 relative"
     >
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-slate-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
-      <div className="flex items-center gap-3 relative z-10">
-        <div
-          className={`p-2.5 rounded-xl ${bgClass} ${colorClass} shadow-sm border border-white/50`}
-        >
-          <Icon size={18} strokeWidth={2.5} />
-        </div>
-        <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wide">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
           {label}
-        </p>
+        </span>
+        <div className={`p-2 rounded-lg ${bgClass} ${colorClass}`}>
+          <Icon size={16} strokeWidth={2.2} />
+        </div>
       </div>
-      <p className="text-3xl font-bold text-slate-900 tracking-tight relative z-10">
-        {value}
-      </p>
+
+      <div className="space-y-1">
+        <p className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          {value}
+        </p>
+        
+        <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs">
+          <span className="font-medium text-slate-500">{subValue || "—"}</span>
+          {secondaryLabel && (
+            <span className="font-semibold text-slate-700">
+              <span className="text-slate-400 font-normal mr-1">{secondaryLabel}:</span>
+              {secondaryValue}
+            </span>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -209,7 +220,7 @@ function EmptyState({ label }) {
   );
 }
 
-function SocialMediaTab({ data, search }) {
+function SocialMediaTab({ data, search, selectedProject, setSelectedProject }) {
   const [expanded, setExpanded] = useState(null);
   const [projectReasons, setProjectReasons] = useState({});
   const [loadingReasons, setLoadingReasons] = useState(null);
@@ -221,15 +232,26 @@ function SocialMediaTab({ data, search }) {
       p.clientName?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const totals = projects.reduce(
-    (acc, p) => ({
-      reelsPlanned: acc.reelsPlanned + (p.reelsPlanned || 0),
-      reelsPosted: acc.reelsPosted + (p.reelsPosted || 0),
-      postsPlanned: acc.postsPlanned + (p.postsPlanned || 0),
-      postsPosted: acc.postsPosted + (p.postsPosted || 0),
-    }),
-    { reelsPlanned: 0, reelsPosted: 0, postsPlanned: 0, postsPosted: 0 },
-  );
+  const totals = selectedProject
+    ? {
+        reelsPlanned: selectedProject.reelsPlanned || 0,
+        reelsPosted: selectedProject.reelsPosted || 0,
+        postsPlanned: selectedProject.postsPlanned || 0,
+        postsPosted: selectedProject.postsPosted || 0,
+      }
+    : projects.reduce(
+        (acc, p) => ({
+          reelsPlanned: acc.reelsPlanned + (p.reelsPlanned || 0),
+          reelsPosted: acc.reelsPosted + (p.reelsPosted || 0),
+          postsPlanned: acc.postsPlanned + (p.postsPlanned || 0),
+          postsPosted: acc.postsPosted + (p.postsPosted || 0),
+        }),
+        { reelsPlanned: 0, reelsPosted: 0, postsPlanned: 0, postsPosted: 0 },
+      );
+
+  const totalPlannedAll = totals.reelsPlanned + totals.postsPlanned;
+  const totalUploadedAll = totals.reelsPosted + totals.postsPosted;
+  const overallExecutionRate = totalPlannedAll > 0 ? Math.round((totalUploadedAll / totalPlannedAll) * 100) : 0;
 
   const getReasons = (project) => {
     const reasons = projectReasons[project.projectId] ?? project.reasons ?? [];
@@ -239,28 +261,36 @@ function SocialMediaTab({ data, search }) {
     );
   };
 
-  const toggleProject = async (project) => {
-    if (expanded === project.projectId) {
+  const handleRowClick = async (p) => {
+    // Toggle selection for stats card view
+    if (selectedProject?.projectId === p.projectId) {
+      setSelectedProject(null);
+    } else {
+      setSelectedProject(p);
+    }
+
+    // Also handle expand accordion drawer logic
+    if (expanded === p.projectId) {
       setExpanded(null);
       return;
     }
 
-    setExpanded(project.projectId);
-    if (projectReasons[project.projectId]) return;
+    setExpanded(p.projectId);
+    if (projectReasons[p.projectId]) return;
 
-    setLoadingReasons(project.projectId);
+    setLoadingReasons(p.projectId);
     try {
-      const response = await API.get(`/api/projects/${project.projectId}`);
+      const response = await API.get(`/api/projects/${p.projectId}`);
       const projectData = response.data?.data || response.data || {};
       setProjectReasons((current) => ({
         ...current,
-        [project.projectId]: projectData.reasons || [],
+        [p.projectId]: projectData.reasons || [],
       }));
     } catch (error) {
       console.error("Failed to load Deviation:", error);
       setProjectReasons((current) => ({
         ...current,
-        [project.projectId]: project.reasons || [],
+        [p.projectId]: p.reasons || [],
       }));
     } finally {
       setLoadingReasons(null);
@@ -273,34 +303,36 @@ function SocialMediaTab({ data, search }) {
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <StatCard
-          icon={Film}
-          label="Reels Planned"
-          value={fmt(totals.reelsPlanned)}
+          icon={Layers}
+          label={selectedProject ? `Execution Rate (${selectedProject.projectName})` : "Total Execution Rate"}
+          value={`${overallExecutionRate}%`}
+          subValue={selectedProject ? `Client: ${selectedProject.clientName || "—"}` : `${projects.length} Active Projects`}
+          secondaryLabel="Total Volume"
+          secondaryValue={`${fmt(totalUploadedAll)} / ${fmt(totalPlannedAll)}`}
           colorClass="text-indigo-600"
           bgClass="bg-indigo-50"
         />
         <StatCard
           icon={Film}
-          label="Reels Uploaded"
+          label="Reels Performance"
           value={fmt(totals.reelsPosted)}
+          subValue={`${Math.round((totals.reelsPosted / (totals.reelsPlanned || 1)) * 100)}% Fulfilled`}
+          secondaryLabel="Planned"
+          secondaryValue={fmt(totals.reelsPlanned)}
           colorClass="text-blue-600"
           bgClass="bg-blue-50"
         />
         <StatCard
           icon={ImageIcon}
-          label="Posts Planned"
-          value={fmt(totals.postsPlanned)}
+          label="Posts Performance"
+          value={fmt(totals.postsPosted)}
+          subValue={`${Math.round((totals.postsPosted / (totals.postsPlanned || 1)) * 100)}% Fulfilled`}
+          secondaryLabel="Planned"
+          secondaryValue={fmt(totals.postsPlanned)}
           colorClass="text-purple-600"
           bgClass="bg-purple-50"
-        />
-        <StatCard
-          icon={ImageIcon}
-          label="Posts Uploaded"
-          value={fmt(totals.postsPosted)}
-          colorClass="text-pink-600"
-          bgClass="bg-pink-50"
         />
       </div>
 
@@ -308,33 +340,33 @@ function SocialMediaTab({ data, search }) {
         <EmptyState label="No Social Media projects found" />
       ) : (
         <div className="overflow-x-auto rounded-2xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-slate-50/90 border-b border-slate-200/80">
+                <th className="px-6 py-4 text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Project Details
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Total Planned
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Reels Planned
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Reels Uploaded
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Post Planned
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Post Uploaded
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Total Uploads
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100">
               {projects.map((p, i) => {
                 const totalPlanned =
                   (p.reelsPlanned || 0) + (p.postsPlanned || 0);
@@ -346,6 +378,7 @@ function SocialMediaTab({ data, search }) {
                     : 0;
                 const reasons = getReasons(p);
                 const latestReason = reasons[0];
+                const isSelected = selectedProject?.projectId === p.projectId;
 
                 return [
                   <motion.tr
@@ -353,61 +386,66 @@ function SocialMediaTab({ data, search }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     key={p.projectId}
-                    onClick={() => toggleProject(p)}
-                    className={`cursor-pointer hover:bg-slate-50/50 transition-colors group ${expanded === p.projectId ? "bg-slate-50/70" : ""}`}
+                    onClick={() => handleRowClick(p)}
+                    className={`cursor-pointer transition-colors group ${isSelected ? "bg-indigo-50/40 ring-1 ring-inset ring-indigo-200" : expanded === p.projectId ? "bg-slate-50/90" : "hover:bg-slate-50/80"}`}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-3">
-                        <ChevronDown
-                          size={18}
-                          className={`mt-0.5 shrink-0 text-indigo-500 transition-transform ${expanded === p.projectId ? "rotate-180" : ""}`}
-                        />
+                        <div className={`p-1.5 rounded-lg border transition-colors ${expanded === p.projectId ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-400 group-hover:text-slate-600"}`}>
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${expanded === p.projectId ? "rotate-180" : ""}`}
+                          />
+                        </div>
                         <div>
-                          <p className="font-semibold text-slate-900">
-                            {p.projectName || "—"}
-                          </p>
-                         
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                              {p.projectName || "—"}
+                            </p>
+                            {isSelected && (
+                              <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">
+                                Selected
+                              </span>
+                            )}
+                          </div>
                           {latestReason && (
                             <p
-                              className="text-xs text-amber-700 mt-2 max-w-xs truncate"
+                              className="text-xs text-amber-700 mt-1 font-medium max-w-xs truncate"
                               title={latestReason.reason || latestReason.text}
                             >
-                              Deviation :{" "}
-                              {latestReason.reason || latestReason.text || "—"}
+                              Deviation: {latestReason.reason || latestReason.text || "—"}
                             </p>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center font-semibold text-slate-700 bg-slate-50/30">
+                    <td className="px-6 py-4 text-center font-bold text-slate-700 bg-slate-50/40">
                       {fmt(totalPlanned)}
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-slate-500">
+                    <td className="px-6 py-4 text-center font-semibold text-slate-600">
                       {fmt(p.reelsPlanned)}
                     </td>
-                    <td className="px-6 py-4 text-center font-semibold text-slate-900">
+                    <td className="px-6 py-4 text-center font-bold text-slate-900">
                       {fmt(p.reelsPosted)}
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-slate-500">
+                    <td className="px-6 py-4 text-center font-semibold text-slate-600">
                       {fmt(p.postsPlanned)}
                     </td>
-                    <td className="px-6 py-4 text-center font-semibold text-slate-900">
+                    <td className="px-6 py-4 text-center font-bold text-slate-900">
                       {fmt(p.postsPosted)}
                     </td>
-                    <td className="px-6 py-4 min-w-[160px]">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-slate-900 w-8">
-                          {fmt(totalUploaded)}
-                        </span>
-                        <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden hidden sm:block shadow-inner">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <div className="text-sm font-bold text-slate-900">
+                          {fmt(totalUploaded)} <span className="text-slate-400 font-normal text-xs">/ {fmt(totalPlanned)}</span>
+                        </div>
+                        <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden flex">
+                          <div 
+                            className={`h-full rounded-full ${uploadPct >= 100 ? 'bg-emerald-500' : uploadPct >= 50 ? 'bg-blue-600' : 'bg-amber-500'}`} 
                             style={{ width: `${Math.min(uploadPct, 100)}%` }}
                           />
                         </div>
-                        <span className="text-xs font-semibold text-slate-400 w-8 text-right hidden sm:block">
-                          {uploadPct}%
-                        </span>
+                        <span className="text-[10px] font-semibold text-slate-500">{uploadPct}% Executed</span>
                       </div>
                     </td>
                   </motion.tr>,
@@ -416,46 +454,42 @@ function SocialMediaTab({ data, search }) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       key={`${p.projectId}-reasons`}
-                      className="bg-amber-50/40"
+                      className="bg-amber-50/20"
                     >
                       <td colSpan={7} className="px-6 py-5">
-                        <div className="ml-9 rounded-xl border border-amber-100 bg-white p-4">
+                        <div className="ml-10 rounded-xl border border-amber-200/70 bg-white p-4 shadow-sm">
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-bold text-slate-800">
-                              Deviation
+                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              Deviation Records
                             </h4>
-                            <span className="text-xs font-semibold text-amber-700">
-                              {reasons.length}{" "}
-                              {reasons.length === 1 ? "reason" : "reasons"}
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                              {reasons.length} {reasons.length === 1 ? "reason" : "reasons"}
                             </span>
                           </div>
                           {loadingReasons === p.projectId ? (
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                              <Loader2 size={16} className="animate-spin" />{" "}
-                              Loading reasons...
+                            <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                              <Loader2 size={16} className="animate-spin text-amber-600" /> Loading reasons...
                             </div>
                           ) : reasons.length === 0 ? (
-                            <p className="text-sm text-slate-500">
-                              No reasons added for this project.
+                            <p className="text-sm text-slate-500 italic">
+                              No deviation reasons logged for this project.
                             </p>
                           ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                               {reasons.map((reason, reasonIndex) => (
                                 <div
-                                  key={
-                                    reason.id || `${p.projectId}-${reasonIndex}`
-                                  }
-                                  className="flex items-start gap-3 border-t border-slate-100 pt-3 first:border-t-0 first:pt-0"
+                                  key={reason.id || `${p.projectId}-${reasonIndex}`}
+                                  className="flex items-start gap-3 border-t border-slate-100 pt-2.5 first:border-t-0 first:pt-0"
                                 >
                                   <Calendar
-                                    size={15}
-                                    className="mt-0.5 shrink-0 text-amber-500"
+                                    size={14}
+                                    className="mt-0.5 shrink-0 text-amber-600"
                                   />
                                   <div>
-                                    <p className="text-sm font-medium text-slate-700">
+                                    <p className="text-xs font-medium text-slate-800">
                                       {reason.reason || reason.text || "—"}
                                     </p>
-                                    <p className="text-xs text-slate-400 mt-1">
+                                    <p className="text-[11px] text-slate-400 mt-0.5">
                                       {fmtDate(reason.date)}
                                     </p>
                                   </div>
@@ -477,7 +511,7 @@ function SocialMediaTab({ data, search }) {
   );
 }
 
-function MetaAdsTab({ data, search }) {
+function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
   const [expanded, setExpanded] = useState(null);
   const projects = (data?.metaAds || []).filter(
     (p) =>
@@ -485,14 +519,23 @@ function MetaAdsTab({ data, search }) {
       p.projectName?.toLowerCase().includes(search.toLowerCase()) ||
       p.clientName?.toLowerCase().includes(search.toLowerCase()),
   );
-  const totals = projects.reduce(
-    (acc, p) => ({
-      reach: acc.reach + (p.totalReach || 0),
-      spend: acc.spend + (p.totalSpend || 0),
-      leads: acc.leads + (p.totalLeads || 0),
-    }),
-    { reach: 0, spend: 0, leads: 0 },
-  );
+
+  const totals = selectedProject
+    ? {
+        reach: selectedProject.totalReach || 0,
+        spend: selectedProject.totalSpend || 0,
+        leads: selectedProject.totalLeads || 0,
+      }
+    : projects.reduce(
+        (acc, p) => ({
+          reach: acc.reach + (p.totalReach || 0),
+          spend: acc.spend + (p.totalSpend || 0),
+          leads: acc.leads + (p.totalLeads || 0),
+        }),
+        { reach: 0, spend: 0, leads: 0 },
+      );
+
+  const costPerLead = totals.leads > 0 ? totals.spend / totals.leads : 0;
 
   return (
     <motion.div
@@ -500,27 +543,36 @@ function MetaAdsTab({ data, search }) {
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <StatCard
-          icon={Eye}
-          label="Total Reach"
-          value={fmt(totals.reach)}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <StatCard
           icon={DollarSign}
-          label="Total Spend"
+          label={selectedProject ? `Ad Spend (${selectedProject.projectName})` : "Ad Spend & Efficiency"}
           value={fmtCurrency(totals.spend)}
+          subValue={`CPL: ${fmtCurrency(costPerLead)}`}
+          secondaryLabel="Total Reach"
+          secondaryValue={fmt(totals.reach)}
           colorClass="text-emerald-600"
           bgClass="bg-emerald-50"
         />
         <StatCard
           icon={Users}
-          label="Total Leads"
+          label="Total Leads Generated"
           value={fmt(totals.leads)}
-          colorClass="text-amber-600"
-          bgClass="bg-amber-50"
+          subValue={selectedProject ? `Client: ${selectedProject.clientName || "—"}` : `${projects.length} Campaigns`}
+          secondaryLabel="Conversion Volume"
+          secondaryValue="Verified"
+          colorClass="text-blue-600"
+          bgClass="bg-blue-50"
+        />
+        <StatCard
+          icon={Activity}
+          label="Average Reach / Spend"
+          value={totals.spend > 0 ? fmt(Math.round(totals.reach / (totals.spend / 100))) : "—"}
+          subValue="Per ₹100 Spent"
+          secondaryLabel="Efficiency Score"
+          secondaryValue="Optimal"
+          colorClass="text-indigo-600"
+          bgClass="bg-indigo-50"
         />
       </div>
 
@@ -528,160 +580,176 @@ function MetaAdsTab({ data, search }) {
         <EmptyState label="No Meta Ads reports found" />
       ) : (
         <div className="space-y-4">
-          {projects.map((p, i) => (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              key={p.projectId}
-              className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${expanded === p.projectId ? "border-blue-200 shadow-[0_8px_30px_rgb(59,130,246,0.08)]" : "border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200"}`}
-            >
-              <button
-                className="w-full flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors"
-                onClick={() =>
-                  setExpanded(expanded === p.projectId ? null : p.projectId)
-                }
+          {projects.map((p, i) => {
+            const isSelected = selectedProject?.projectId === p.projectId;
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                key={p.projectId}
+                className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${isSelected ? "border-blue-400 ring-2 ring-blue-100" : expanded === p.projectId ? "border-blue-300 shadow-[0_8px_30px_rgb(59,130,246,0.08)]" : "border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200"}`}
               >
-                <div className="flex items-center gap-4 text-left mb-4 md:mb-0">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
-                    <Megaphone size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-[15px]">
-                      {p.projectName}
-                    </p>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">
-                      {p.clientName || "—"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6 text-right pr-2">
-                  <div className="hidden sm:block">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
-                      Reach
-                    </p>
-                    <p className="font-semibold text-slate-900">
-                      {fmt(p.totalReach)}
-                    </p>
-                  </div>
-                  <div className="hidden sm:block">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
-                      Spend
-                    </p>
-                    <p className="font-semibold text-slate-900">
-                      {fmtCurrency(p.totalSpend)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-blue-500 uppercase tracking-widest font-bold mb-1">
-                      Leads
-                    </p>
-                    <p className="font-bold text-blue-600 text-lg">
-                      {fmt(p.totalLeads)}
-                    </p>
-                  </div>
-                  <div
-                    className={`p-2 rounded-full transition-colors ${expanded === p.projectId ? "bg-blue-50" : "bg-slate-50"}`}
+                <div className="flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors">
+                  <button
+                    className="flex items-center gap-4 text-left flex-1"
+                    onClick={() => {
+                      if (selectedProject?.projectId === p.projectId) {
+                        setSelectedProject(null);
+                      } else {
+                        setSelectedProject(p);
+                      }
+                    }}
                   >
-                    <ChevronDown
-                      size={18}
-                      className={`text-slate-400 transition-transform duration-300 ${expanded === p.projectId ? "rotate-180 text-blue-600" : ""}`}
-                    />
-                  </div>
-                </div>
-              </button>
-
-              <AnimatePresence>
-                {expanded === p.projectId && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <div className="border-t border-slate-100 bg-slate-50/50 p-5">
-                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-4 ml-1">
-                        Daily Breakdown
-                      </p>
-                      <div className="overflow-hidden bg-white rounded-xl border border-slate-200/60 shadow-sm">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-100">
-                              {[
-                                "Date",
-                                "Reach",
-                                "Spend",
-                                "Leads",
-                                "Status",
-                                "Type",
-                                "Area",
-                              ].map((h) => (
-                                <th
-                                  key={h}
-                                  className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-xs"
-                                >
-                                  {h}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {(p.reports || []).map((r) => (
-                              <tr
-                                key={r.id}
-                                className="text-slate-600 hover:bg-slate-50/80 transition-colors"
-                              >
-                                <td className="px-5 py-3.5 text-slate-900 font-semibold">
-                                  {fmtDate(r.date)}
-                                </td>
-                                <td className="px-5 py-3.5 font-medium">
-                                  {fmt(r.reach)}
-                                </td>
-                                <td className="px-5 py-3.5 font-medium">
-                                  {fmtCurrency(r.spend)}
-                                </td>
-                                <td className="px-5 py-3.5 font-bold text-blue-600">
-                                  {fmt(r.leads)}
-                                </td>
-                                <td className="px-5 py-3.5">
-                                  {r.isAdRunning === null ? (
-                                    "—"
-                                  ) : r.isAdRunning ? (
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full">
-                                      <CheckCircle2 size={12} strokeWidth={3} />{" "}
-                                      Running
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-full">
-                                      <AlertCircle size={12} strokeWidth={3} />{" "}
-                                      Paused
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3.5 font-medium">
-                                  {r.typeOfAds || "—"}
-                                </td>
-                                <td className="px-5 py-3.5 text-slate-500">
-                                  {r.areaName || "—"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
+                      <Megaphone size={20} className="text-blue-600" />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-slate-900 text-[15px]">
+                          {p.projectName}
+                        </p>
+                        {isSelected && (
+                          <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-slate-500 mt-0.5">
+                        {p.clientName || "—"}
+                      </p>
+                    </div>
+                  </button>
+
+                  <div className="flex items-center gap-6 mt-4 md:mt-0">
+                    <div className="hidden sm:block text-right">
+                      <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
+                        Reach
+                      </p>
+                      <p className="font-semibold text-slate-900">
+                        {fmt(p.totalReach)}
+                      </p>
+                    </div>
+                    <div className="hidden sm:block text-right">
+                      <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
+                        Spend
+                      </p>
+                      <p className="font-semibold text-slate-900">
+                        {fmtCurrency(p.totalSpend)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[11px] text-blue-500 uppercase tracking-widest font-bold mb-1">
+                        Leads
+                      </p>
+                      <p className="font-bold text-blue-600 text-lg">
+                        {fmt(p.totalLeads)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setExpanded(expanded === p.projectId ? null : p.projectId)
+                      }
+                      className={`p-2 rounded-lg border transition-colors ${expanded === p.projectId ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-slate-50 border-slate-200 text-slate-400"}`}
+                    >
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform duration-200 ${expanded === p.projectId ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {expanded === p.projectId && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="border-t border-slate-100 bg-slate-50/50 p-5">
+                        <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-4 ml-1">
+                          Daily Breakdown Logs
+                        </p>
+                        <div className="overflow-x-auto bg-white rounded-xl border border-slate-200/70 shadow-sm">
+                          <table className="w-full text-sm text-left">
+                            <thead>
+                              <tr className="bg-slate-50/80 border-b border-slate-200/80">
+                                {[
+                                  "Date",
+                                  "Reach",
+                                  "Spend",
+                                  "Leads",
+                                  "Status",
+                                  "Type",
+                                  "Area",
+                                ].map((h) => (
+                                  <th
+                                    key={h}
+                                    className="px-5 py-3 font-bold text-slate-600 uppercase tracking-wider text-xs"
+                                  >
+                                    {h}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {(p.reports || []).map((r) => (
+                                <tr
+                                  key={r.id}
+                                  className="text-slate-600 hover:bg-slate-50/80 transition-colors"
+                                >
+                                  <td className="px-5 py-3.5 text-slate-900 font-semibold">
+                                    {fmtDate(r.date)}
+                                  </td>
+                                  <td className="px-5 py-3.5 font-medium">
+                                    {fmt(r.reach)}
+                                  </td>
+                                  <td className="px-5 py-3.5 font-medium">
+                                    {fmtCurrency(r.spend)}
+                                  </td>
+                                  <td className="px-5 py-3.5 font-bold text-blue-600">
+                                    {fmt(r.leads)}
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    {r.isAdRunning === null ? (
+                                      "—"
+                                    ) : r.isAdRunning ? (
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full">
+                                        <CheckCircle2 size={12} strokeWidth={3} /> Running
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-full">
+                                        <AlertCircle size={12} strokeWidth={3} /> Paused
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-5 py-3.5 font-medium">
+                                    {r.typeOfAds || "—"}
+                                  </td>
+                                  <td className="px-5 py-3.5 text-slate-500">
+                                    {r.areaName || "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </motion.div>
   );
 }
 
-function SeoTab({ data, search }) {
+function SeoTab({ data, search, selectedProject, setSelectedProject }) {
   const [expanded, setExpanded] = useState(null);
   const projects = (data?.seo || []).filter(
     (p) =>
@@ -690,12 +758,39 @@ function SeoTab({ data, search }) {
       p.clientName?.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const topRankingsCount = selectedProject 
+    ? (selectedProject.latestReport?.rankingNo && selectedProject.latestReport.rankingNo <= 10 ? 1 : 0)
+    : projects.filter(p => p.latestReport?.rankingNo && p.latestReport.rankingNo <= 10).length;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-4"
+      className="space-y-6"
     >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <StatCard
+          icon={TrendingUp}
+          label={selectedProject ? `SEO Portfolio (${selectedProject.projectName})` : "Tracked SEO Portfolios"}
+          value={selectedProject ? (selectedProject.latestReport?.rankingNo ? `#${selectedProject.latestReport.rankingNo}` : "—") : projects.length}
+          subValue={selectedProject ? `Client: ${selectedProject.clientName || "—"}` : `${topRankingsCount} in Top 10 Ranks`}
+          secondaryLabel="Visibility"
+          secondaryValue="Active"
+          colorClass="text-emerald-600"
+          bgClass="bg-emerald-50"
+        />
+        <StatCard
+          icon={Search}
+          label="Keyword Dominance"
+          value={selectedProject ? (selectedProject.latestReport?.keywords?.length || 0) : projects.reduce((acc, p) => acc + (p.latestReport?.keywords?.length || 0), 0)}
+          subValue="Total Monitored Keywords"
+          secondaryLabel="Status"
+          secondaryValue="Updated"
+          colorClass="text-teal-600"
+          bgClass="bg-teal-50"
+        />
+      </div>
+
       {projects.length === 0 ? (
         <EmptyState label="No SEO reports found" />
       ) : (
@@ -708,6 +803,7 @@ function SeoTab({ data, search }) {
               : lr.rankingNo <= 10
                 ? "text-emerald-600"
                 : "text-slate-700";
+          const isSelected = selectedProject?.projectId === p.projectId;
 
           return (
             <motion.div
@@ -715,29 +811,41 @@ function SeoTab({ data, search }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               key={p.projectId}
-              className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${expanded === p.projectId ? "border-emerald-200 shadow-[0_8px_30px_rgb(16,185,129,0.08)]" : "border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200"}`}
+              className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${isSelected ? "border-emerald-400 ring-2 ring-emerald-100" : expanded === p.projectId ? "border-emerald-300 shadow-[0_8px_30px_rgb(16,185,129,0.08)]" : "border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200"}`}
             >
-              <button
-                className="w-full flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors"
-                onClick={() =>
-                  setExpanded(expanded === p.projectId ? null : p.projectId)
-                }
-              >
-                <div className="flex items-center gap-4 text-left mb-4 md:mb-0">
+              <div className="flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors">
+                <button
+                  className="flex items-center gap-4 text-left flex-1"
+                  onClick={() => {
+                    if (selectedProject?.projectId === p.projectId) {
+                      setSelectedProject(null);
+                    } else {
+                      setSelectedProject(p);
+                    }
+                  }}
+                >
                   <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 shadow-sm">
                     <TrendingUp size={20} className="text-emerald-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900 text-[15px]">
-                      {p.projectName}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-slate-900 text-[15px]">
+                        {p.projectName}
+                      </p>
+                      {isSelected && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                          Selected
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm font-medium text-slate-500 mt-0.5">
                       {p.clientName || "—"}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-6 text-right pr-2">
-                  <div>
+                </button>
+
+                <div className="flex items-center gap-6 mt-4 md:mt-0">
+                  <div className="text-right">
                     <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
                       Ranking
                     </p>
@@ -745,7 +853,7 @@ function SeoTab({ data, search }) {
                       {lr?.rankingNo ? `#${lr.rankingNo}` : "—"}
                     </p>
                   </div>
-                  <div className="hidden sm:block">
+                  <div className="hidden sm:block text-right">
                     <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
                       Last Checked
                     </p>
@@ -753,16 +861,19 @@ function SeoTab({ data, search }) {
                       {fmtDate(lr?.checkDate)}
                     </p>
                   </div>
-                  <div
-                    className={`p-2 rounded-full transition-colors ${expanded === p.projectId ? "bg-emerald-50" : "bg-slate-50"}`}
+                  <button
+                    onClick={() =>
+                      setExpanded(expanded === p.projectId ? null : p.projectId)
+                    }
+                    className={`p-2 rounded-lg border transition-colors ${expanded === p.projectId ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400"}`}
                   >
                     <ChevronDown
-                      size={18}
-                      className={`text-slate-400 transition-transform duration-300 ${expanded === p.projectId ? "rotate-180 text-emerald-600" : ""}`}
+                      size={14}
+                      className={`transition-transform duration-200 ${expanded === p.projectId ? "rotate-180" : ""}`}
                     />
-                  </div>
+                  </button>
                 </div>
-              </button>
+              </div>
 
               <AnimatePresence>
                 {expanded === p.projectId && (
@@ -775,26 +886,24 @@ function SeoTab({ data, search }) {
                     <div className="border-t border-slate-100 bg-slate-50/50 p-5 space-y-5">
                       {lr && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <div className="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm">
+                          <div className="bg-white p-5 rounded-xl border border-slate-200/70 shadow-sm">
                             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <Search size={14} className="text-emerald-500" />{" "}
-                              Top Keywords
+                              <Search size={14} className="text-emerald-500" /> Top Keywords
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {(lr.keywords || []).map((kw, idx) => (
                                 <span
                                   key={idx}
-                                  className="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/60 shadow-sm"
+                                  className="px-3 py-1 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/60 shadow-sm"
                                 >
                                   {kw}
                                 </span>
                               ))}
                             </div>
                           </div>
-                          <div className="bg-white p-5 rounded-xl border border-slate-200/60 shadow-sm">
+                          <div className="bg-white p-5 rounded-xl border border-slate-200/70 shadow-sm">
                             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <TrendingUp size={14} className="text-blue-500" />{" "}
-                              Remarks
+                              <TrendingUp size={14} className="text-blue-500" /> Remarks
                             </p>
                             <p className="text-[13px] text-slate-600 leading-relaxed font-medium">
                               {lr.remarks || "No remarks logged."}
@@ -804,12 +913,12 @@ function SeoTab({ data, search }) {
                       )}
                       <div>
                         <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-3 ml-1">
-                          Historical Data
+                          Historical Data Logs
                         </p>
-                        <div className="overflow-hidden bg-white rounded-xl border border-slate-200/60 shadow-sm">
-                          <table className="w-full text-sm">
+                        <div className="overflow-x-auto bg-white rounded-xl border border-slate-200/70 shadow-sm">
+                          <table className="w-full text-sm text-left">
                             <thead>
-                              <tr className="bg-slate-50/50 border-b border-slate-100">
+                              <tr className="bg-slate-50/80 border-b border-slate-200/80">
                                 {[
                                   "Date",
                                   "Rank",
@@ -819,14 +928,14 @@ function SeoTab({ data, search }) {
                                 ].map((h) => (
                                   <th
                                     key={h}
-                                    className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-xs"
+                                    className="px-5 py-3 font-bold text-slate-600 uppercase tracking-wider text-xs"
                                   >
                                     {h}
                                   </th>
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                               {(p.reports || []).map((r) => (
                                 <tr
                                   key={r.id}
@@ -850,7 +959,7 @@ function SeoTab({ data, search }) {
                                         href={r.screenshotUrl}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-xs font-bold text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-xs font-bold text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors shadow-sm"
                                       >
                                         <ExternalLink size={14} /> View
                                       </a>
@@ -884,6 +993,7 @@ export default function ProjectsReportsOverviewPage() {
   const [startDate, setStart] = useState("");
   const [endDate, setEnd] = useState("");
   const [preset, setPreset] = useState("");
+  const [selectedProject, setSelectedProject] = useState(null);
 
   const tabs = [
     {
@@ -939,43 +1049,64 @@ export default function ProjectsReportsOverviewPage() {
   return (
     <div className="min-h-screen bg-[#FAFBFC] p-4 md:p-8 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header - Premium SaaS styling */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+        {/* Header - Premium Enterprise Layout */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
               Reports Overview
             </h1>
-            <p className="text-[15px] text-slate-500 mt-1.5 font-medium">
-              Monitor and export project performance metrics.
+            <p className="text-xs text-slate-500 mt-1 font-medium tracking-wide">
+              Monitor key performance metrics across social media, meta ads, and SEO portfolios.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={load}
               disabled={loading}
-              className="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 shadow-sm transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 font-semibold text-xs transition-all shadow-sm"
             >
               <RefreshCw
-                size={18}
+                size={14}
                 className={loading ? "animate-spin text-blue-600" : ""}
               />
+              Refresh Data
             </button>
             <button
               onClick={() => exportToExcel(tab, data, startDate, endDate)}
-              className="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-b from-slate-800 to-slate-900 text-white font-semibold text-sm shadow-[0_4px_14px_0_rgb(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:from-slate-700 hover:to-slate-800 active:scale-[0.98] transition-all duration-200"
+              className="group flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-xs shadow-md hover:bg-slate-800 active:scale-[0.98] transition-all"
             >
               <Download
-                size={16}
+                size={14}
                 className="text-slate-300 group-hover:text-white transition-colors"
-              />{" "}
+              />
               Export CSV
             </button>
           </div>
         </div>
 
-        {/* Filters Panel - Clean & Integrated */}
-        <div className="bg-white rounded-2xl p-2 border border-slate-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.02)] flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between">
-          <div className="flex items-center gap-1 p-2">
+        {/* Selected Project Banner Notification (if active) */}
+        {selectedProject && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-indigo-900 text-white px-5 py-3 rounded-xl flex items-center justify-between shadow-md"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <span className="bg-indigo-700 px-2 py-0.5 rounded uppercase tracking-wider text-[10px]">Filtering Stats</span>
+              <span>Showing metrics for: <strong className="underline decoration-indigo-400">{selectedProject.projectName}</strong></span>
+            </div>
+            <button
+              onClick={() => setSelectedProject(null)}
+              className="text-indigo-200 hover:text-white text-xs flex items-center gap-1 bg-indigo-800/80 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              <X size={13} /> Reset View
+            </button>
+          </motion.div>
+        )}
+
+        {/* Consolidated Filters Panel */}
+        <div className="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.02)] flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 xl:pb-0">
             {[
               { id: "today", label: "Today" },
               { id: "3days", label: "3 Days" },
@@ -986,16 +1117,16 @@ export default function ProjectsReportsOverviewPage() {
               <button
                 key={p.id}
                 onClick={() => applyPreset(p.id)}
-                className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 ${preset === p.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}
+                className={`px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-all duration-200 whitespace-nowrap ${preset === p.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}
               >
                 {p.label}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto p-2 pt-0 xl:p-2 xl:pl-0">
-            <div className="flex items-center gap-2.5 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3.5 py-2 flex-1 md:flex-none focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
-              <Calendar size={16} className="text-slate-400" />
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto">
+            <div className="flex items-center gap-2 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3 py-1.5 flex-1 md:flex-none">
+              <Calendar size={14} className="text-slate-400 shrink-0" />
               <input
                 type="date"
                 value={startDate}
@@ -1003,12 +1134,12 @@ export default function ProjectsReportsOverviewPage() {
                   setStart(e.target.value);
                   setPreset("");
                 }}
-                className="bg-transparent text-[13px] font-semibold text-slate-700 outline-none w-full md:w-32 cursor-pointer"
+                className="bg-transparent text-[12px] font-semibold text-slate-700 outline-none w-full md:w-28 cursor-pointer"
               />
             </div>
-            <span className="text-slate-300 font-medium">—</span>
-            <div className="flex items-center gap-2.5 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3.5 py-2 flex-1 md:flex-none focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
-              <Calendar size={16} className="text-slate-400" />
+            <span className="text-slate-300 font-medium hidden md:block">—</span>
+            <div className="flex items-center gap-2 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3 py-1.5 flex-1 md:flex-none">
+              <Calendar size={14} className="text-slate-400 shrink-0" />
               <input
                 type="date"
                 value={endDate}
@@ -1016,34 +1147,37 @@ export default function ProjectsReportsOverviewPage() {
                   setEnd(e.target.value);
                   setPreset("");
                 }}
-                className="bg-transparent text-[13px] font-semibold text-slate-700 outline-none w-full md:w-32 cursor-pointer"
+                className="bg-transparent text-[12px] font-semibold text-slate-700 outline-none w-full md:w-28 cursor-pointer"
               />
             </div>
 
-            <div className="w-px h-6 bg-slate-200 hidden md:block mx-1"></div>
+            <div className="w-px h-6 bg-slate-200 hidden xl:block mx-1"></div>
 
-            <div className="flex items-center gap-2.5 bg-slate-50/80 border border-slate-200/60 rounded-xl px-4 py-2 flex-1 focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
-              <Search size={16} className="text-slate-400" />
+            <div className="flex items-center gap-2 bg-slate-50/80 border border-slate-200/60 rounded-xl px-3 py-1.5 flex-1 w-full xl:w-48">
+              <Search size={14} className="text-slate-400 shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search records..."
-                className="bg-transparent text-[13px] font-semibold text-slate-700 outline-none placeholder-slate-400 w-full md:w-48"
+                className="bg-transparent text-[12px] font-semibold text-slate-700 outline-none placeholder-slate-400 w-full"
               />
             </div>
           </div>
         </div>
 
-        {/* Floating Segmented Control */}
-        <div className="flex items-center justify-center md:justify-start">
-          <div className="inline-flex bg-slate-100 p-1 rounded-xl">
+        {/* Tab Switcher */}
+        <div className="flex items-center justify-start">
+          <div className="inline-flex bg-slate-200/70 p-1 rounded-xl">
             {tabs.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all duration-200 ${tab === t.id ? t.activeClass : t.inactiveClass}`}
+                onClick={() => {
+                  setTab(t.id);
+                  setSelectedProject(null); // Clear selection when switching tabs
+                }}
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold transition-all duration-200 ${tab === t.id ? t.activeClass : t.inactiveClass}`}
               >
-                <t.icon size={16} />
+                <t.icon size={15} />
                 {t.label}
               </button>
             ))}
@@ -1053,7 +1187,7 @@ export default function ProjectsReportsOverviewPage() {
         {/* Main Content Area */}
         <div className="min-h-[400px]">
           {loading ? (
-            <ProfessionalLoader text="Loading. Please wait..." />
+            <ProfessionalLoader text="Loading reports..." />
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
@@ -1064,12 +1198,29 @@ export default function ProjectsReportsOverviewPage() {
                 transition={{ duration: 0.2 }}
               >
                 {tab === "social-media" && (
-                  <SocialMediaTab data={data} search={search} />
+                  <SocialMediaTab 
+                    data={data} 
+                    search={search} 
+                    selectedProject={selectedProject} 
+                    setSelectedProject={setSelectedProject} 
+                  />
                 )}
                 {tab === "meta-ads" && (
-                  <MetaAdsTab data={data} search={search} />
+                  <MetaAdsTab 
+                    data={data} 
+                    search={search} 
+                    selectedProject={selectedProject} 
+                    setSelectedProject={setSelectedProject} 
+                  />
                 )}
-                {tab === "seo" && <SeoTab data={data} search={search} />}
+                {tab === "seo" && (
+                  <SeoTab 
+                    data={data} 
+                    search={search} 
+                    selectedProject={selectedProject} 
+                    setSelectedProject={setSelectedProject} 
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           )}
