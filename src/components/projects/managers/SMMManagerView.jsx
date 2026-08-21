@@ -1104,6 +1104,66 @@ const SMMManagerView = ({ projectId }) => {
         </form>
       </motion.div>
 
+      {/* ================= REASONS SECTION ================= */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-amber-100/60 p-8 md:p-10"
+      >
+        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100">
+            <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          Project Reasons
+          <span className="ml-auto text-xs font-bold bg-amber-100 text-amber-700 px-3 py-1 rounded-full border border-amber-200">
+            {(project?.reasons || []).length} {(project?.reasons || []).length === 1 ? "entry" : "entries"}
+          </span>
+        </h3>
+
+        {(!project?.reasons || project.reasons.length === 0) ? (
+          <div className="text-center py-10 bg-amber-50/40 rounded-2xl border border-dashed border-amber-200">
+            <svg className="w-10 h-10 text-amber-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-sm font-semibold text-amber-600">No reasons added yet</p>
+            <p className="text-xs text-amber-400 mt-1">Reasons added from the Social Media projects page will appear here.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {project.reasons.map((r, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-4 p-5 rounded-2xl bg-amber-50/60 border border-amber-100/80"
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 font-black text-sm">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 leading-relaxed">
+                    {r.reason || r.text || "—"}
+                  </p>
+                  {r.date && (
+                    <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {new Date(r.date).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
       {/* ================= MASTER HISTORICAL CALENDARS LIST ================= */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-8">
         <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">

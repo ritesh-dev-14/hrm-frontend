@@ -9,9 +9,11 @@ import {
   ChevronRight,
   ClipboardList,
   Zap,
+  PlusCircle,
 } from "lucide-react";
 
 import API from "../services/api";
+import ReasonModal from "../components/projects/ReasonModal";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -53,6 +55,10 @@ const SocialMediaProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Reason Modal state
+  const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
+  const [selectedProjectForReason, setSelectedProjectForReason] = useState(null);
 
   const navigate = useNavigate();
 
@@ -90,6 +96,18 @@ const SocialMediaProjectsPage = () => {
       month: "short",
       year: "numeric",
     });
+  };
+
+  const handleOpenReasonModal = (e, project) => {
+    e.stopPropagation(); // Prevent card click
+    setSelectedProjectForReason(project);
+    setIsReasonModalOpen(true);
+  };
+
+  const handleProjectUpdate = (updatedProject) => {
+    setAllProjects((prevProjects) =>
+      prevProjects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+    );
   };
 
   return (
@@ -231,7 +249,7 @@ const SocialMediaProjectsPage = () => {
                   </p>
 
                   {/* Footer */}
-                  <div className="space-y-4 mt-auto border-t border-slate-100 pt-5">
+                  <div className="space-y-4 mt-auto border-t border-slate-100 pt-5 flex flex-col">
                     <div className="flex items-center justify-between text-xs font-semibold text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-1.5">
                         <CalendarDays size={14} className="text-slate-400" />
@@ -244,21 +262,33 @@ const SocialMediaProjectsPage = () => {
                       </div>
                     </div>
 
-                    {project.createdBy && (
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-cyan-50 border border-cyan-100 flex items-center justify-center shrink-0">
-                          <User2 size={16} className="text-cyan-500" />
+                    <div className="flex items-center justify-between mt-2">
+                      {project.createdBy ? (
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-cyan-50 border border-cyan-100 flex items-center justify-center shrink-0">
+                            <User2 size={16} className="text-cyan-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">
+                              {project.createdBy.name}
+                            </p>
+                            <p className="text-[10px] font-bold tracking-wider uppercase text-slate-400 truncate mt-0.5">
+                              {project.createdBy.employeeId}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate">
-                            {project.createdBy.name}
-                          </p>
-                          <p className="text-[10px] font-bold tracking-wider uppercase text-slate-400 truncate mt-0.5">
-                            {project.createdBy.employeeId}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div />
+                      )}
+                      
+                      <button
+                        onClick={(e) => handleOpenReasonModal(e, project)}
+                        className="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-600 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors border border-cyan-200 shadow-sm"
+                      >
+                        <PlusCircle size={14} />
+                        Add Reason
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -266,6 +296,13 @@ const SocialMediaProjectsPage = () => {
           </motion.div>
         )}
       </div>
+
+      <ReasonModal
+        isOpen={isReasonModalOpen}
+        onClose={() => setIsReasonModalOpen(false)}
+        project={selectedProjectForReason}
+        onProjectUpdate={handleProjectUpdate}
+      />
     </div>
   );
 };
