@@ -17,6 +17,7 @@ import {
   Camera,
   Search
 } from "lucide-react";
+import ProfessionalLoader from "../../ProfessionalLoader";
 
 const ShootManagerPage = () => {
   const navigate = useNavigate();
@@ -200,16 +201,9 @@ const ShootManagerPage = () => {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                <Loader2 className="h-10 w-10 text-indigo-500 mb-4" />
-              </motion.div>
-              <p className="text-sm font-semibold text-indigo-900 tracking-wide">
-                Synchronizing Workspaces...
-              </p>
-            </div>
-          ) : filteredWorkspaces.length === 0 ? (
+          {isLoading ? 
+             <ProfessionalLoader text="Loading projects..." />
+           : filteredWorkspaces.length === 0 ? (
             <div className="py-32 flex flex-col items-center justify-center text-center bg-white/50 backdrop-blur-sm">
               <div className="w-20 h-20 bg-indigo-50 text-indigo-300 rounded-full flex items-center justify-center mb-6 shadow-inner">
                 <Clapperboard size={40} />
