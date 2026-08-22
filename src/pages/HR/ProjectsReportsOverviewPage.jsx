@@ -936,7 +936,7 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
                                   "Rank",
                                   "Keywords",
                                   "Manager",
-                                  "Report",
+                                  "Screenshots",
                                 ].map((h) => (
                                   <th
                                     key={h}
