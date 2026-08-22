@@ -325,7 +325,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 <table className="w-full min-w-[1000px] text-sm">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200">
-                      {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Campaign Period","Actions"].map((h) => (
+                      {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Actions"].map((h) => (
                         <th key={h} className="text-left px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -350,7 +350,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                         <td className="px-5 py-4 text-indigo-600 font-semibold">{fmt(r.todayReachObtained)}</td>
                         <td className="px-5 py-4 text-pink-600 font-semibold">{fmtCur(r.todayAmountSpend)}</td>
                         <td className="px-5 py-4 text-emerald-600 font-semibold">{fmt(r.leadObtained)}</td>
-                        <td className="px-5 py-4 text-slate-500 text-xs whitespace-nowrap">{fmtDate(r.campaignStartDate)} – {fmtDate(r.campaignEndDate)}</td>
+                        
                         <td className="px-5 py-4">
                           <button onClick={() => openEdit(r)} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold hover:underline transition-colors">Edit</button>
                         </td>
