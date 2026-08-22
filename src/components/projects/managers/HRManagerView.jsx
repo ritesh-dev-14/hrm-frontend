@@ -533,9 +533,19 @@ const HRManagerView = ({ projectId }) => {
                       <input type="text" name="reference" value={formData.reference} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" placeholder="Link1, Link2" />
                     </div>
                     <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-600"><LinkIcon size={14} className="inline text-indigo-500 mr-1" /> Taste</label>
-                      <input type="text" name="taste" value={formData.taste} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" placeholder="Link1, Link2" />
-                    </div>
+  <label className="text-xs font-semibold text-slate-600">
+    <LinkIcon size={14} className="inline text-indigo-500 mr-1" /> Taste
+  </label>
+  <textarea
+    name="taste"
+    value={formData.taste}
+    onChange={handleInputChange}
+    rows={4}
+    className="w-full p-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none resize-y custom-scrollbar"
+    placeholder="Write your paragraphs, notes, or link pointers here..."
+  />
+</div>
+
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
