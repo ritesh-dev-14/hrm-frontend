@@ -124,14 +124,15 @@ const SEOProjectsPage = () => {
             </p>
           </div>
 
-          {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4 sm:ml-auto">
+            {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
 
-          {/* Stats pill */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3 bg-white border border-emerald-100 rounded-2xl px-5 py-3 shadow-sm"
-          >
+            {/* Stats pill */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-3 bg-white border border-emerald-100 rounded-2xl px-5 py-3 shadow-sm"
+            >
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/30">
               <TrendingUp size={20} className="text-white" />
             </div>
@@ -143,7 +144,8 @@ const SEOProjectsPage = () => {
                 Total Projects
               </p>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* SEARCH */}

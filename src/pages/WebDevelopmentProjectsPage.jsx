@@ -51,7 +51,9 @@ export default function WebDevelopmentProjectsPage() {
             </p>
             <h1 className="mt-2 text-3xl font-black">Web Development</h1>
           </div>
-          {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
+          <div className="flex items-center gap-3 sm:ml-auto">
+            {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
+          </div>
         </header>
 
         <div className="mb-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
