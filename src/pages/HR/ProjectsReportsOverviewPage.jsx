@@ -12,6 +12,7 @@ import {
   DollarSign,
   Users,
   BarChart3,
+  FileText,
   ChevronDown,
   ExternalLink,
   AlertCircle,
@@ -20,6 +21,7 @@ import {
   Activity,
   Layers,
   X,
+  Code2,
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -154,6 +156,22 @@ function exportToExcel(tab, data, startDate, endDate) {
         ].join(","),
       );
     });
+  } else if (tab === "web-development") {
+    rows.push(
+      ["Project", "Latest Report", "Previous Report", "Task Progress", "Blockers", "Employee"].join(","),
+    );
+    (data.webDevelopment || []).forEach((p) => {
+      const latest = p.reports?.[0];
+      const previous = p.reports?.[1];
+      rows.push([
+        escapeCell(p.projectName),
+        escapeCell(latest?.content),
+        escapeCell(previous?.content),
+        latest?.taskProgress == null ? "—" : `${latest.taskProgress}%`,
+        escapeCell(latest?.blockers),
+        escapeCell(latest?.employeeName),
+      ].join(","));
+    });
   }
 
   const blob = new Blob(["\ufeff" + rows.join("\n")], {
@@ -201,7 +219,6 @@ function StatCard({ icon: Icon, label, value, subValue, secondaryLabel, secondar
     </motion.div>
   );
 }
-
 function EmptyState({ label }) {
   return (
     <motion.div
@@ -997,6 +1014,54 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
   );
 }
 
+function WebDevelopmentTab({ data, search }) {
+  const projects = (data?.webDevelopment || []).filter((project) =>
+    !search || `${project.projectName} ${project.clientName || ""}`.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <StatCard icon={Code2} label="Web Development Projects" value={projects.length} subValue="Tracked projects" colorClass="text-blue-600" bgClass="bg-blue-50" />
+        <StatCard icon={FileText} label="Latest Reports" value={projects.filter((project) => project.reports?.[0]).length} subValue="Projects with updates" colorClass="text-indigo-600" bgClass="bg-indigo-50" />
+        <StatCard icon={Activity} label="Average Progress" value={`${projects.length ? Math.round(projects.reduce((sum, project) => sum + (project.reports?.[0]?.taskProgress || 0), 0) / projects.length) : 0}%`} subValue="From latest reports" colorClass="text-emerald-600" bgClass="bg-emerald-50" />
+      </div>
+
+      {projects.length === 0 ? <EmptyState label="No Web Development reports found" /> : projects.map((project) => {
+        const latest = project.reports?.[0];
+        const previous = project.reports?.[1];
+        return (
+          <motion.div key={project.projectId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 p-5">
+              <div>
+                <h3 className="font-bold text-slate-900">{project.projectName}</h3>
+                <p className="text-xs text-slate-500 mt-1">{project.clientName || "No client specified"}</p>
+              </div>
+              {latest?.taskProgress != null && <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{latest.taskProgress}% complete</span>}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
+              {[{ label: "Latest Report", report: latest }, { label: "Previous Report", report: previous }].map(({ label, report }) => (
+                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
+                    <span className="text-xs text-slate-400">{report ? fmtDate(report.date) : "—"}</span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{report?.content || "No report available"}</p>
+                  {report?.lastWorking && <p className="mt-3 text-xs text-slate-600"><strong>Last Working:</strong> {report.lastWorking}</p>}
+                  {report?.lastDiscussion && <p className="mt-1 text-xs text-slate-600"><strong>Discussion:</strong> {report.lastDiscussion}</p>}
+                  {report?.nextStep && <p className="mt-1 text-xs text-slate-600"><strong>Next Step:</strong> {report.nextStep}</p>}
+                  {report?.blockers && <p className="mt-1 text-xs font-semibold text-amber-700"><strong>⚠ Blockers:</strong> {report.blockers}</p>}
+                  {report?.employeeName && <p className="mt-3 text-xs text-slate-400">By {report.employeeName}</p>}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
 export default function ProjectsReportsOverviewPage() {
   const [tab, setTab] = useState("social-media");
   const [data, setData] = useState({});
@@ -1030,6 +1095,13 @@ export default function ProjectsReportsOverviewPage() {
         "bg-white text-emerald-600 shadow-sm ring-1 ring-slate-900/5",
       inactiveClass: "text-slate-500 hover:text-slate-800 hover:bg-slate-100",
     },
+    {
+      id: "web-development",
+      label: "Web Development",
+      icon: Code2,
+      activeClass: "bg-white text-blue-600 shadow-sm ring-1 ring-slate-900/5",
+      inactiveClass: "text-slate-500 hover:text-slate-800 hover:bg-slate-100",
+    },
   ];
 
   const load = useCallback(async () => {
@@ -1039,7 +1111,30 @@ export default function ProjectsReportsOverviewPage() {
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
       const res = await API.get(`/api/reports/projects-overview?${params}`);
-      setData(res.data?.data || {});
+      const overview = res.data?.data || {};
+      const projectsRes = await API.get("/api/projects");
+      const webProjects = (projectsRes.data?.data || []).filter((project) => {
+        const name = project.department?.name?.toLowerCase() || "";
+        return name.includes("web development") || name === "it";
+      });
+      const webDevelopment = await Promise.all(webProjects.map(async (project) => {
+        try {
+          const reportsRes = await API.get(`/api/project-reports/${project.id}`);
+          const reports = reportsRes.data?.data || [];
+          return {
+            projectId: project.id,
+            projectName: project.projectName,
+            clientName: project.clientName,
+            reports: reports.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 2).map((report) => ({
+              ...report,
+              employeeName: report.employee?.name || report.createdBy?.name,
+            })),
+          };
+        } catch {
+          return { projectId: project.id, projectName: project.projectName, clientName: project.clientName, reports: [] };
+        }
+      }));
+      setData({ ...overview, webDevelopment });
     } catch {
       toast.error("Failed to load reports");
     } finally {
@@ -1068,7 +1163,7 @@ export default function ProjectsReportsOverviewPage() {
               Reports Overview
             </h1>
             <p className="text-xs text-slate-500 mt-1 font-medium tracking-wide">
-              Monitor key performance metrics across social media, meta ads, and SEO portfolios.
+              Monitor key performance metrics across social media, meta ads, SEO, and Web Development projects.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -1232,6 +1327,9 @@ export default function ProjectsReportsOverviewPage() {
                     selectedProject={selectedProject} 
                     setSelectedProject={setSelectedProject} 
                   />
+                )}
+                {tab === "web-development" && (
+                  <WebDevelopmentTab data={data} search={search} />
                 )}
               </motion.div>
             </AnimatePresence>

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
-import { Send, FileText, Briefcase, RefreshCw, Layers, CheckSquare } from "lucide-react";
+import { Send, FileText, RefreshCw, Layers, CheckSquare, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function EmployeeDailyReports() {
@@ -10,24 +10,49 @@ export default function EmployeeDailyReports() {
   
   const [selectedTaskAssignmentId, setSelectedTaskAssignmentId] = useState("");
   const [reportContent, setReportContent] = useState("");
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
+  const [reportDetails, setReportDetails] = useState({
+    lastWorking: "",
+    lastDiscussion: "",
+    nextStep: "",
+    blockers: "",
+    taskProgress: "",
+  });
   const [submitting, setSubmitting] = useState(false);
 
   // For displaying previous reports of selected project
   const [pastReports, setPastReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
 
-  useEffect(() => {
-    fetchMyTasks();
-  }, []);
-
   const fetchMyTasks = async () => {
     try {
       setLoadingTasks(true);
-      const res = await API.get("/api/task-item-submission/my-items");
-      if (res.data?.data) {
-        // We only want tasks that belong to a project, ideally Web Dev.
-        // The backend /api/project-reports validates if it's Web Dev.
-        const validTasks = res.data.data.filter(t => t.taskItem?.task?.projectId || t.taskItem?.task?.project?.id);
+      const [tasksRes, projectsRes] = await Promise.all([
+        API.get("/api/task-item-submission/my-items"),
+        API.get("/api/projects"),
+      ]);
+      const projects = projectsRes.data?.data || [];
+      const projectsById = new Map(projects.map((project) => [project.id, project]));
+      const isWebDevelopment = (project) => {
+        const departmentName = project?.department?.name?.toLowerCase().trim() || "";
+        return departmentName.includes("web development") || departmentName === "it";
+      };
+
+      if (tasksRes.data?.data) {
+        const validTasks = tasksRes.data.data.filter((task) => {
+          const taskProject = task.taskItem?.task?.project || {};
+          const projectId = task.taskItem?.task?.projectId || taskProject.id;
+          const project = projectsById.get(projectId) || taskProject;
+          const departmentName = [
+            project?.department?.name,
+            taskProject?.departmentName,
+            task.taskItem?.task?.departmentName,
+          ].find(Boolean);
+
+          // This page is dedicated to Web Development. Some task responses omit
+          // department relations, so let the backend validate those projects.
+          return projectId && (isWebDevelopment(project) || !departmentName);
+        });
         setTasks(validTasks);
       }
     } catch (err) {
@@ -38,8 +63,15 @@ export default function EmployeeDailyReports() {
     }
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchMyTasks();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   const selectedTask = useMemo(() => {
-    return tasks.find(t => t.assignmentId === selectedTaskAssignmentId);
+    return tasks.find(t => String(t.assignmentId) === String(selectedTaskAssignmentId));
   }, [tasks, selectedTaskAssignmentId]);
 
   const fetchPastReports = async (projectId) => {
@@ -65,7 +97,7 @@ export default function EmployeeDailyReports() {
     const tId = e.target.value;
     setSelectedTaskAssignmentId(tId);
     
-    const task = tasks.find(t => t.assignmentId === tId);
+    const task = tasks.find(t => String(t.assignmentId) === String(tId));
     const projectId = task?.taskItem?.task?.projectId || task?.taskItem?.task?.project?.id;
     if (projectId) {
       fetchPastReports(projectId);
@@ -97,12 +129,20 @@ export default function EmployeeDailyReports() {
       setSubmitting(true);
       const res = await API.post("/api/project-reports", {
         projectId,
+        date: reportDate,
         content: finalContent,
+        lastWorking: reportDetails.lastWorking.trim() || null,
+        lastDiscussion: reportDetails.lastDiscussion.trim() || null,
+        nextStep: reportDetails.nextStep.trim() || null,
+        blockers: reportDetails.blockers.trim() || null,
+        taskProgress: reportDetails.taskProgress === "" ? null : Number(reportDetails.taskProgress),
       });
 
-      if (res.data?.success) {
+      if (res.status >= 200 && res.status < 300) {
         toast.success("Daily report submitted successfully!");
         setReportContent("");
+        setReportDate(new Date().toISOString().split("T")[0]);
+        setReportDetails({ lastWorking: "", lastDiscussion: "", nextStep: "", blockers: "", taskProgress: "" });
         fetchPastReports(projectId);
       }
     } catch (err) {
@@ -177,9 +217,78 @@ export default function EmployeeDailyReports() {
                 />
               </div>
 
+              <div className="mb-6 space-y-4">
+                {[
+                  ["lastWorking", "Last Working", "What was the last successfully completed part?", "e.g., User authentication module completed"],
+                  ["lastDiscussion", "Last Discussion", "Summary of recent meetings or discussions", "e.g., Client approved design on Aug 21. Waiting for animation approvals."],
+                  ["nextStep", "Next Step", "What's the next action item?", "e.g., Integrate payment gateway. Will start after API credentials received."],
+                ].map(([name, label, placeholder, helpText]) => (
+                  <div key={name}>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">{label}</label>
+                    <textarea
+                      maxLength={1000}
+                      rows="3"
+                      placeholder={placeholder}
+                      value={reportDetails[name]}
+                      onChange={(e) => setReportDetails((prev) => ({ ...prev, [name]: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none"
+                    />
+                    <p className="mt-1 text-xs text-slate-400">{helpText}</p>
+                  </div>
+                ))}
+
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+                    {reportDetails.blockers && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                    Blockers
+                  </label>
+                  <textarea
+                    maxLength={1000}
+                    rows="3"
+                    placeholder="Any obstacles or blocking issues?"
+                    value={reportDetails.blockers}
+                    onChange={(e) => setReportDetails((prev) => ({ ...prev, blockers: e.target.value }))}
+                    className={`w-full rounded-xl border bg-white px-4 py-3 text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all resize-none ${reportDetails.blockers ? "border-amber-300 focus:border-amber-400 focus:ring-amber-100" : "border-slate-200 focus:border-indigo-400 focus:ring-indigo-100"}`}
+                  />
+                  <p className="mt-1 text-xs text-slate-400">e.g., Staging environment not setup. Missing database access.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Task Progress</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={reportDetails.taskProgress === "" ? 0 : reportDetails.taskProgress}
+                      onChange={(e) => setReportDetails((prev) => ({ ...prev, taskProgress: e.target.value }))}
+                      className="h-2 flex-1 accent-indigo-600"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="%"
+                      value={reportDetails.taskProgress}
+                      onChange={(e) => setReportDetails((prev) => ({ ...prev, taskProgress: e.target.value }))}
+                      className="w-20 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                    />
+                    <span className="w-12 text-right text-sm font-bold text-indigo-600">{reportDetails.taskProgress === "" ? "—" : `${reportDetails.taskProgress}%`}</span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${reportDetails.taskProgress || 0}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Report Date <span className="text-rose-500">*</span></label>
+                  <input type="date" required value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                </div>
+              </div>
+
               <button
                 type="submit"
-                disabled={submitting || !selectedTaskAssignmentId || !reportContent.trim()}
+                disabled={submitting}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2"
               >
                 {submitting ? (

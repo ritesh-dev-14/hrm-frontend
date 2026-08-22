@@ -798,6 +798,15 @@ const WebDevManagerView = ({ projectId }) => {
                     <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
                       {report.content}
                     </p>
+                    {(report.lastWorking || report.lastDiscussion || report.nextStep || report.blockers || report.taskProgress != null) && (
+                      <div className="mt-4 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+                        {report.lastWorking && <div><strong>Last Working:</strong> {report.lastWorking}</div>}
+                        {report.lastDiscussion && <div><strong>Last Discussion:</strong> {report.lastDiscussion}</div>}
+                        {report.nextStep && <div><strong>Next Step:</strong> {report.nextStep}</div>}
+                        {report.blockers && <div className="text-amber-700"><strong>⚠ Blockers:</strong> {report.blockers}</div>}
+                        {report.taskProgress != null && <div className="font-bold text-indigo-600">Progress: {report.taskProgress}%</div>}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
