@@ -333,7 +333,7 @@ function SocialMediaTab({ data, search, selectedProject, setSelectedProject }) {
         />
         <StatCard
           icon={Film}
-          label="Reels Performance"
+          label="Reels Deviation"
           value={fmt(totals.reelsPosted)}
           subValue={`${Math.round((totals.reelsPosted / (totals.reelsPlanned || 1)) * 100)}% Fulfilled`}
           secondaryLabel="Planned"
@@ -343,7 +343,7 @@ function SocialMediaTab({ data, search, selectedProject, setSelectedProject }) {
         />
         <StatCard
           icon={ImageIcon}
-          label="Posts Performance"
+          label="Posts Deviation"
           value={fmt(totals.postsPosted)}
           subValue={`${Math.round((totals.postsPosted / (totals.postsPlanned || 1)) * 100)}% Fulfilled`}
           secondaryLabel="Planned"
@@ -800,7 +800,7 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <StatCard
           icon={TrendingUp}
-          label={selectedProject ? `SEO Portfolio (${selectedProject.projectName})` : "Tracked SEO Portfolios"}
+          label={selectedProject ? `SEO Projects (${selectedProject.projectName})` : "Tracked SEO Projects"}
           value={selectedProject ? (selectedProject.latestReport?.rankingNo ? `#${selectedProject.latestReport.rankingNo}` : "—") : projects.length}
           subValue={selectedProject ? `Client: ${selectedProject.clientName || "—"}` : `${topRankingsCount} in Top 10 Ranks`}
           secondaryLabel="Visibility"
@@ -810,7 +810,7 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
         />
         <StatCard
           icon={Search}
-          label="Keyword Dominance"
+          label="Keyword Used"
           value={selectedProject ? (selectedProject.latestReport?.keywords?.length || 0) : projects.reduce((acc, p) => acc + (p.latestReport?.keywords?.length || 0), 0)}
           subValue="Total Monitored Keywords"
           secondaryLabel="Status"
