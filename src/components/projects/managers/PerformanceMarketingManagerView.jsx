@@ -151,6 +151,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
       const payload = {
         ...form,
         projectId,
+        clientContactNumber: form.clientContactNumber?.trim() || null,
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
         todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
         leadObtained: form.leadObtained !== "" ? Number(form.leadObtained) : null,

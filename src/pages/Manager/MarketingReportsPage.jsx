@@ -156,6 +156,7 @@ export default function MarketingReportsPage() {
     try {
       const payload = {
         ...form,
+        clientContactNumber: form.clientContactNumber?.trim() || null,
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
         todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
         leadObtained: form.leadObtained !== "" ? Number(form.leadObtained) : null,
