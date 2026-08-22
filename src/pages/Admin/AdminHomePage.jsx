@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  BarChart3
 } from "lucide-react";
 import API from "../../services/api";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
@@ -222,6 +223,34 @@ const AdminPage = () => {
           </motion.div>
         </motion.div>
 
+        {/* SECTION 1.5: REPORTS NAVIGATION BANNER */}
+        <motion.div variants={itemVariants}>
+          <Link to="/reports/overview" className="block outline-none">
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-[1.5rem] p-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-center justify-between shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 group cursor-pointer">
+              
+              <div className="flex items-center gap-5 w-full sm:w-auto">
+                <div className="p-3.5 bg-slate-50 text-slate-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 shadow-sm border border-slate-100 group-hover:border-indigo-600">
+                  <BarChart3 size={24} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">
+                    Overall Analytics & Progress Reports
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">
+                    Click here to view overall progress, performance metrics, and comprehensive reporting.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-5 sm:mt-0 w-full sm:w-auto flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-600 bg-slate-50 border border-slate-200 px-6 py-3 rounded-xl group-hover:bg-indigo-50 group-hover:text-indigo-700 group-hover:border-indigo-200 transition-all">
+                View Reports <ChevronRight size={16} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+              
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* SECTION 2: CATALOG & CALENDAR */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Projects Catalog */}
           <motion.div
@@ -425,7 +454,7 @@ const AdminPage = () => {
           </motion.div>
         </div>
 
-        {/* Employee Roster */}
+        {/* SECTION 3: Employee Roster */}
         <motion.div
           variants={itemVariants}
           className="bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100/60"
