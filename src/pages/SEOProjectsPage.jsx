@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 
 import API from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import ProfessionalLoader from "../components/ProfessionalLoader";
+import CreateTaskButton from "../components/taskCreation/CreateTaskButton";
+import CreateTaskModal from "../components/taskCreation/CreateTaskModal";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -50,8 +53,10 @@ const SEOProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [openModal, setOpenModal] = useState(false);
 
   const navigate = useNavigate();
+  const { role } = useAuth();
 
   const loadData = async () => {
     try {
@@ -89,6 +94,10 @@ const SEOProjectsPage = () => {
     });
   };
 
+  const handleProjectCreated = (project) => {
+    setAllProjects((previous) => [project, ...previous]);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
       {/* Background glows */}
@@ -114,6 +123,8 @@ const SEOProjectsPage = () => {
               All projects assigned to the SEO Department
             </p>
           </div>
+
+          {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
 
           {/* Stats pill */}
           <motion.div
@@ -257,6 +268,12 @@ const SEOProjectsPage = () => {
           </motion.div>
         )}
       </div>
+      {role !== "MANAGER" && <CreateTaskModal
+          open={openModal}
+          onClose={() => setOpenModal(false)}
+          onTaskCreated={handleProjectCreated}
+          defaultDepartmentName="seo"
+        />}
     </div>
   );
 };

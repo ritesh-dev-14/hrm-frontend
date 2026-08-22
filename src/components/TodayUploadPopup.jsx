@@ -84,17 +84,21 @@ export default function TodayUploadPopup({ data, onClose }) {
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: "linear-gradient(135deg, #818cf8, #a78bfa)" }}
                 >
-                  <Upload size={18} className="text-white" />
+                    {data?.alertTitle ? <ArrowRight size={18} className="text-white" /> : <Upload size={18} className="text-white" />}
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-widest text-indigo-300 font-bold mb-0.5">
-                    Today&apos;s Upload Alert
+                    {data?.alertTitle || "Today's Upload Alert"}
                   </p>
                   <h3 className="text-base font-bold text-white leading-tight">
                     {data?.projectName || "New Upload Available"}
                   </h3>
                 </div>
               </div>
+
+              {data?.alertMessage && (
+                <p className="mb-4 text-sm text-indigo-200">{data.alertMessage}</p>
+              )}
 
               {/* Info rows */}
               <div className="space-y-2 mb-4">
@@ -153,13 +157,13 @@ export default function TodayUploadPopup({ data, onClose }) {
               {/* CTA */}
               <button
                 onClick={() => {
-                  navigate("/uploads");
+                  navigate(data?.targetPath || "/uploads");
                   onClose();
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
                 style={{ background: "linear-gradient(135deg, #818cf8, #a78bfa)" }}
               >
-                View Uploads
+                {data?.targetPath ? "View Project" : "View Uploads"}
                 <ArrowRight size={15} />
               </button>
             </div>

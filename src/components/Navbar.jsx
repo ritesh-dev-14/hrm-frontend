@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -24,6 +24,7 @@ import {
   TrendingUp,
   Megaphone,
   BarChart2,
+  Code2,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -47,6 +48,7 @@ const NAV_CONFIG = [
       { id: "marketing-projects", label: "Meta Ads", icon: Megaphone, path: "/marketing-projects" },
       { id: "social-media-projects", label: "Social Media", icon: Megaphone, path: "/social-media-projects" },
       { id: "seo-projects", label: "SEO", icon: Megaphone, path: "/seo-projects" },
+      { id: "web-development-projects", label: "Web Development", icon: Code2, path: "/web-development-projects" },
     ],
   },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"] },
@@ -73,6 +75,17 @@ const NAV_CONFIG = [
 const WIDE = 260;
 const COLLAPSED = 80;
 
+const getDepartmentBadgeKey = (data) => {
+  const department = String(
+    data?.departmentName || data?.department?.name || data?.department || data?.projectDepartment || "",
+  ).toLowerCase();
+  if (department.includes("social")) return "socialMedia";
+  if (department.includes("seo")) return "seo";
+  if (department.includes("web") || department.includes("development") || department === "it") return "webDevelopment";
+  if (department.includes("marketing") || department.includes("meta")) return "marketing";
+  return null;
+};
+
 export default function ProfessionalSidebar({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar") === "collapsed");
@@ -82,10 +95,17 @@ export default function ProfessionalSidebar({ children }) {
   const location = useLocation();
   const [assignedActionsCount, setAssignedActionsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState({ projects: 0, shoots: 0, creative: 0, editor: 0 });
+  const [departmentUnreadCounts, setDepartmentUnreadCounts] = useState({
+    marketing: 0,
+    socialMedia: 0,
+    seo: 0,
+    webDevelopment: 0,
+  });
   const [departmentName, setDepartmentName] = useState("");
   const [uploadPopupData, setUploadPopupData] = useState(null);
+  const knownProjectIds = useRef(null);
   const [projectsOpen, setProjectsOpen] = useState(() =>
-    ["/marketing-projects", "/social-media-projects", "/seo-projects", "/projects"].some(
+    ["/marketing-projects", "/social-media-projects", "/seo-projects", "/web-development-projects", "/projects"].some(
       (path) => window.location.pathname.startsWith(path),
     ),
   );
@@ -98,11 +118,32 @@ export default function ProfessionalSidebar({ children }) {
       socketInstance.emit("join-user", { userId: user.id });
     });
 
+    const recordDepartmentNotification = (data) => {
+      const department = String(
+        data?.departmentName || data?.department?.name || data?.department || data?.projectDepartment || "",
+      ).toLowerCase();
+      const badgeKey = getDepartmentBadgeKey(data);
+
+      if (badgeKey) {
+        setDepartmentUnreadCounts((prev) => ({ ...prev, [badgeKey]: prev[badgeKey] + 1 }));
+      }
+    };
+
     socketInstance.on("task-submitted-popup", (data) => {
+      recordDepartmentNotification(data);
+      setUnreadCounts((prev) => ({ ...prev, projects: (prev.projects || 0) + 1 }));
       toast.info(`New Task Submission on Project: ${data.projectName} by ${data.employeeName}`);
+      setUploadPopupData({
+        ...data,
+        alertTitle: "Task Submission",
+        alertMessage: `${data.employeeName || "An employee"} submitted a task`,
+        targetPath: data.projectId ? `/project/${data.projectId}` : "/projects",
+      });
     });
 
     socketInstance.on("task-rejected-popup", (data) => {
+      recordDepartmentNotification(data);
+      setUnreadCounts((prev) => ({ ...prev, projects: (prev.projects || 0) + 1 }));
       toast.error(
         <div>
           <strong>Task Rejected!</strong><br />
@@ -112,9 +153,17 @@ export default function ProfessionalSidebar({ children }) {
         </div>,
         { autoClose: false }
       );
+      setUploadPopupData({
+        ...data,
+        alertTitle: "Task Rejected",
+        alertMessage: data.reason || "A task was rejected",
+        targetPath: data.projectId ? `/project/${data.projectId}` : "/projects",
+      });
     });
 
     socketInstance.on("task-resubmitted-popup", (data) => {
+      recordDepartmentNotification(data);
+      setUnreadCounts((prev) => ({ ...prev, projects: (prev.projects || 0) + 1 }));
       toast.info(
         <div>
           <strong>Task Resubmitted!</strong><br />
@@ -124,9 +173,30 @@ export default function ProfessionalSidebar({ children }) {
         </div>,
         { autoClose: false }
       );
+      setUploadPopupData({
+        ...data,
+        alertTitle: "Task Resubmitted",
+        alertMessage: `${data.employeeName || "An employee"} resubmitted a task`,
+        targetPath: data.projectId ? `/project/${data.projectId}` : "/projects",
+      });
+    });
+
+    const handleTaskApproved = (data) => {
+      recordDepartmentNotification(data);
+      setUnreadCounts((prev) => ({ ...prev, projects: (prev.projects || 0) + 1 }));
+      setUploadPopupData({
+        ...data,
+        alertTitle: "Task Approved",
+        alertMessage: data.message || "A task was approved",
+        targetPath: data.projectId ? `/project/${data.projectId}` : "/projects",
+      });
+    };
+    ["task-approved-popup", "task-verified-popup", "task-submission-approved-popup"].forEach((eventName) => {
+      socketInstance.on(eventName, handleTaskApproved);
     });
 
     socketInstance.on("today-upload-popup", (data) => {
+      recordDepartmentNotification(data);
       setUploadPopupData(data);
       setUnreadCounts((prev) => ({ ...prev, projects: (prev.projects || 0) + 1 }));
       toast.info(
@@ -139,6 +209,9 @@ export default function ProfessionalSidebar({ children }) {
     });
 
     return () => {
+      ["task-approved-popup", "task-verified-popup", "task-submission-approved-popup"].forEach((eventName) => {
+        socketInstance.off(eventName, handleTaskApproved);
+      });
       socketInstance.emit("leave-user", { userId: user.id });
       socketInstance.disconnect();
     };
@@ -188,8 +261,33 @@ export default function ProfessionalSidebar({ children }) {
     if (!user?.id) return;
     const fetchUnreads = async () => {
       try {
-        const res = await API.get("/api/sidebar-unread");
+        const [res, projectsRes] = await Promise.all([
+          API.get("/api/sidebar-unread"),
+          API.get("/api/projects"),
+        ]);
         if (res.data?.success) setUnreadCounts(res.data.data);
+
+        const projects = projectsRes.data?.data || [];
+        const projectIds = new Set(projects.map((project) => project.id));
+        if (knownProjectIds.current) {
+          const newProjects = projects.filter((project) => !knownProjectIds.current.has(project.id));
+          newProjects.forEach((project) => {
+            const badgeKey = getDepartmentBadgeKey(project);
+            if (badgeKey) {
+              setDepartmentUnreadCounts((prev) => ({ ...prev, [badgeKey]: prev[badgeKey] + 1 }));
+              setUploadPopupData({
+                projectName: project.projectName,
+                projectId: project.id,
+                departmentName: project.department?.name,
+                clientName: project.clientName,
+                alertTitle: "New Project",
+                alertMessage: `${project.department?.name || "Department"} project added`,
+                targetPath: `/project/${project.id}`,
+              });
+            }
+          });
+        }
+        knownProjectIds.current = projectIds;
       } catch (err) { console.error("Failed to fetch sidebar unread counts:", err); }
     };
 
@@ -237,6 +335,16 @@ export default function ProfessionalSidebar({ children }) {
   const handleNavClick = (item) => {
     navigate(item.path);
     setMobileOpen(false);
+
+    const departmentBadgeKey = {
+      "marketing-projects": "marketing",
+      "social-media-projects": "socialMedia",
+      "seo-projects": "seo",
+      "web-development-projects": "webDevelopment",
+    }[item.id];
+    if (departmentBadgeKey) {
+      setDepartmentUnreadCounts((prev) => ({ ...prev, [departmentBadgeKey]: 0 }));
+    }
 
     let menuIdToReset = null;
     if ((item.id === "project" || item.id === "tasks-emp") && unreadCounts.projects > 0) {
@@ -366,6 +474,14 @@ export default function ProfessionalSidebar({ children }) {
                       <div className="ml-[22px] mt-1 mb-1 space-y-0.5 border-l border-slate-700/50 pl-2">
                         {item.children.map((child) => {
                           const childActive = activeId === child.id;
+                          const childBadgeCount = departmentUnreadCounts[
+                            {
+                              "marketing-projects": "marketing",
+                              "social-media-projects": "socialMedia",
+                              "seo-projects": "seo",
+                              "web-development-projects": "webDevelopment",
+                            }[child.id]
+                          ] || 0;
                           return (
                             <button
                               key={child.id}
@@ -378,6 +494,11 @@ export default function ProfessionalSidebar({ children }) {
                             >
                               <child.icon size={14} strokeWidth={childActive ? 2.5 : 2} className={childActive ? "text-indigo-400" : "text-slate-500"} />
                               {child.label}
+                              {childBadgeCount > 0 && (
+                                <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                                  {childBadgeCount > 99 ? "99+" : childBadgeCount}
+                                </span>
+                              )}
                             </button>
                           );
                         })}

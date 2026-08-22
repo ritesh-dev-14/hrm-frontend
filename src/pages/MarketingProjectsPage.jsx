@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import ProfessionalLoader from "../components/ProfessionalLoader";
 import API from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import CreateTaskButton from "../components/taskCreation/CreateTaskButton";
+import CreateTaskModal from "../components/taskCreation/CreateTaskModal";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -53,8 +56,10 @@ const MarketingProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [openModal, setOpenModal] = useState(false);
 
   const navigate = useNavigate();
+  const { role } = useAuth();
 
   const loadData = async () => {
     try {
@@ -92,6 +97,10 @@ const MarketingProjectsPage = () => {
     });
   };
 
+  const handleProjectCreated = (project) => {
+    setAllProjects((previous) => [project, ...previous]);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
       {/* Background glows */}
@@ -117,6 +126,8 @@ const MarketingProjectsPage = () => {
               All projects assigned to the Marketing Department
             </p>
           </div>
+
+          {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
 
           {/* Stats pill */}
           <motion.div
@@ -260,6 +271,12 @@ const MarketingProjectsPage = () => {
           </motion.div>
         )}
       </div>
+      {role !== "MANAGER" && <CreateTaskModal
+          open={openModal}
+          onClose={() => setOpenModal(false)}
+          onTaskCreated={handleProjectCreated}
+          defaultDepartmentName="marketing"
+        />}
     </div>
   );
 };

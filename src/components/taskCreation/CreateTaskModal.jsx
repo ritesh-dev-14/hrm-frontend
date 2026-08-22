@@ -402,7 +402,7 @@ const INITIAL_STATE = {
   assignTo: [], 
 };
 
-const CreateTaskModal = ({ open, onClose, onTaskCreated }) => {
+const CreateTaskModal = ({ open, onClose, onTaskCreated, defaultDepartmentName = "" }) => {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [departments, setDepartments] = useState([]);
   const [managers, setManagers] = useState([]);
@@ -434,7 +434,16 @@ const CreateTaskModal = ({ open, onClose, onTaskCreated }) => {
             API.get("/api/departments"),
             API.get("/api/hr/managers"),
           ]);
-          setDepartments(deptRes?.data?.data || deptRes?.data || []);
+          const loadedDepartments = deptRes?.data?.data || deptRes?.data || [];
+          setDepartments(loadedDepartments);
+          if (defaultDepartmentName) {
+            const department = loadedDepartments.find((item) =>
+              item.name?.toLowerCase().includes(defaultDepartmentName.toLowerCase()),
+            );
+            if (department) {
+              setFormData((prev) => ({ ...prev, departmentId: department.id }));
+            }
+          }
           setManagers(managerRes?.data?.data || managerRes?.data || []);
         } catch (err) {
           setError("Failed to load departments or managers.");
@@ -443,7 +452,7 @@ const CreateTaskModal = ({ open, onClose, onTaskCreated }) => {
 
       fetchModalData();
     }
-  }, [open]);
+  }, [open, defaultDepartmentName]);
 
   // Determine if conditional fields should show
   const selectedDeptObj = departments.find(

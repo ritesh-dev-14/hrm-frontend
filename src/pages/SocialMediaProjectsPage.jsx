@@ -13,8 +13,11 @@ import {
 } from "lucide-react";
 
 import API from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import ReasonModal from "../components/projects/ReasonModal";
 import ProfessionalLoader from "../components/ProfessionalLoader";
+import CreateTaskButton from "../components/taskCreation/CreateTaskButton";
+import CreateTaskModal from "../components/taskCreation/CreateTaskModal";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -56,12 +59,14 @@ const SocialMediaProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [openModal, setOpenModal] = useState(false);
   
   // Reason Modal state
   const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
   const [selectedProjectForReason, setSelectedProjectForReason] = useState(null);
 
   const navigate = useNavigate();
+  const { role } = useAuth();
 
   const loadData = async () => {
     try {
@@ -97,6 +102,10 @@ const SocialMediaProjectsPage = () => {
       month: "short",
       year: "numeric",
     });
+  };
+
+  const handleProjectCreated = (project) => {
+    setAllProjects((previous) => [project, ...previous]);
   };
 
   const handleOpenReasonModal = (e, project) => {
@@ -136,6 +145,8 @@ const SocialMediaProjectsPage = () => {
               All projects assigned to the Social Media Department
             </p>
           </div>
+
+          {role !== "MANAGER" && <CreateTaskButton title="Add Project" onClick={() => setOpenModal(true)} />}
 
           {/* Stats pill */}
           <motion.div
@@ -298,6 +309,12 @@ const SocialMediaProjectsPage = () => {
         project={selectedProjectForReason}
         onProjectUpdate={handleProjectUpdate}
       />
+      {role !== "MANAGER" && <CreateTaskModal
+          open={openModal}
+          onClose={() => setOpenModal(false)}
+          onTaskCreated={handleProjectCreated}
+          defaultDepartmentName="social media"
+        />}
     </div>
   );
 };

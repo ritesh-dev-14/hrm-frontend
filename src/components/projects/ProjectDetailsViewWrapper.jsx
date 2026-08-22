@@ -68,6 +68,11 @@ const ProjectDetailsWrapper = () => {
       return <PerformanceMarketingManagerView projectId={id} />;
     }
 
+    // Web Development projects use the dedicated web development workspace for every role.
+    if (WEB_DEV_DEPT_KEYS.some((key) => normalised.includes(key))) {
+      return <WebDevManagerView projectId={id} />;
+    }
+
     // HR / ADMIN / EA → HRManagerView for all non-marketing projects
     if (
       user?.role === "HR" ||
@@ -88,11 +93,6 @@ const ProjectDetailsWrapper = () => {
             onBack={() => window.history.back()}
           />
         );
-      }
-
-      // Web Development department
-      if (WEB_DEV_DEPT_KEYS.some((key) => normalised.includes(key.split(" ")[0]))) {
-        return <WebDevManagerView projectId={id} />;
       }
 
       // Default: Social Media / all other departments
