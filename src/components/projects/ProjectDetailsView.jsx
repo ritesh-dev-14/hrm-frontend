@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Calendar,
   Building2,
@@ -27,6 +27,7 @@ import {
 import API from "../../services/api";
 import SeoReportModal from "./SeoReportModal";
 import ProfessionalLoader from "../ProfessionalLoader";
+import { notifyError, notifySuccess } from "../../utils/toast";
 
 const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
   const [project, setProject] = useState(null);
@@ -62,6 +63,20 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
   const [seoReportsLoading, setSeoReportsLoading] = useState(false);
   const [showSeoPassword, setShowSeoPassword] = useState(false);
 
+  // SEO Task states
+  const [seoTasks, setSeoTasks] = useState([]);
+  const [seoTasksLoading, setSeoTasksLoading] = useState(false);
+  const [seoTaskSubmitting, setSeoTaskSubmitting] = useState(false);
+  const [seoTaskError, setSeoTaskError] = useState("");
+  const [seoTaskForm, setSeoTaskForm] = useState({
+    taskName: "",
+    workingOnTask: "",
+    keyword: "",
+    screenshot: null,
+  });
+  const [seoTaskPreview, setSeoTaskPreview] = useState("");
+  const seoTaskFileRef = useRef(null);
+
   // Strict structural role verification
   const isManager = userRole?.toUpperCase() === "MANAGER";
 
@@ -73,6 +88,7 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
   useEffect(() => {
     if (project?.department?.name?.toLowerCase().includes("seo") && projectId) {
       fetchSeoReports(projectId);
+      fetchSeoTasks(projectId);
     }
   }, [project?.department?.name, projectId]);
 
@@ -217,6 +233,88 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
       console.error("Failed to fetch SEO reports:", err);
     } finally {
       setSeoReportsLoading(false);
+    }
+  };
+
+  const fetchSeoTasks = async (pid) => {
+    try {
+      setSeoTasksLoading(true);
+      const res = await API.get(`/api/seo-tasks?projectId=${pid}`);
+      if (res.data?.success) {
+        const tasks = res.data.data || [];
+        setSeoTasks(
+          [...tasks].sort(
+            (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+          ),
+        );
+      }
+    } catch (err) {
+      setSeoTaskError(
+        err?.response?.data?.message || "Failed to load SEO tasks.",
+      );
+    } finally {
+      setSeoTasksLoading(false);
+    }
+  };
+
+  const handleSeoTaskInputChange = (e) => {
+    const { name, value } = e.target;
+    setSeoTaskForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSeoTaskScreenshotChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setSeoTaskError("Please select an image file for the screenshot.");
+      return;
+    }
+    setSeoTaskForm((current) => ({ ...current, screenshot: file }));
+    setSeoTaskPreview(URL.createObjectURL(file));
+    setSeoTaskError("");
+  };
+
+  const resetSeoTaskForm = () => {
+    setSeoTaskForm({
+      taskName: "",
+      workingOnTask: "",
+      keyword: "",
+      screenshot: null,
+    });
+    setSeoTaskPreview("");
+    if (seoTaskFileRef.current) seoTaskFileRef.current.value = "";
+  };
+
+  const handleSeoTaskSubmit = async (e) => {
+    e.preventDefault();
+    const { taskName, workingOnTask, keyword, screenshot } = seoTaskForm;
+    if (!taskName.trim() || !workingOnTask.trim() || !keyword.trim() || !screenshot) {
+      setSeoTaskError("Please complete all SEO task fields and upload a screenshot.");
+      return;
+    }
+
+    try {
+      setSeoTaskSubmitting(true);
+      setSeoTaskError("");
+      const formData = new FormData();
+      formData.append("projectId", projectId);
+      formData.append("taskName", taskName.trim());
+      formData.append("workingOnTask", workingOnTask.trim());
+      formData.append("keyword", keyword.trim());
+      formData.append("screenshot", screenshot);
+
+      await API.post("/api/seo-tasks", formData);
+      notifySuccess("SEO task created successfully.");
+      resetSeoTaskForm();
+      await fetchSeoTasks(projectId);
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        "Failed to create SEO task. Please try again.";
+      setSeoTaskError(message);
+      notifyError(message);
+    } finally {
+      setSeoTaskSubmitting(false);
     }
   };
 
@@ -796,6 +894,125 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
                                 </p>
                               )}
                             </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SEO TASKS SECTION */}
+              {isSeoDept && (
+                <div className="space-y-5 pt-6 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <Hash size={14} /> SEO Tasks
+                      <span className="ml-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold">
+                        {seoTasks.length}
+                      </span>
+                    </h3>
+                  </div>
+
+                  {isManager && (
+                    <form
+                      onSubmit={handleSeoTaskSubmit}
+                      className="p-5 rounded-2xl border border-indigo-100 bg-indigo-50/40 space-y-4"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label className="text-xs font-semibold text-slate-500">
+                          Task Name
+                          <input
+                            name="taskName"
+                            value={seoTaskForm.taskName}
+                            onChange={handleSeoTaskInputChange}
+                            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            placeholder="Technical SEO Audit"
+                          />
+                        </label>
+                        <label className="text-xs font-semibold text-slate-500">
+                          Keyword
+                          <input
+                            name="keyword"
+                            value={seoTaskForm.keyword}
+                            onChange={handleSeoTaskInputChange}
+                            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            placeholder="digital marketing agency"
+                          />
+                        </label>
+                      </div>
+                      <label className="block text-xs font-semibold text-slate-500">
+                        Working On Which Task
+                        <textarea
+                          name="workingOnTask"
+                          value={seoTaskForm.workingOnTask}
+                          onChange={handleSeoTaskInputChange}
+                          rows={3}
+                          className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          placeholder="Fixing broken meta descriptions"
+                        />
+                      </label>
+                      <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                        <label className="flex-1 text-xs font-semibold text-slate-500">
+                          Screenshot
+                          <input
+                            ref={seoTaskFileRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSeoTaskScreenshotChange}
+                            className="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-indigo-700"
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          disabled={seoTaskSubmitting}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {seoTaskSubmitting && <Loader2 size={16} className="animate-spin" />}
+                          {seoTaskSubmitting ? "Uploading..." : "Create Task"}
+                        </button>
+                      </div>
+                      {seoTaskPreview && (
+                        <a href={seoTaskPreview} target="_blank" rel="noreferrer" className="block w-fit">
+                          <img src={seoTaskPreview} alt="SEO task screenshot preview" className="h-24 w-36 rounded-xl border border-slate-200 object-cover" />
+                        </a>
+                      )}
+                      {seoTaskError && (
+                        <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+                          <AlertCircle size={14} /> {seoTaskError}
+                        </div>
+                      )}
+                    </form>
+                  )}
+
+                  {seoTasksLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 size={20} className="animate-spin text-indigo-500" />
+                    </div>
+                  ) : seoTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-10">
+                      <Hash size={22} className="text-slate-300" />
+                      <p className="text-sm font-medium text-slate-500">No SEO tasks yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {seoTasks.map((task) => (
+                        <div key={task.id} className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                          {task.screenshotUrl ? (
+                            <a href={task.screenshotUrl} target="_blank" rel="noreferrer" className="group relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                              <img src={task.screenshotUrl} alt={`${task.taskName} screenshot`} className="h-full w-full object-cover transition group-hover:scale-105" />
+                              <ExternalLink size={13} className="absolute bottom-1 right-1 text-white drop-shadow" />
+                            </a>
+                          ) : (
+                            <div className="flex h-20 w-28 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300"><Image size={20} /></div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <h4 className="font-semibold text-slate-900">{task.taskName}</h4>
+                              <span className="text-xs text-slate-400">{formatDate(task.createdAt)}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600">{task.workingOnTask}</p>
+                            <p className="mt-2 inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700"><Hash size={11} />{task.keyword}</p>
                           </div>
                         </div>
                       ))}

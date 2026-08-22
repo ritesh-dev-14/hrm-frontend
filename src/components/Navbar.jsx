@@ -757,6 +757,7 @@ import {
   BriefcaseBusiness,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   BellRing,
   Zap,
   Camera,
@@ -780,7 +781,18 @@ const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR"] },
   { id: "reports-emp", label: "Reports", icon: FileText, path: "/reports/employee", roles: ["EMPLOYEE"] },
-  { id: "project", label: "Projects", icon: BriefcaseBusiness, path: "/projects", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
+  {
+    id: "project",
+    label: "Projects",
+    icon: BriefcaseBusiness,
+    path: "/projects",
+    roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"],
+    children: [
+      { id: "marketing-projects", label: "Meta Ads", icon: Megaphone, path: "/marketing-projects" },
+      { id: "social-media-projects", label: "Social Media", icon: Megaphone, path: "/social-media-projects" },
+      { id: "seo-projects", label: "SEO", icon: Megaphone, path: "/seo-projects" },
+    ],
+  },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"] },
   { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
@@ -796,9 +808,6 @@ const NAV_CONFIG = [
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing", icon: TrendingUp, path: "/marketing", roles: ["MANAGER"], departments: ["marketing", "marketing department", "performance marketing"] },
-  { id: "marketing-projects", label: "Meta Ads", icon: Megaphone, path: "/marketing-projects", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
-  { id: "social-media-projects", label: "Social Media", icon: Megaphone, path: "/social-media-projects", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
-  { id: "seo-projects", label: "SEO", icon: Megaphone, path: "/seo-projects", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["ADMIN", "HR"] },
   { id: "complete-details", label: "Complete Details", icon: Layers, path: "/admin/complete-details", roles: ["ADMIN"] },
@@ -819,6 +828,11 @@ export default function ProfessionalSidebar({ children }) {
   const [unreadCounts, setUnreadCounts] = useState({ projects: 0, shoots: 0, creative: 0, editor: 0 });
   const [departmentName, setDepartmentName] = useState("");
   const [uploadPopupData, setUploadPopupData] = useState(null);
+  const [projectsOpen, setProjectsOpen] = useState(() =>
+    ["/marketing-projects", "/social-media-projects", "/seo-projects"].some(
+      (path) => window.location.pathname.startsWith(path),
+    ),
+  );
 
   useEffect(() => {
     if (!user?.id) return;
@@ -936,6 +950,10 @@ export default function ProfessionalSidebar({ children }) {
     document.body.style.overflow = mobileOpen ? "hidden" : "auto";
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (location.pathname !== "/projects") setProjectsOpen(true);
+  }, [location.pathname]);
+
   const allowedNav = useMemo(() => {
     return NAV_CONFIG.filter((item) => {
       if (!item.roles.includes(role?.toUpperCase())) return false;
@@ -953,6 +971,14 @@ export default function ProfessionalSidebar({ children }) {
       if (item.path === "/dashboard") return location.pathname === "/dashboard";
       return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
     });
+    if (matched) return matched.id;
+
+    const projectItem = allowedNav.find((item) => item.id === "project");
+    const activeProject = projectItem?.children?.find(
+      (child) => location.pathname === child.path || location.pathname.startsWith(`${child.path}/`),
+    );
+    if (activeProject) return activeProject.id;
+
     return matched?.id || null;
   }, [location.pathname, allowedNav]);
 
@@ -1009,7 +1035,9 @@ export default function ProfessionalSidebar({ children }) {
         {/* NAV LINKS */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar relative z-10">
           {allowedNav.map((item) => {
-            const active = activeId === item.id;
+            const hasChildren = item.id === "project" && item.children?.length > 0;
+            const activeChild = hasChildren && item.children.some((child) => activeId === child.id);
+            const active = activeId === item.id || activeChild;
             
             // Calculate Badges
             let badgeCount = 0;
@@ -1020,54 +1048,82 @@ export default function ProfessionalSidebar({ children }) {
             const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 
             return (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 relative group outline-none ${
+              <div key={item.id}>
+                <button
+                  onClick={() => {
+                    if (hasChildren && !isCollapsed) {
+                      setProjectsOpen((open) => !open);
+                    } else {
+                      handleNavClick(item);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 relative group outline-none ${
                   active ? "text-indigo-50" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-                }`}
-              >
-                {active && (
-                  <motion.div
-                    layoutId={`${layoutPrefix}-active-bg`}
-                    className="absolute inset-0 bg-indigo-600/15 border border-indigo-500/20 rounded-xl"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
+                  }`}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId={`${layoutPrefix}-active-bg`}
+                      className="absolute inset-0 bg-indigo-600/15 border border-indigo-500/20 rounded-xl"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
 
-                <div className="flex items-center gap-3.5 relative z-10">
-                  <div className="relative shrink-0 flex items-center justify-center">
-                    <item.icon size={18} strokeWidth={active ? 2.5 : 2} className={`transition-colors ${active ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-400"}`} />
+                  <div className="flex items-center gap-3.5 relative z-10">
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <item.icon size={18} strokeWidth={active ? 2.5 : 2} className={`transition-colors ${active ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-400"}`} />
                     
                     {/* Collapsed mode indicator dot */}
                     {isCollapsed && (badgeCount > 0 || isUploadBadge) && (
                       <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-[#0B0F19] block ${isUploadBadge ? 'bg-purple-500' : 'bg-red-500'}`} />
                     )}
+                    </div>
+
+                    {(!isCollapsed) && (
+                      <span className={`text-[13px] whitespace-nowrap transition-all ${active ? "font-semibold" : "font-medium"}`}>
+                        {item.label}
+                      </span>
+                    )}
                   </div>
 
-                  {(!isCollapsed) && (
-                    <span className={`text-[13px] whitespace-nowrap transition-all ${active ? "font-semibold" : "font-medium"}`}>
-                      {item.label}
-                    </span>
-                  )}
-                </div>
-
                 {/* Expanded mode badges */}
-                {(!isCollapsed) && (
-                  <div className="relative z-10 flex items-center">
-                    {badgeCount > 0 && (
+                  {(!isCollapsed) && (
+                    <div className="relative z-10 flex items-center gap-2">
+                      {badgeCount > 0 && (
                       <span className="min-w-[22px] h-[22px] px-1.5 rounded-md bg-red-500 text-white text-[10px] flex items-center justify-center font-bold shadow-sm">
                         {badgeCount}
                       </span>
                     )}
-                    {isUploadBadge && (
+                      {isUploadBadge && (
                       <span className="min-w-[22px] h-[22px] px-1.5 rounded-md bg-purple-500 text-white text-[10px] flex items-center justify-center font-bold shadow-sm">
                         NEW
                       </span>
-                    )}
+                      )}
+                      {hasChildren && (
+                        <ChevronDown size={15} className={`transition-transform ${projectsOpen ? "rotate-180" : ""}`} />
+                      )}
+                    </div>
+                  )}
+                </button>
+
+                {hasChildren && !isCollapsed && projectsOpen && (
+                  <div className="ml-5 mt-1 space-y-1 border-l border-slate-700/70 pl-3">
+                    {item.children.map((child) => {
+                      const childActive = activeId === child.id;
+                      return (
+                        <button
+                          key={child.id}
+                          onClick={() => handleNavClick(child)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors ${childActive ? "bg-indigo-600/15 text-indigo-200 font-semibold" : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-200"}`}
+                        >
+                          <child.icon size={14} className={childActive ? "text-indigo-400" : "text-slate-600"} />
+                          {child.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
