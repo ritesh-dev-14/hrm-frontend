@@ -981,7 +981,7 @@ export default function ProfessionalSidebar({ children }) {
     }
   };
 
-  // Render function returning JSX to prevent unmounting/remounting
+ // Render function returning JSX to prevent unmounting/remounting
   const renderSidebarContent = (isMobile = false) => {
     const isCollapsed = !isMobile && collapsed;
     const layoutPrefix = isMobile ? "mobile" : "desktop";
@@ -1084,16 +1084,6 @@ export default function ProfessionalSidebar({ children }) {
             )}
           </button>
         </div>
-
-        {/* TOGGLE BUTTON */}
-        {!isMobile && (
-          <button
-            onClick={() => setCollapsed((p) => !p)}
-            className="absolute top-8 -right-3.5 w-7 h-7 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg flex items-center justify-center border-[3px] border-[#0B0F19] z-50 transition-transform active:scale-95"
-          >
-            {collapsed ? <ChevronRight size={14} strokeWidth={3} /> : <ChevronLeft size={14} strokeWidth={3} />}
-          </button>
-        )}
       </div>
     );
   };
@@ -1106,9 +1096,17 @@ export default function ProfessionalSidebar({ children }) {
           initial={false}
           animate={{ width: collapsed ? COLLAPSED : WIDE }}
           transition={{ type: "spring", stiffness: 350, damping: 35 }}
-          className="h-full"
+          className="h-full relative" // Added 'relative' to anchor the toggle button safely outside
         >
           {renderSidebarContent(false)}
+          
+          {/* TOGGLE BUTTON - Moved OUTSIDE of the overflow-hidden container */}
+          <button
+            onClick={() => setCollapsed((p) => !p)}
+            className="absolute top-10 -right-4 w-8 h-8 bg-white hover:bg-slate-100 text-slate-800 rounded-full shadow-md flex items-center justify-center border border-slate-200 z-[100] transition-transform hover:scale-105 active:scale-95 outline-none"
+          >
+            {collapsed ? <ChevronRight size={16} strokeWidth={2.5} /> : <ChevronLeft size={16} strokeWidth={2.5} />}
+          </button>
         </motion.div>
       </aside>
 
