@@ -219,6 +219,7 @@ function StatCard({ icon: Icon, label, value, subValue, secondaryLabel, secondar
     </motion.div>
   );
 }
+
 function EmptyState({ label }) {
   return (
     <motion.div
@@ -279,14 +280,12 @@ function SocialMediaTab({ data, search, selectedProject, setSelectedProject }) {
   };
 
   const handleRowClick = async (p) => {
-    // Toggle selection for stats card view
     if (selectedProject?.projectId === p.projectId) {
       setSelectedProject(null);
     } else {
       setSelectedProject(p);
     }
 
-    // Also handle expand accordion drawer logic
     if (expanded === p.projectId) {
       setExpanded(null);
       return;
@@ -629,6 +628,8 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
                 const pCpl = pLeads > 0 ? pSpend / pLeads : 0;
                 const reportCount = p.reportCount || (p.reports || []).length || 0;
                 const isSelected = selectedProject?.projectId === p.projectId;
+                
+                const isAnyAdRunning = (p.reports || []).some((r) => r.isAdRunning === true);
 
                 return [
                   <motion.tr
@@ -656,9 +657,21 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {isAnyAdRunning && (
+                              <span className="relative flex h-2 w-2 shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                            )}
+                            
+                            <p className={`font-bold transition-colors ${
+                              isAnyAdRunning 
+                                ? "text-emerald-600 group-hover:text-emerald-700" 
+                                : "text-slate-900 group-hover:text-blue-600"
+                            }`}>
                               {p.projectName || "—"}
                             </p>
+
                             {isSelected && (
                               <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
                                 Selected
@@ -712,13 +725,13 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
                                     "Type",
                                     "Area",
                                   ].map((h) => (
-                                    <th
-                                      key={h}
-                                      className="px-4 py-2.5 font-bold text-slate-600 uppercase tracking-wider text-xs"
-                                    >
-                                      {h}
-                                    </th>
-                                  ))}
+                                  <th
+                                    key={h}
+                                    className="px-4 py-2.5 font-bold text-slate-600 uppercase tracking-wider text-xs"
+                                  >
+                                    {h}
+                                  </th>
+                                ))}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -777,9 +790,9 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
   );
 }
 
-
 function SeoTab({ data, search, selectedProject, setSelectedProject }) {
   const [expanded, setExpanded] = useState(null);
+  
   const projects = (data?.seo || []).filter(
     (p) =>
       !search ||
@@ -787,280 +800,453 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
       p.clientName?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const topRankingsCount = selectedProject 
+  const topRankingsCount = selectedProject
     ? (selectedProject.latestReport?.rankingNo && selectedProject.latestReport.rankingNo <= 10 ? 1 : 0)
     : projects.filter(p => p.latestReport?.rankingNo && p.latestReport.rankingNo <= 10).length;
 
+  const getRankBadge = (rank) => {
+    if (!rank) return <span className="text-slate-400 font-medium">—</span>;
+    if (rank <= 3) return <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded text-xs font-bold shadow-sm">#{rank}</span>;
+    if (rank <= 10) return <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded text-xs font-bold">#{rank}</span>;
+    return <span className="bg-slate-50 text-slate-700 border border-slate-200 px-2.5 py-1 rounded text-xs font-semibold">#{rank}</span>;
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      
+      {/* Top Stats - Kept clean and minimal */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <StatCard
           icon={TrendingUp}
-          label={selectedProject ? `SEO Projects (${selectedProject.projectName})` : "Tracked SEO Projects"}
+          label={selectedProject ? `SEO Project: ${selectedProject.projectName}` : "Tracked SEO Projects"}
           value={selectedProject ? (selectedProject.latestReport?.rankingNo ? `#${selectedProject.latestReport.rankingNo}` : "—") : projects.length}
-          subValue={selectedProject ? `Client: ${selectedProject.clientName || "—"}` : `${topRankingsCount} in Top 10 Ranks`}
-          secondaryLabel="Visibility"
-          secondaryValue="Active"
-          colorClass="text-emerald-600"
-          bgClass="bg-emerald-50"
+          subValue={selectedProject ? `Client: ${selectedProject.clientName || "—"}` : `${topRankingsCount} projects in Top 10`}
+          secondaryLabel="Status"
+          secondaryValue="Active Monitoring"
+          colorClass="text-slate-700"
+          bgClass="bg-slate-100"
         />
         <StatCard
           icon={Search}
-          label="Keyword Used"
+          label="Keyword Density"
           value={selectedProject ? (selectedProject.latestReport?.keywords?.length || 0) : projects.reduce((acc, p) => acc + (p.latestReport?.keywords?.length || 0), 0)}
-          subValue="Total Monitored Keywords"
-          secondaryLabel="Status"
-          secondaryValue="Updated"
-          colorClass="text-teal-600"
-          bgClass="bg-teal-50"
+          subValue="Total Tracked Keywords"
+          secondaryLabel="Update Cycle"
+          secondaryValue="Real-time"
+          colorClass="text-slate-700"
+          bgClass="bg-slate-100"
         />
       </div>
 
       {projects.length === 0 ? (
-        <EmptyState label="No SEO reports found" />
+        <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg border-dashed">
+          <Search size={28} className="text-slate-300 mb-3" />
+          <p className="text-sm font-medium text-slate-600">No SEO data available.</p>
+        </div>
       ) : (
-        projects.map((p, i) => {
-          const lr = p.latestReport;
-          const rankColor = !lr?.rankingNo
-            ? "text-slate-400"
-            : lr.rankingNo <= 3
-              ? "text-blue-600"
-              : lr.rankingNo <= 10
-                ? "text-emerald-600"
-                : "text-slate-700";
-          const isSelected = selectedProject?.projectId === p.projectId;
+        <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+          {/* Table Header Equivalent */}
+          <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <div className="col-span-4">Project & Client</div>
+            <div className="col-span-3 text-center">Current Rank</div>
+            <div className="col-span-3 text-center">Last Audit</div>
+            <div className="col-span-2 text-right pr-4">Action</div>
+          </div>
 
-          return (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              key={p.projectId}
-              className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${isSelected ? "border-emerald-400 ring-2 ring-emerald-100" : expanded === p.projectId ? "border-emerald-300 shadow-[0_8px_30px_rgb(16,185,129,0.08)]" : "border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200"}`}
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors">
-                <button
-                  className="flex items-center gap-4 text-left flex-1"
-                  onClick={() => {
-                    if (selectedProject?.projectId === p.projectId) {
-                      setSelectedProject(null);
-                    } else {
-                      setSelectedProject(p);
-                    }
-                  }}
+          <div className="divide-y divide-slate-200">
+            {projects.map((p, i) => {
+              const lr = p.latestReport;
+              const isSelected = selectedProject?.projectId === p.projectId;
+              const isExpanded = expanded === p.projectId;
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  key={p.projectId}
+                  className={`group transition-colors ${isSelected ? "bg-indigo-50/30" : "hover:bg-slate-50/50"}`}
                 >
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 shadow-sm">
-                    <TrendingUp size={20} className="text-emerald-600" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-slate-900 text-[15px]">
-                        {p.projectName}
-                      </p>
-                      {isSelected && (
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                          Selected
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">
-                      {p.clientName || "—"}
-                    </p>
-                  </div>
-                </button>
-
-                <div className="flex items-center gap-6 mt-4 md:mt-0">
-                  <div className="text-right">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
-                      Ranking
-                    </p>
-                    <p className={`font-bold text-xl ${rankColor}`}>
-                      {lr?.rankingNo ? `#${lr.rankingNo}` : "—"}
-                    </p>
-                  </div>
-                  <div className="hidden sm:block text-right">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
-                      Last Checked
-                    </p>
-                    <p className="font-semibold text-slate-900">
-                      {fmtDate(lr?.checkDate)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setExpanded(expanded === p.projectId ? null : p.projectId)
-                    }
-                    className={`p-2 rounded-lg border transition-colors ${expanded === p.projectId ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400"}`}
+                  {/* Row Content */}
+                  <div 
+                    onClick={() => setSelectedProject(isSelected ? null : p)}
+                    className="cursor-pointer p-4 md:px-4 md:py-3 grid grid-cols-1 md:grid-cols-12 gap-4 items-center"
                   >
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform duration-200 ${expanded === p.projectId ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {expanded === p.projectId && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <div className="border-t border-slate-100 bg-slate-50/50 p-5 space-y-5">
-                      {lr && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <div className="bg-white p-5 rounded-xl border border-slate-200/70 shadow-sm">
-                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <Search size={14} className="text-emerald-500" /> Top Keywords
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {(lr.keywords || []).map((kw, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-3 py-1 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/60 shadow-sm"
-                                >
-                                  {kw}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="bg-white p-5 rounded-xl border border-slate-200/70 shadow-sm">
-                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <TrendingUp size={14} className="text-blue-500" /> Remarks
-                            </p>
-                            <p className="text-[13px] text-slate-600 leading-relaxed font-medium">
-                              {lr.remarks || "No remarks logged."}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                    {/* Project Info */}
+                    <div className="col-span-12 md:col-span-4 flex items-center gap-3">
+                      <div className={`p-2 rounded border ${isExpanded ? "bg-slate-900 border-slate-900 text-white" : "bg-white border-slate-200 text-slate-500"}`}>
+                        <TrendingUp size={16} strokeWidth={2} />
+                      </div>
                       <div>
-                        <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-3 ml-1">
-                          Historical Data Logs
-                        </p>
-                        <div className="overflow-x-auto bg-white rounded-xl border border-slate-200/70 shadow-sm">
-                          <table className="w-full text-sm text-left">
-                            <thead>
-                              <tr className="bg-slate-50/80 border-b border-slate-200/80">
-                                {[
-                                  "Date",
-                                  "Rank",
-                                  "Keywords",
-                                  "Manager",
-                                  "Screenshots",
-                                ].map((h) => (
-                                  <th
-                                    key={h}
-                                    className="px-5 py-3 font-bold text-slate-600 uppercase tracking-wider text-xs"
-                                  >
-                                    {h}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {(p.reports || []).map((r) => (
-                                <tr
-                                  key={r.id}
-                                  className="text-slate-600 hover:bg-slate-50/80 transition-colors"
-                                >
-                                  <td className="px-5 py-3.5 font-semibold text-slate-900">
-                                    {fmtDate(r.checkDate)}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-bold text-slate-800">
-                                    {r.rankingNo ? `#${r.rankingNo}` : "—"}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-medium truncate max-w-[250px]">
-                                    {(r.keywords || []).join(", ")}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-medium">
-                                    {r.managerName || "—"}
-                                  </td>
-                                  <td className="px-5 py-3.5">
-                                    {r.screenshotUrl ? (
-                                      <a
-                                        href={r.screenshotUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-xs font-bold text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors shadow-sm"
-                                      >
-                                        <ExternalLink size={14} /> View
-                                      </a>
-                                    ) : (
-                                      "—"
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-slate-900">
+                            {p.projectName}
+                          </h3>
+                          {isSelected && (
+                            <span className="text-[9px] uppercase tracking-widest bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded-sm">
+                              Selected
+                            </span>
+                          )}
                         </div>
+                        <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Users size={12} /> {p.clientName || "Internal"}
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })
+
+                    {/* Rank */}
+                    <div className="col-span-6 md:col-span-3 flex md:justify-center items-center">
+                      <div className="md:hidden text-xs text-slate-400 font-medium mr-2">Rank:</div>
+                      {getRankBadge(lr?.rankingNo)}
+                    </div>
+                    
+                    {/* Date */}
+                    <div className="col-span-6 md:col-span-3 flex md:justify-center items-center">
+                      <div className="md:hidden text-xs text-slate-400 font-medium mr-2">Audited:</div>
+                      <span className="text-sm text-slate-600 font-medium flex items-center gap-1.5">
+                        <Calendar size={13} className="text-slate-400" />
+                        {fmtDate(lr?.checkDate)}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-12 md:col-span-2 flex justify-end">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpanded(isExpanded ? null : p.projectId);
+                        }}
+                        className="p-1.5 rounded-md text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                      >
+                        <ChevronDown size={18} className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Data Area */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-5 md:p-6 bg-slate-50 border-t border-slate-200 space-y-6">
+                          
+                          {/* Top Section: Keywords & Remarks */}
+                          {lr && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Keywords */}
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                  <Search size={14} className="text-slate-400" /> Targeted Keywords
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {(lr.keywords || []).length > 0 ? (
+                                    lr.keywords.map((kw, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-medium rounded shadow-sm"
+                                      >
+                                        {kw}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-sm text-slate-500 italic">No keywords tracked.</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Remarks */}
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                  <MessageSquare size={14} className="text-slate-400" /> Auditor Remarks
+                                </h4>
+                                <div className="bg-white border-l-2 border-indigo-500 p-4 rounded-r shadow-sm">
+                                  <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                    {lr.remarks || <span className="text-slate-400 italic">No remarks provided for the current cycle.</span>}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Historical Data Table */}
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                              <Layers size={14} className="text-slate-400" /> Historical Performance
+                            </h4>
+                            
+                            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                              <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                  <tr>
+                                    {["Audit Date", "Rank", "Keywords Shift", "Manager", "Evidence"].map((h) => (
+                                      <th key={h} className="px-4 py-3 font-semibold text-slate-600 text-[11px] uppercase tracking-wider">
+                                        {h}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {(p.reports || []).length > 0 ? (
+                                    p.reports.map((r, rIdx) => (
+                                      <tr key={r.id || rIdx} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
+                                          {fmtDate(r.checkDate)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          {getRankBadge(r.rankingNo)}
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-slate-600 max-w-[200px] truncate" title={(r.keywords || []).join(", ")}>
+                                          {(r.keywords || []).join(", ") || "—"}
+                                        </td>
+                                        <td className="px-4 py-3 text-xs font-medium text-slate-700">
+                                          {r.managerName || "Unknown"}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          {r.screenshotUrl ? (
+                                            <a
+                                              href={r.screenshotUrl}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-xs font-semibold transition-colors"
+                                            >
+                                              <ExternalLink size={13} /> View File
+                                            </a>
+                                          ) : (
+                                            <span className="text-slate-400 text-xs">—</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td colSpan={5} className="px-4 py-6 text-center text-slate-500 text-sm">
+                                        No historical records available.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </motion.div>
   );
 }
 
+
+
 function WebDevelopmentTab({ data, search }) {
+  const [expanded, setExpanded] = useState(null);
+
   const projects = (data?.webDevelopment || []).filter((project) =>
-    !search || `${project.projectName} ${project.clientName || ""}`.toLowerCase().includes(search.toLowerCase()),
+    !search ||
+    `${project.projectName} ${project.clientName || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <StatCard icon={Code2} label="Web Development Projects" value={projects.length} subValue="Tracked projects" colorClass="text-blue-600" bgClass="bg-blue-50" />
-        <StatCard icon={FileText} label="Latest Reports" value={projects.filter((project) => project.reports?.[0]).length} subValue="Projects with updates" colorClass="text-indigo-600" bgClass="bg-indigo-50" />
-        <StatCard icon={Activity} label="Average Progress" value={`${projects.length ? Math.round(projects.reduce((sum, project) => sum + (project.reports?.[0]?.taskProgress || 0), 0) / projects.length) : 0}%`} subValue="From latest reports" colorClass="text-emerald-600" bgClass="bg-emerald-50" />
+        <StatCard 
+          icon={Code2} 
+          label="Web Development Projects" 
+          value={projects.length} 
+          subValue="Active Tracked Projects" 
+          colorClass="text-blue-600" 
+          bgClass="bg-blue-50" 
+        />
+        <StatCard 
+          icon={FileText} 
+          label="Latest Reports" 
+          value={projects.filter((p) => p.reports?.[0]).length} 
+          subValue="Projects with recent updates" 
+          colorClass="text-indigo-600" 
+          bgClass="bg-indigo-50" 
+        />
+        <StatCard 
+          icon={Activity} 
+          label="Average Progress" 
+          value={`${projects.length ? Math.round(projects.reduce((sum, p) => sum + (p.reports?.[0]?.taskProgress || 0), 0) / projects.length) : 0}%`} 
+          subValue="Across all active projects" 
+          colorClass="text-emerald-600" 
+          bgClass="bg-emerald-50" 
+        />
       </div>
 
-      {projects.length === 0 ? <EmptyState label="No Web Development reports found" /> : projects.map((project) => {
-        const latest = project.reports?.[0];
-        const previous = project.reports?.[1];
-        return (
-          <motion.div key={project.projectId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between gap-4 border-b border-slate-100 p-5">
-              <div>
-                <h3 className="font-bold text-slate-900">{project.projectName}</h3>
-                <p className="text-xs text-slate-500 mt-1">{project.clientName || "No client specified"}</p>
-              </div>
-              {latest?.taskProgress != null && <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{latest.taskProgress}% complete</span>}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
-              {[{ label: "Latest Report", report: latest }, { label: "Previous Report", report: previous }].map(({ label, report }) => (
-                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
-                    <span className="text-xs text-slate-400">{report ? fmtDate(report.date) : "—"}</span>
+      {projects.length === 0 ? (
+        <EmptyState label="No Web Development reports found" />
+      ) : (
+        <div className="space-y-4">
+          {projects.map((project, i) => {
+            const latest = project.reports?.[0];
+            const previous = project.reports?.[1];
+            const isExpanded = expanded === project.projectId;
+            const progress = latest?.taskProgress || 0;
+
+            return (
+              <motion.div 
+                key={project.projectId} 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${
+                  isExpanded 
+                    ? "border-blue-200 shadow-lg shadow-blue-900/5 ring-4 ring-blue-50" 
+                    : "border-slate-200/80 shadow-sm hover:border-blue-300 hover:shadow-md"
+                }`}
+              >
+                {/* Header Section */}
+                <div 
+                  onClick={() => setExpanded(isExpanded ? null : project.projectId)}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-5 cursor-pointer group gap-4"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`p-3 rounded-xl transition-colors duration-300 ${isExpanded ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"}`}>
+                      <Code2 size={22} strokeWidth={2.5} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-[16px] group-hover:text-blue-700 transition-colors">
+                        {project.projectName}
+                      </h3>
+                      <p className="text-sm font-medium text-slate-500 mt-1 flex items-center gap-1.5">
+                        <Users size={14} className="text-slate-400" />
+                        {project.clientName || "Internal Project"}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{report?.content || "No report available"}</p>
-                  {report?.lastWorking && <p className="mt-3 text-xs text-slate-600"><strong>Last Working:</strong> {report.lastWorking}</p>}
-                  {report?.lastDiscussion && <p className="mt-1 text-xs text-slate-600"><strong>Discussion:</strong> {report.lastDiscussion}</p>}
-                  {report?.nextStep && <p className="mt-1 text-xs text-slate-600"><strong>Next Step:</strong> {report.nextStep}</p>}
-                  {report?.blockers && <p className="mt-1 text-xs font-semibold text-amber-700"><strong>⚠ Blockers:</strong> {report.blockers}</p>}
-                  {report?.employeeName && <p className="mt-3 text-xs text-slate-400">By {report.employeeName}</p>}
+
+                  <div className="flex items-center gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100">
+                    <div className="flex-1 sm:w-40">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Progress</span>
+                        <span className="text-[11px] font-extrabold text-blue-700">{progress}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <button className={`p-2.5 rounded-xl border transition-all duration-200 shrink-0 ${
+                      isExpanded ? "bg-slate-900 border-slate-900 text-white" : "bg-white border-slate-200 text-slate-500 group-hover:bg-slate-50"
+                    }`}>
+                      <ChevronDown size={16} strokeWidth={2.5} className={`transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        );
-      })}
+
+                {/* Expanded Timeline Section */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="border-t border-slate-100 bg-slate-50/50 p-5 md:p-8">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+                          <Layers size={14} /> Development Activity Logs
+                        </h4>
+                        
+                        <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
+                          {/* Latest Report */}
+                          {latest ? (
+                            <div className="relative pl-6">
+                              <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-blue-100 border-2 border-blue-600 ring-4 ring-slate-50" />
+                              <div className="bg-white p-5 rounded-xl border border-blue-100 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold">
+                                    <Activity size={12} /> Latest Update
+                                  </span>
+                                  <span className="text-xs font-semibold text-slate-400">{fmtDate(latest.date)}</span>
+                                </div>
+                                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
+                                  {latest.content || "No details provided."}
+                                </p>
+                                
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                                  {latest.lastWorking && (
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Last Working</p>
+                                      <p className="text-xs text-slate-700 font-medium">{latest.lastWorking}</p>
+                                    </div>
+                                  )}
+                                  {latest.nextStep && (
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Next Step</p>
+                                      <p className="text-xs text-slate-700 font-medium">{latest.nextStep}</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {latest.blockers && (
+                                  <div className="mt-3 bg-red-50/50 border border-red-100 p-3 rounded-lg flex items-start gap-2">
+                                    <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
+                                    <div>
+                                      <p className="text-[10px] font-bold text-red-600 uppercase mb-0.5">Current Blockers</p>
+                                      <p className="text-xs font-semibold text-red-900">{latest.blockers}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {latest.employeeName && (
+                                  <p className="mt-4 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                                    <CheckCircle2 size={12} className="text-emerald-500" /> Logged by {latest.employeeName}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="pl-6 text-sm text-slate-400 italic">No reports generated yet.</p>
+                          )}
+
+                          {/* Previous Report */}
+                          {previous && (
+                            <div className="relative pl-6 opacity-75 hover:opacity-100 transition-opacity">
+                              <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-slate-200 border-2 border-slate-400 ring-4 ring-slate-50" />
+                              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Previous Update</span>
+                                  <span className="text-xs font-semibold text-slate-400">{fmtDate(previous.date)}</span>
+                                </div>
+                                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                  {previous.content}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 }
+
 
 export default function ProjectsReportsOverviewPage() {
   const [tab, setTab] = useState("social-media");
