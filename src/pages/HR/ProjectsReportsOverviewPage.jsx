@@ -525,14 +525,16 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
         reach: selectedProject.totalReach || 0,
         spend: selectedProject.totalSpend || 0,
         leads: selectedProject.totalLeads || 0,
+        reports: selectedProject.reportCount || (selectedProject.reports || []).length || 0,
       }
     : projects.reduce(
         (acc, p) => ({
           reach: acc.reach + (p.totalReach || 0),
           spend: acc.spend + (p.totalSpend || 0),
           leads: acc.leads + (p.totalLeads || 0),
+          reports: acc.reports + (p.reportCount || (p.reports || []).length || 0),
         }),
-        { reach: 0, spend: 0, leads: 0 },
+        { reach: 0, spend: 0, leads: 0, reports: 0 },
       );
 
   const costPerLead = totals.leads > 0 ? totals.spend / totals.leads : 0;
@@ -566,9 +568,9 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
         />
         <StatCard
           icon={Activity}
-          label="Average Reach / Spend"
-          value={totals.spend > 0 ? fmt(Math.round(totals.reach / (totals.spend / 100))) : "—"}
-          subValue="Per ₹100 Spent"
+          label="Total Campaign Reports"
+          value={fmt(totals.reports)}
+          subValue="Logged Activity Reports"
           secondaryLabel="Efficiency Score"
           secondaryValue="Optimal"
           colorClass="text-indigo-600"
@@ -579,175 +581,185 @@ function MetaAdsTab({ data, search, selectedProject, setSelectedProject }) {
       {projects.length === 0 ? (
         <EmptyState label="No Meta Ads reports found" />
       ) : (
-        <div className="space-y-4">
-          {projects.map((p, i) => {
-            const isSelected = selectedProject?.projectId === p.projectId;
-            return (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                key={p.projectId}
-                className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${isSelected ? "border-blue-400 ring-2 ring-blue-100" : expanded === p.projectId ? "border-blue-300 shadow-[0_8px_30px_rgb(59,130,246,0.08)]" : "border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:border-slate-200"}`}
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-slate-50/50 transition-colors">
-                  <button
-                    className="flex items-center gap-4 text-left flex-1"
+        <div className="overflow-x-auto rounded-2xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/90 border-b border-slate-200/80">
+                <th className="px-6 py-4 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Project Details
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Total Reach
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Total Spend
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Total Leads
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Cost Per Lead (CPL)
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Reports Count
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {projects.map((p, i) => {
+                const pSpend = p.totalSpend || 0;
+                const pLeads = p.totalLeads || 0;
+                const pCpl = pLeads > 0 ? pSpend / pLeads : 0;
+                const reportCount = p.reportCount || (p.reports || []).length || 0;
+                const isSelected = selectedProject?.projectId === p.projectId;
+
+                return [
+                  <motion.tr
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    key={p.projectId}
                     onClick={() => {
                       if (selectedProject?.projectId === p.projectId) {
                         setSelectedProject(null);
                       } else {
                         setSelectedProject(p);
                       }
+                      setExpanded(expanded === p.projectId ? null : p.projectId);
                     }}
+                    className={`cursor-pointer transition-colors group ${isSelected ? "bg-blue-50/40 ring-1 ring-inset ring-blue-200" : expanded === p.projectId ? "bg-slate-50/90" : "hover:bg-slate-50/80"}`}
                   >
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
-                      <Megaphone size={20} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-slate-900 text-[15px]">
-                          {p.projectName}
-                        </p>
-                        {isSelected && (
-                          <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
-                            Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-medium text-slate-500 mt-0.5">
-                        {p.clientName || "—"}
-                      </p>
-                    </div>
-                  </button>
-
-                  <div className="flex items-center gap-6 mt-4 md:mt-0">
-                    <div className="hidden sm:block text-right">
-                      <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
-                        Reach
-                      </p>
-                      <p className="font-semibold text-slate-900">
-                        {fmt(p.totalReach)}
-                      </p>
-                    </div>
-                    <div className="hidden sm:block text-right">
-                      <p className="text-[11px] text-slate-400 uppercase tracking-widest font-bold mb-1">
-                        Spend
-                      </p>
-                      <p className="font-semibold text-slate-900">
-                        {fmtCurrency(p.totalSpend)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[11px] text-blue-500 uppercase tracking-widest font-bold mb-1">
-                        Leads
-                      </p>
-                      <p className="font-bold text-blue-600 text-lg">
-                        {fmt(p.totalLeads)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setExpanded(expanded === p.projectId ? null : p.projectId)
-                      }
-                      className={`p-2 rounded-lg border transition-colors ${expanded === p.projectId ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-slate-50 border-slate-200 text-slate-400"}`}
-                    >
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform duration-200 ${expanded === p.projectId ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                <AnimatePresence>
-                  {expanded === p.projectId && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <div className="border-t border-slate-100 bg-slate-50/50 p-5">
-                        <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-4 ml-1">
-                          Daily Breakdown Logs
-                        </p>
-                        <div className="overflow-x-auto bg-white rounded-xl border border-slate-200/70 shadow-sm">
-                          <table className="w-full text-sm text-left">
-                            <thead>
-                              <tr className="bg-slate-50/80 border-b border-slate-200/80">
-                                {[
-                                  "Date",
-                                  "Reach",
-                                  "Spend",
-                                  "Leads",
-                                  "Status",
-                                  "Type",
-                                  "Area",
-                                ].map((h) => (
-                                  <th
-                                    key={h}
-                                    className="px-5 py-3 font-bold text-slate-600 uppercase tracking-wider text-xs"
-                                  >
-                                    {h}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {(p.reports || []).map((r) => (
-                                <tr
-                                  key={r.id}
-                                  className="text-slate-600 hover:bg-slate-50/80 transition-colors"
-                                >
-                                  <td className="px-5 py-3.5 text-slate-900 font-semibold">
-                                    {fmtDate(r.date)}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-medium">
-                                    {fmt(r.reach)}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-medium">
-                                    {fmtCurrency(r.spend)}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-bold text-blue-600">
-                                    {fmt(r.leads)}
-                                  </td>
-                                  <td className="px-5 py-3.5">
-                                    {r.isAdRunning === null ? (
-                                      "—"
-                                    ) : r.isAdRunning ? (
-                                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full">
-                                        <CheckCircle2 size={12} strokeWidth={3} /> Running
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-full">
-                                        <AlertCircle size={12} strokeWidth={3} /> Paused
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="px-5 py-3.5 font-medium">
-                                    {r.typeOfAds || "—"}
-                                  </td>
-                                  <td className="px-5 py-3.5 text-slate-500">
-                                    {r.areaName || "—"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                    <td className="px-6 py-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-1.5 rounded-lg border transition-colors ${expanded === p.projectId ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-slate-50 border-slate-200 text-slate-400 group-hover:text-slate-600"}`}>
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${expanded === p.projectId ? "rotate-180" : ""}`}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {p.projectName || "—"}
+                            </p>
+                            {isSelected && (
+                              <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                            {p.clientName || "—"}
+                          </p>
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
+                    </td>
+                    <td className="px-6 py-4 text-center font-bold text-slate-700 bg-slate-50/40">
+                      {fmt(p.totalReach)}
+                    </td>
+                    <td className="px-6 py-4 text-center font-semibold text-slate-600">
+                      {fmtCurrency(p.totalSpend)}
+                    </td>
+                    <td className="px-6 py-4 text-center font-bold text-blue-600">
+                      {fmt(p.totalLeads)}
+                    </td>
+                    <td className="px-6 py-4 text-center font-semibold text-slate-600">
+                      {fmtCurrency(pCpl)}
+                    </td>
+                    <td className="px-6 py-4 text-center font-bold text-slate-900">
+                      {fmt(reportCount)}
+                    </td>
+                  </motion.tr>,
+                  expanded === p.projectId && (
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={`${p.projectId}-reports`}
+                      className="bg-blue-50/20"
+                    >
+                      <td colSpan={6} className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                        <div className="ml-10 rounded-xl border border-blue-200/70 bg-white p-4 shadow-sm">
+                          <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mb-3">
+                            Daily Breakdown Logs
+                          </p>
+                          <div className="overflow-x-auto rounded-lg border border-slate-200/70">
+                            <table className="w-full text-sm text-left">
+                              <thead>
+                                <tr className="bg-slate-50/80 border-b border-slate-200/80">
+                                  {[
+                                    "Date",
+                                    "Reach",
+                                    "Spend",
+                                    "Leads",
+                                    "Status",
+                                    "Type",
+                                    "Area",
+                                  ].map((h) => (
+                                    <th
+                                      key={h}
+                                      className="px-4 py-2.5 font-bold text-slate-600 uppercase tracking-wider text-xs"
+                                    >
+                                      {h}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {(p.reports || []).map((r) => (
+                                  <tr
+                                    key={r.id}
+                                    className="text-slate-600 hover:bg-slate-50/80 transition-colors"
+                                  >
+                                    <td className="px-4 py-3 text-slate-900 font-semibold text-xs">
+                                      {fmtDate(r.date)}
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-xs">
+                                      {fmt(r.reach)}
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-xs">
+                                      {fmtCurrency(r.spend)}
+                                    </td>
+                                    <td className="px-4 py-3 font-bold text-blue-600 text-xs">
+                                      {fmt(r.leads)}
+                                    </td>
+                                    <td className="px-4 py-3 text-xs">
+                                      {r.isAdRunning === null ? (
+                                        "—"
+                                      ) : r.isAdRunning ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                                          <CheckCircle2 size={10} strokeWidth={3} /> Running
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200/60 px-2 py-0.5 rounded-full">
+                                          <AlertCircle size={10} strokeWidth={3} /> Paused
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-xs">
+                                      {r.typeOfAds || "—"}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-500 text-xs">
+                                      {r.areaName || "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ),
+                ];
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </motion.div>
   );
 }
+
 
 function SeoTab({ data, search, selectedProject, setSelectedProject }) {
   const [expanded, setExpanded] = useState(null);
