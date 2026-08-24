@@ -224,6 +224,7 @@ const AdminPage = () => {
         </motion.div>
 
         {/* SECTION 1.5: REPORTS NAVIGATION BANNER */}
+        
         <motion.div variants={itemVariants}>
           <Link to="/reports/overview" className="block outline-none">
             <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-[1.5rem] p-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-center justify-between shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 group cursor-pointer">
