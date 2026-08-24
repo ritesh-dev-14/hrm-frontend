@@ -42,6 +42,9 @@ const INITIAL_FORM = {
   reasonNotRunning: "",
   typeOfAds: "",
   leadObtained: "",
+  decidedDailyBudget: "",
+  leadSentToClient: "",
+  startDate: "",
   date: new Date().toISOString().split("T")[0],
 };
 
@@ -58,6 +61,7 @@ export default function MarketingReportsPage() {
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [search, setSearch] = useState("");
+  const [adTypeFilter, setAdTypeFilter] = useState("");
   const [toast, setToast] = useState(null);
 
   /* toast helper */
@@ -144,6 +148,9 @@ export default function MarketingReportsPage() {
       reasonNotRunning: report.reasonNotRunning || "",
       typeOfAds: report.typeOfAds || "",
       leadObtained: report.leadObtained != null ? String(report.leadObtained) : "",
+      decidedDailyBudget: report.decidedDailyBudget != null ? String(report.decidedDailyBudget) : "",
+      leadSentToClient: typeof report.leadSentToClient === "boolean" ? String(report.leadSentToClient) : "",
+      startDate: report.startDate ? report.startDate.split("T")[0] : "",
       date: report.date ? report.date.split("T")[0] : "",
     });
     setShowForm(true);
@@ -152,6 +159,10 @@ export default function MarketingReportsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.projectId) return showToast("error", "Please select a project.");
+    if (!["Awareness", "Lead"].includes(form.typeOfAds)) return showToast("error", "Please select Awareness or Lead.");
+    if (!["true", "false"].includes(form.isAdRunning)) return showToast("error", "Please select whether the ad is running.");
+    if (form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
+    if (form.typeOfAds === "Lead" && !["true", "false"].includes(form.leadSentToClient)) return showToast("error", "Please select whether the lead was sent to the client.");
     setSubmitting(true);
     try {
       const payload = {
@@ -160,6 +171,9 @@ export default function MarketingReportsPage() {
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
         todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
         leadObtained: form.leadObtained !== "" ? Number(form.leadObtained) : null,
+        decidedDailyBudget: form.decidedDailyBudget !== "" ? Number(form.decidedDailyBudget) : null,
+        leadSentToClient: form.leadSentToClient === "true" ? true : form.leadSentToClient === "false" ? false : null,
+        startDate: form.startDate || null,
         isAdRunning: form.isAdRunning === "true" ? true : form.isAdRunning === "false" ? false : null,
       };
 
@@ -187,7 +201,7 @@ export default function MarketingReportsPage() {
       r.clientName?.toLowerCase().includes(q) ||
       r.areaName?.toLowerCase().includes(q) ||
       r.typeOfAds?.toLowerCase().includes(q)
-    );
+    ) && (!adTypeFilter || r.typeOfAds === adTypeFilter);
   });
 
   /* ─── summary stats ───────────────────────────────────────────────────── */
@@ -300,7 +314,7 @@ export default function MarketingReportsPage() {
 
         {/* Search + refresh */}
         {selectedProject && (
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex flex-wrap items-center gap-3 mb-5">
             <div className="relative flex-1 max-w-xs">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
@@ -310,6 +324,11 @@ export default function MarketingReportsPage() {
                 className="w-full bg-slate-800/50 border border-slate-700/40 text-white rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
             </div>
+            <select value={adTypeFilter} onChange={(e) => setAdTypeFilter(e.target.value)} className="bg-slate-800/50 border border-slate-700/40 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60">
+              <option value="">All Ad Types</option>
+              <option value="Awareness">Awareness</option>
+              <option value="Lead">Lead</option>
+            </select>
             <button
               onClick={() => loadReports(selectedProject.id)}
               disabled={loading}
@@ -355,7 +374,7 @@ export default function MarketingReportsPage() {
             <table className="w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="bg-slate-800/80 border-b border-slate-700/40">
-                  {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Campaign Period","Actions"].map((h) => (
+                  {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Daily Budget","Lead Sent","Start Date","Actions"].map((h) => (
                     <th key={h} className="text-left px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -380,7 +399,9 @@ export default function MarketingReportsPage() {
                     <td className="px-4 py-3.5 text-cyan-400 font-semibold">{fmt(r.todayReachObtained)}</td>
                     <td className="px-4 py-3.5 text-pink-400 font-semibold">{fmtCur(r.todayAmountSpend)}</td>
                     <td className="px-4 py-3.5 text-emerald-400 font-semibold">{fmt(r.leadObtained)}</td>
-                    <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{fmtDate(r.campaignStartDate)} – {fmtDate(r.campaignEndDate)}</td>
+                    <td className="px-4 py-3.5 text-slate-300">{fmtCur(r.decidedDailyBudget)}</td>
+                    <td className="px-4 py-3.5">{r.leadSentToClient === true ? "Yes" : r.leadSentToClient === false ? "No" : "—"}</td>
+                    <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{fmtDate(r.startDate || r.campaignStartDate)}</td>
                     <td className="px-4 py-3.5">
                       <button onClick={() => openEdit(r)} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold hover:underline transition-colors">Edit</button>
                     </td>
@@ -452,7 +473,11 @@ export default function MarketingReportsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Type of Ads</label>
-                  <input value={form.typeOfAds} onChange={(e) => setForm((f) => ({ ...f, typeOfAds: e.target.value }))} placeholder="e.g. Meta, Google" className={inputCls} />
+                  <select value={form.typeOfAds} onChange={(e) => setForm((f) => ({ ...f, typeOfAds: e.target.value }))} className={selectCls}>
+                    <option value="">— Select —</option>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Lead">Lead</option>
+                  </select>
                 </div>
               </div>
 
@@ -463,30 +488,25 @@ export default function MarketingReportsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Today's Reach</label>
-                  <input type="number" min="0" value={form.todayReachObtained} onChange={(e) => setForm((f) => ({ ...f, todayReachObtained: e.target.value }))} placeholder="0" className={inputCls} />
+              {form.typeOfAds === "Awareness" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Today's Reach</label><input type="number" min="0" value={form.todayReachObtained} onChange={(e) => setForm((f) => ({ ...f, todayReachObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount Spent (₹)</label>
-                  <input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} />
+              )}
+
+              {form.typeOfAds === "Lead" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Decided Daily Budget (₹)</label><input type="number" min="0" step="0.01" value={form.decidedDailyBudget} onChange={(e) => setForm((f) => ({ ...f, decidedDailyBudget: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Leads Obtained</label><input type="number" min="0" value={form.leadObtained} onChange={(e) => setForm((f) => ({ ...f, leadObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Lead Sent to Client</label><select value={form.leadSentToClient} onChange={(e) => setForm((f) => ({ ...f, leadSentToClient: e.target.value }))} className={selectCls}><option value="">— Select —</option><option value="true">Yes</option><option value="false">No</option></select></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Leads Obtained</label>
-                  <input type="number" min="0" value={form.leadObtained} onChange={(e) => setForm((f) => ({ ...f, leadObtained: e.target.value }))} placeholder="0" className={inputCls} />
-                </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Campaign Start</label>
-                  <input type="date" value={form.campaignStartDate} onChange={(e) => setForm((f) => ({ ...f, campaignStartDate: e.target.value }))} className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Campaign End</label>
-                  <input type="date" value={form.campaignEndDate} onChange={(e) => setForm((f) => ({ ...f, campaignEndDate: e.target.value }))} className={inputCls} />
-                </div>
+                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Start Date</label><input type="date" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} className={inputCls} /></div>
+                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Campaign Start Date</label><input type="date" value={form.campaignStartDate} onChange={(e) => setForm((f) => ({ ...f, campaignStartDate: e.target.value }))} className={inputCls} /></div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Report Date</label>
                   <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} />

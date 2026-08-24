@@ -42,6 +42,9 @@ const INITIAL_FORM = {
   reasonNotRunning: "",
   typeOfAds: "",
   leadObtained: "",
+  decidedDailyBudget: "",
+  leadSentToClient: "",
+  startDate: "",
   date: new Date().toISOString().split("T")[0],
 };
 
@@ -52,12 +55,14 @@ export default function PerformanceMarketingManagerView({ projectId }) {
 
   const [project, setProject] = useState(null);
   const [reports, setReports] = useState([]);
+  const [monthlyCalendar, setMonthlyCalendar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [search, setSearch] = useState("");
+  const [adTypeFilter, setAdTypeFilter] = useState("");
   const [toast, setToast] = useState(null);
 
   /* toast helper */
@@ -92,6 +97,15 @@ export default function PerformanceMarketingManagerView({ projectId }) {
         ? repRes.data
         : repRes.data?.data || [];
       setReports(data);
+
+      const today = new Date();
+      const monthlyRes = await API.get(
+        `/api/marketing-monthly-reports?month=${today.getMonth() + 1}&year=${today.getFullYear()}`,
+      );
+      const monthlyData = monthlyRes?.data && Object.prototype.hasOwnProperty.call(monthlyRes.data, "data")
+        ? monthlyRes.data.data
+        : monthlyRes?.data;
+      setMonthlyCalendar(monthlyData || null);
     } catch {
       showToast("error", "Failed to load marketing details.");
     } finally {
@@ -139,6 +153,9 @@ export default function PerformanceMarketingManagerView({ projectId }) {
       reasonNotRunning: report.reasonNotRunning || "",
       typeOfAds: report.typeOfAds || "",
       leadObtained: report.leadObtained != null ? String(report.leadObtained) : "",
+      decidedDailyBudget: report.decidedDailyBudget != null ? String(report.decidedDailyBudget) : "",
+      leadSentToClient: typeof report.leadSentToClient === "boolean" ? String(report.leadSentToClient) : "",
+      startDate: report.startDate ? report.startDate.split("T")[0] : "",
       date: report.date ? report.date.split("T")[0] : "",
     });
     setShowForm(true);
@@ -146,6 +163,10 @@ export default function PerformanceMarketingManagerView({ projectId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!["Awareness", "Lead"].includes(form.typeOfAds)) return showToast("error", "Please select Awareness or Lead.");
+    if (!["true", "false"].includes(form.isAdRunning)) return showToast("error", "Please select whether the ad is running.");
+    if (form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
+    if (form.typeOfAds === "Lead" && !["true", "false"].includes(form.leadSentToClient)) return showToast("error", "Please select whether the lead was sent to the client.");
     setSubmitting(true);
     try {
       const payload = {
@@ -155,6 +176,9 @@ export default function PerformanceMarketingManagerView({ projectId }) {
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
         todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
         leadObtained: form.leadObtained !== "" ? Number(form.leadObtained) : null,
+        decidedDailyBudget: form.decidedDailyBudget !== "" ? Number(form.decidedDailyBudget) : null,
+        leadSentToClient: form.leadSentToClient === "true" ? true : form.leadSentToClient === "false" ? false : null,
+        startDate: form.startDate || null,
         isAdRunning: form.isAdRunning === "true" ? true : form.isAdRunning === "false" ? false : null,
       };
 
@@ -182,13 +206,23 @@ export default function PerformanceMarketingManagerView({ projectId }) {
       r.clientName?.toLowerCase().includes(q) ||
       r.areaName?.toLowerCase().includes(q) ||
       r.typeOfAds?.toLowerCase().includes(q)
-    );
+    ) && (!adTypeFilter || r.typeOfAds === adTypeFilter);
   });
 
   /* ─── summary stats ───────────────────────────────────────────────────── */
   const totalSpend = reports.reduce((s, r) => s + (r.todayAmountSpend || 0), 0);
   const totalReach = reports.reduce((s, r) => s + (r.todayReachObtained || 0), 0);
   const totalLeads = reports.reduce((s, r) => s + (r.leadObtained || 0), 0);
+  const monthlyRows = (monthlyCalendar?.rows || []).filter(
+    (row) => String(row.projectId || row.project?.id) === String(projectId),
+  );
+  const monthlyStats = [
+    { icon: BarChart3, label: "Monthly Campaigns", value: monthlyRows.length, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { icon: CheckCircle2, label: "Currently Running", value: monthlyRows.filter((row) => row.currentlyRunning === true || row.currentlyRunning === "yes").length, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { icon: Users, label: "Required Leads", value: fmt(monthlyRows.reduce((total, row) => total + Number(row.requiredLeads || 0), 0)), color: "text-blue-600", bg: "bg-blue-50" },
+    { icon: DollarSign, label: "Ad Funds", value: fmtCur(monthlyRows.reduce((total, row) => total + Number(row.awarenessFunds || 0) + Number(row.leadsFund || 0), 0)), color: "text-orange-600", bg: "bg-orange-50" },
+    { icon: Calendar, label: "Monthly Budget", value: fmtCur(monthlyRows.reduce((total, row) => total + Number(row.monthlyBudget || 0), 0)), color: "text-violet-600", bg: "bg-violet-50" },
+  ];
 
   const inputCls =
     "w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3.5 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all";
@@ -288,10 +322,29 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 </div>
               ))}
             </div>
+
+            <div className="mt-8 border-t border-slate-100 pt-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Monthly Calendar</h2>
+                  <p className="text-xs text-slate-500">Current month stats for this project</p>
+                </div>
+                <button onClick={() => navigate("/marketing-monthly-reports")} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Open Calendar</button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                {monthlyStats.map((stat) => (
+                  <div key={stat.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${stat.bg}`}><stat.icon size={17} className={stat.color} /></div>
+                    <p className="text-lg font-black text-slate-900">{stat.value}</p>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Search + refresh */}
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex flex-wrap items-center gap-3 mb-5">
             <div className="relative flex-1 max-w-sm">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -301,6 +354,11 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
             </div>
+            <select value={adTypeFilter} onChange={(e) => setAdTypeFilter(e.target.value)} className="bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60">
+              <option value="">All Ad Types</option>
+              <option value="Awareness">Awareness</option>
+              <option value="Lead">Lead</option>
+            </select>
             <button
               onClick={loadData}
               disabled={loading}
@@ -325,7 +383,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 <table className="w-full min-w-[1000px] text-sm">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200">
-                      {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Actions"].map((h) => (
+                      {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Daily Budget","Lead Sent","Start Date","Actions"].map((h) => (
                         <th key={h} className="text-left px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -350,6 +408,9 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                         <td className="px-5 py-4 text-indigo-600 font-semibold">{fmt(r.todayReachObtained)}</td>
                         <td className="px-5 py-4 text-pink-600 font-semibold">{fmtCur(r.todayAmountSpend)}</td>
                         <td className="px-5 py-4 text-emerald-600 font-semibold">{fmt(r.leadObtained)}</td>
+                        <td className="px-5 py-4 text-slate-700">{fmtCur(r.decidedDailyBudget)}</td>
+                        <td className="px-5 py-4">{r.leadSentToClient === true ? "Yes" : r.leadSentToClient === false ? "No" : "—"}</td>
+                        <td className="px-5 py-4 text-slate-500 text-xs whitespace-nowrap">{fmtDate(r.startDate || r.campaignStartDate)}</td>
                         
                         <td className="px-5 py-4">
                           <button onClick={() => openEdit(r)} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold hover:underline transition-colors">Edit</button>
@@ -409,7 +470,11 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Type of Ads</label>
-                  <input value={form.typeOfAds} onChange={(e) => setForm((f) => ({ ...f, typeOfAds: e.target.value }))} placeholder="e.g. Meta, Google" className={inputCls} />
+                  <select value={form.typeOfAds} onChange={(e) => setForm((f) => ({ ...f, typeOfAds: e.target.value }))} className={selectCls}>
+                    <option value="">— Select —</option>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Lead">Lead</option>
+                  </select>
                 </div>
               </div>
 
@@ -420,26 +485,25 @@ export default function PerformanceMarketingManagerView({ projectId }) {
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Today's Reach</label>
-                  <input type="number" min="0" value={form.todayReachObtained} onChange={(e) => setForm((f) => ({ ...f, todayReachObtained: e.target.value }))} placeholder="0" className={inputCls} />
+              {form.typeOfAds === "Awareness" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Today's Reach</label><input type="number" min="0" value={form.todayReachObtained} onChange={(e) => setForm((f) => ({ ...f, todayReachObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Amount Spent (₹)</label>
-                  <input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Leads Obtained</label>
-                  <input type="number" min="0" value={form.leadObtained} onChange={(e) => setForm((f) => ({ ...f, leadObtained: e.target.value }))} placeholder="0" className={inputCls} />
-                </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Report Date</label>
-                  <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} />
+              {form.typeOfAds === "Lead" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Decided Daily Budget (₹)</label><input type="number" min="0" step="0.01" value={form.decidedDailyBudget} onChange={(e) => setForm((f) => ({ ...f, decidedDailyBudget: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Leads Obtained</label><input type="number" min="0" value={form.leadObtained} onChange={(e) => setForm((f) => ({ ...f, leadObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Lead Sent to Client</label><select value={form.leadSentToClient} onChange={(e) => setForm((f) => ({ ...f, leadSentToClient: e.target.value }))} className={selectCls}><option value="">— Select —</option><option value="true">Yes</option><option value="false">No</option></select></div>
+                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
                 </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Campaign Start Date</label><input type="date" value={form.campaignStartDate} onChange={(e) => setForm((f) => ({ ...f, campaignStartDate: e.target.value }))} className={inputCls} /></div>
+                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Report Date</label><input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} /></div>
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-slate-100">
