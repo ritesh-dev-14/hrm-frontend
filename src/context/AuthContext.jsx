@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import API from "../services/api";
 
 const AuthContext = createContext();
 
@@ -7,6 +8,15 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const clearSession = () => {
+    setUser(null);
+    setRole(null);
+    setToken(null);
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  };
 
   // load from localStorage on refresh
   useEffect(() => {
@@ -32,18 +42,34 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
   };
 
-  const logout = () => {
-    setUser(null);
-    setRole(null);
-    setToken(null);
+  const logout = async ({ enforceEmployeeCheck = false } = {}) => {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const currentRole = role || storedUser?.role;
 
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    if (!enforceEmployeeCheck || String(currentRole || "").trim().toUpperCase() !== "EMPLOYEE") {
+      clearSession();
+      return { allowed: true };
+    }
+
+    try {
+      const response = await API.get("/api/employee/logout-status");
+      const status = response?.data?.data || {};
+
+      if (status.canLogout !== false) {
+        clearSession();
+        return { allowed: true, status };
+      }
+
+      return { allowed: false, status };
+    } catch (error) {
+      console.error("Employee logout check failed:", error);
+      return { allowed: false, error: true };
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, role, token, login, logout, isLoading }}
+      value={{ user, role, token, login, logout, clearSession, isLoading }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import API from "../../services/api";
 import { notifyError, notifyInfo, notifySuccess } from "../../utils/toast";
+import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -115,6 +116,7 @@ const EmployeeTaskPage = () => {
       );
       notifySuccess("Task submitted successfully");
       setSelectedTask(null);
+      await refreshEmployeeLogoutStatus();
       loadTasks();
     } catch (error) {
       notifyError(error?.response?.data?.message || "Submission failed");
@@ -132,6 +134,7 @@ const EmployeeTaskPage = () => {
       );
       notifySuccess("Task resubmitted! Manager has been notified.");
       setSelectedTask(null);
+      await refreshEmployeeLogoutStatus();
       loadTasks();
     } catch (error) {
       notifyError(error?.response?.data?.message || "Resubmission failed");
@@ -153,6 +156,7 @@ const EmployeeTaskPage = () => {
       );
       notifySuccess("Roadblock logged successfully");
       setSelectedTask(null);
+      await refreshEmployeeLogoutStatus();
       loadTasks();
     } catch (error) {
       notifyError("Failed to log roadblock");

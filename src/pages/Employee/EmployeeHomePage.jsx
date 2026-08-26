@@ -7,6 +7,7 @@ import {
 import AttendanceCard from "../../components/attendece/AttendenceCard";
 import API from "../../services/api";
 import { employeeActions } from "../../components/dashboard/dashboardData.js";
+import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -99,6 +100,7 @@ const EmployeeHomePage = () => {
     };
     
     fetchData();
+    refreshEmployeeLogoutStatus().catch(() => null);
   }, []);
 
   return (

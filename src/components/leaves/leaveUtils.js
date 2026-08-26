@@ -76,12 +76,23 @@ export default function useLeaves() {
 
       return true;
     } catch (err) {
+      const message = err?.response?.data?.message;
+
       console.error(
         "Error applying leave:",
         err?.response?.data || err.message,
       );
 
-      alert(err?.response?.data?.message || "Failed to apply leave");
+      if (
+        err?.response?.status === 400 &&
+        message === "Cannot apply for leave during probation period"
+      ) {
+        alert(
+          "You cannot apply for leave during your probation period. Please contact HR if you believe your probation status is incorrect.",
+        );
+      } else {
+        alert(message || "Failed to apply leave");
+      }
 
       return false;
     }
