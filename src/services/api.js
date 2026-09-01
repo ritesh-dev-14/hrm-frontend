@@ -14,7 +14,18 @@ API.interceptors.request.use((config) => {
 });
 
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const requestUrl = String(response.config?.url || "").toLowerCase();
+    const isApprovalMutation = ["post", "patch", "put"].includes(
+      response.config?.method?.toLowerCase(),
+    ) && /(verify|approve|approval|review)/.test(requestUrl);
+
+    if (isApprovalMutation) {
+      window.dispatchEvent(new Event("social-media-data-updated"));
+    }
+
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       console.error("Session expired or unauthorized. Logging out...");

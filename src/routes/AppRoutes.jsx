@@ -71,6 +71,7 @@ import SocialMediaProjectsPage from "../pages/SocialMediaProjectsPage.jsx";
 import SEOProjectsPage from "../pages/SEOProjectsPage.jsx";
 import WebDevelopmentProjectsPage from "../pages/WebDevelopmentProjectsPage.jsx";
 import DailyDepartmentReportPage from '../pages/DailyDepartmentReportPage';
+import DataDashboardPage from "../pages/DataDashboardPage";
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -518,6 +519,17 @@ export const AppRoutes = () => {
             element={
               ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
                 <DailyDepartmentReportPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/data/:projectId?"
+            element={
+              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+                <DataDashboardPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

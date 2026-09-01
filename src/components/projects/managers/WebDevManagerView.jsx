@@ -367,6 +367,8 @@ const WebDevManagerView = ({ projectId }) => {
   const handleVerifySubmission = async (assignmentId) => {
     try {
       await API.patch(`/api/task-item-submission/${assignmentId}/verify`);
+      // Notify DataDashboard to refetch summary after approval
+      window.dispatchEvent(new Event("social-media-data-updated"));
       // Refresh items and tasks
       toggleTaskExpansion(expandedTaskId); 
       toggleTaskExpansion(expandedTaskId); // quick re-toggle to fetch

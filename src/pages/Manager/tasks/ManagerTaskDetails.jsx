@@ -328,6 +328,8 @@ const ManagerTaskDetailPage = () => {
 
       notifySuccess("Submission verified");
 
+      window.dispatchEvent(new Event("social-media-data-updated"));
+
       loadPage();
     } catch (error) {
       console.error(error);

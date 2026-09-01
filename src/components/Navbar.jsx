@@ -25,6 +25,7 @@ import {
   Megaphone,
   BarChart2,
   Code2,
+  Database,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -69,6 +70,7 @@ const NAV_CONFIG = [
   { id: "marketing", label: "Marketing", icon: TrendingUp, path: "/marketing", roles: ["MANAGER"], departments: ["marketing", "marketing department", "performance marketing"] },
   { id: "marketing-monthly-reports", label: "Marketing Monthly Calendar", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
+  { id: "data", label: "Data", icon: Database, path: "/data", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["ADMIN", "HR"] },
   { id: "complete-details", label: "Complete Details", icon: Layers, path: "/admin/complete-details", roles: ["ADMIN"] },
   { id: "admin-panel", label: "Admin", icon: ShieldCheck, path: "/admin/settings", roles: ["ADMIN"] },

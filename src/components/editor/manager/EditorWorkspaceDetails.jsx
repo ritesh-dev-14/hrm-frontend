@@ -196,6 +196,7 @@ const EditorWorkspaceDetails = () => {
       const res = await API.patch(`/api/task-item-submission/${assignmentId}/verify`)
 
       if (res.data?.success || res.status === 200) {
+        window.dispatchEvent(new Event("social-media-data-updated"));
         await refreshSubtaskIndex()
       }
     } catch (error) {
