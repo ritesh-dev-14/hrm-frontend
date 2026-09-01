@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
+import { Copy, X } from "lucide-react";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
 const arrayToString = (arr) => (Array.isArray(arr) ? arr.join(", ") : "");
@@ -177,6 +178,13 @@ const SMMManagerView = ({ projectId }) => {
   const [sheetsLoading, setSheetsLoading] = useState(false);
   const [selectedCalendar, setSelectedCalendar] = useState(null);
   const [isPatchingDay, setIsPatchingDay] = useState(false);
+  const [calendarToCopy, setCalendarToCopy] = useState(null);
+  const [copyTarget, setCopyTarget] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+  });
+  const [isCopyingCalendar, setIsCopyingCalendar] = useState(false);
+  const [showCopyPicker, setShowCopyPicker] = useState(false);
 
   // NEW: tracks which sheet's day-level detail (submission links etc.) is currently being fetched
   const [loadingCalendarId, setLoadingCalendarId] = useState(null);
@@ -287,7 +295,7 @@ const SMMManagerView = ({ projectId }) => {
 
   // NEW: Fetch full day-level detail for a single monthly sheet (this is what carries
   // the real submission link values per day) and set it as the active calendar.
-  const fetchMonthlySheetDetail = async (sheetId) => {
+  const fetchMonthlySheetDetail = async (sheetId, openCalendar = true) => {
     if (!sheetId) return;
     try {
       setLoadingCalendarId(sheetId);
@@ -297,7 +305,9 @@ const SMMManagerView = ({ projectId }) => {
       const resData = response.data ? response.data : response;
 
       if (resData && resData.success) {
-        setSelectedCalendar(padCalendarDays(resData.data));
+        const calendarDetails = padCalendarDays(resData.data);
+        if (openCalendar) setSelectedCalendar(calendarDetails);
+        return calendarDetails;
       } else {
         alert(resData?.message || "Failed to load day-level calendar details.");
       }
@@ -722,6 +732,82 @@ const SMMManagerView = ({ projectId }) => {
       );
     } finally {
       setIsPatchingDay(false);
+    }
+  };
+
+  const handleCopyCalendar = async () => {
+    if (!calendarToCopy) return;
+
+    const targetMonth = Number(copyTarget.month);
+    const targetYear = Number(copyTarget.year);
+    if (!targetMonth || targetMonth < 1 || targetMonth > 12 || !targetYear) {
+      alert("Please choose a valid target month and year.");
+      return;
+    }
+    if (
+      targetMonth === Number(calendarToCopy.month) &&
+      targetYear === Number(calendarToCopy.year)
+    ) {
+      alert("The target month must be different from the source month.");
+      return;
+    }
+
+    try {
+      setIsCopyingCalendar(true);
+      const sourceCalendar =
+        selectedCalendar?.id === calendarToCopy.id
+          ? selectedCalendar
+          : await fetchMonthlySheetDetail(calendarToCopy.id, false);
+
+      if (!sourceCalendar) return;
+
+      const daysInTargetMonth = new Date(targetYear, targetMonth, 0).getDate();
+      const copiedDays = (sourceCalendar.days || [])
+        .map((day) => {
+          const sourceDate = new Date(day.date);
+          const dayNumber = sourceDate.getUTCDate();
+          if (dayNumber > daysInTargetMonth) return null;
+
+          return {
+            date: `${targetYear}-${String(targetMonth).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`,
+            reelType: day.reelType && day.reelType !== "NONE" ? day.reelType : null,
+            postType: day.postType && day.postType !== "NONE" ? day.postType : null,
+            title: day.title || "",
+            videoType: day.videoType || "HORIZONTAL",
+            referenceLinks: day.referenceLinks || [],
+            script: day.script || "",
+            description: day.description || "",
+          };
+        })
+        .filter(Boolean);
+
+      const response = await API.post(`/api/projects/${projectId}/monthly-sheets`, {
+        month: targetMonth,
+        year: targetYear,
+        totalReels: Number(sourceCalendar.totalReels) || 0,
+        totalPosts: Number(sourceCalendar.totalPosts) || 0,
+        totalReelsUploaded: 0,
+        totalPostsUploaded: 0,
+        moodBoardLink: sourceCalendar.moodBoardLink || null,
+        days: copiedDays,
+      });
+      const resData = response.data ? response.data : response;
+
+      if (resData?.success) {
+        alert("Content calendar copied successfully.");
+        setCalendarToCopy(null);
+        await fetchMonthlySheets();
+      } else {
+        alert(resData?.message || "Could not copy the content calendar.");
+      }
+    } catch (err) {
+      alert(
+        err.response?.data?.message ||
+          err.message ||
+          "Could not copy the content calendar.",
+      );
+    } finally {
+      setIsCopyingCalendar(false);
     }
   };
 
@@ -1689,17 +1775,33 @@ const SMMManagerView = ({ projectId }) => {
                             </div>
                           </td>
                           <td className="px-6 py-5 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => fetchMonthlySheetDetail(sheet.id)}
-                              disabled={isThisCalendarLoading}
-                              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${selectedCalendar?.id === sheet.id ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}
-                            >
-                              {isThisCalendarLoading
-                                ? "Loading..."
-                                : selectedCalendar?.id === sheet.id
-                                  ? "Viewing Layout"
-                                  : "Open Calendar"}
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setCopyTarget({
+                                    month: new Date().getMonth() + 1,
+                                    year: new Date().getFullYear(),
+                                  });
+                                  setCalendarToCopy(sheet);
+                                }}
+                                disabled={isThisCalendarLoading || isCopyingCalendar}
+                                title="Copy this calendar to another month"
+                                className="p-2 rounded-xl text-slate-600 bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all shadow-sm disabled:opacity-50"
+                              >
+                                <Copy size={16} />
+                              </button>
+                              <button
+                                onClick={() => fetchMonthlySheetDetail(sheet.id)}
+                                disabled={isThisCalendarLoading}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${selectedCalendar?.id === sheet.id ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}
+                              >
+                                {isThisCalendarLoading
+                                  ? "Loading..."
+                                  : selectedCalendar?.id === sheet.id
+                                    ? "Viewing Layout"
+                                    : "Open Calendar"}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1729,6 +1831,157 @@ const SMMManagerView = ({ projectId }) => {
             </div>
           )}
         </motion.div>
+
+        {typeof document !== "undefined" &&
+          createPortal(
+            <>
+              {showCopyPicker && (
+                <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Select Calendar to Copy
+                  </h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    Choose any existing month from this project.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCopyPicker(false)}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {monthlySheets.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 p-5 text-center text-sm font-semibold text-slate-500">
+                  No existing content calendars are available to copy.
+                </p>
+              ) : (
+                <div className="max-h-80 space-y-2 overflow-y-auto">
+                  {monthlySheets.map((sheet) => (
+                    <button
+                      key={sheet.id}
+                      type="button"
+                      onClick={() => {
+                        setCopyTarget({
+                          month: new Date().getMonth() + 1,
+                          year: new Date().getFullYear(),
+                        });
+                        setCalendarToCopy(sheet);
+                        setShowCopyPicker(false);
+                      }}
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50/50"
+                    >
+                      <span className="text-sm font-bold text-slate-800">
+                        {new Date(0, sheet.month - 1).toLocaleString(undefined, {
+                          month: "long",
+                        })} {sheet.year}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {sheet.days?.length || 0} days
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+                </div>
+              )}
+
+              {calendarToCopy && (
+                <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Copy Content Calendar
+                  </h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    Copy {new Date(0, calendarToCopy.month - 1).toLocaleString(undefined, { month: "long" })} {calendarToCopy.year} into a new month.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCalendarToCopy(null)}
+                  disabled={isCopyingCalendar}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs font-bold text-slate-600">
+                  Target month
+                  <select
+                    value={copyTarget.month}
+                    onChange={(e) =>
+                      setCopyTarget((prev) => ({ ...prev, month: e.target.value }))
+                    }
+                    disabled={isCopyingCalendar}
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                      (month) => (
+                        <option key={month} value={month}>
+                          {new Date(0, month - 1).toLocaleString(undefined, {
+                            month: "long",
+                          })}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+                <label className="text-xs font-bold text-slate-600">
+                  Target year
+                  <input
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    value={copyTarget.year}
+                    onChange={(e) =>
+                      setCopyTarget((prev) => ({ ...prev, year: e.target.value }))
+                    }
+                    disabled={isCopyingCalendar}
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </label>
+              </div>
+
+              <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-[11px] font-medium leading-relaxed text-amber-800">
+                Content, scripts, notes, references, and planned types will be copied. Upload links and review status will start empty.
+              </p>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCalendarToCopy(null)}
+                  disabled={isCopyingCalendar}
+                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyCalendar}
+                  disabled={isCopyingCalendar}
+                  className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <Copy size={15} />
+                  {isCopyingCalendar ? "Copying..." : "Copy Calendar"}
+                </button>
+              </div>
+            </div>
+                </div>
+              )}
+            </>,
+            document.body,
+          )}
 
         {/* ================= DRILLDOWN VIEW: FULL SCREEN SINGLE CALENDAR EDITING (PORTAL) ================= */}
         {typeof document !== "undefined" &&
@@ -2739,24 +2992,24 @@ const SMMManagerView = ({ projectId }) => {
                           Create & Deploy Content Calendar Manifest
                         </h2>
                       </div>
-                      <button
-                        onClick={() => setIsDrawerOpen(false)}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowCopyPicker(true)}
+                          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                          <Copy size={15} />
+                          Copy Existing Calendar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsDrawerOpen(false)}
+                          title="Close"
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
                     </div>
 
                     <form
