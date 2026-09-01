@@ -72,6 +72,7 @@ import SEOProjectsPage from "../pages/SEOProjectsPage.jsx";
 import WebDevelopmentProjectsPage from "../pages/WebDevelopmentProjectsPage.jsx";
 import DailyDepartmentReportPage from '../pages/DailyDepartmentReportPage';
 import DataDashboardPage from "../pages/DataDashboardPage";
+import MetaAdsTasksPage from "../pages/MetaAdsTasksPage";
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -303,9 +304,20 @@ export const AppRoutes = () => {
           />
 
           <Route
+            path="/meta-ads-tasks"
+            element={
+              ["HR", "MANAGER"].includes(role) ? (
+                <MetaAdsTasksPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
             path="/marketing-monthly-reports"
             element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+              role === "MANAGER" ? (
                 <MarketingMonthlyReportPage />
               ) : (
                 <Navigate to="/dashboard" replace />

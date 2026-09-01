@@ -68,7 +68,8 @@ const NAV_CONFIG = [
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing", icon: TrendingUp, path: "/marketing", roles: ["MANAGER"], departments: ["marketing", "marketing department", "performance marketing"] },
-  { id: "marketing-monthly-reports", label: "Marketing Monthly Calendar", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
+  { id: "meta-ads-tasks", label: "Meta Ads Task", icon: Megaphone, path: "/meta-ads-tasks", roles: ["HR", "MANAGER"] },
+  { id: "marketing-monthly-reports", label: "Meeta Ads Calander", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["MANAGER"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "data", label: "Data", icon: Database, path: "/data", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["ADMIN", "HR"] },
@@ -109,6 +110,7 @@ export default function ProfessionalSidebar({ children }) {
   const [departmentName, setDepartmentName] = useState("");
   const [uploadPopupData, setUploadPopupData] = useState(null);
   const knownProjectIds = useRef(null);
+  const knownMetaAdsTaskIds = useRef(null);
   const [projectsOpen, setProjectsOpen] = useState(() =>
     ["/marketing-projects", "/social-media-projects", "/seo-projects", "/web-development-projects", "/projects"].some(
       (path) => window.location.pathname.startsWith(path),
@@ -159,6 +161,37 @@ export default function ProfessionalSidebar({ children }) {
         setDepartmentUnreadCounts((prev) => ({ ...prev, [badgeKey]: prev[badgeKey] + 1 }));
       }
     };
+
+    const handleMetaAdsAssigned = (data = {}) => {
+      const task = data.task || data.metaAdsTask || data;
+      const assignedToId = String(
+        task.assignedToId || task.assignedTo?.id || task.assignedTo?._id || data.assignedToId || "",
+      );
+      const currentUserId = String(user.id || user._id || "");
+      if (assignedToId && currentUserId && assignedToId !== currentUserId) return;
+
+      const taskId = task.id || task._id;
+      if (taskId && knownMetaAdsTaskIds.current?.has(String(taskId))) return;
+      if (taskId) {
+        const assignments = new Map(knownMetaAdsTaskIds.current || []);
+        assignments.set(String(taskId), assignedToId);
+        knownMetaAdsTaskIds.current = assignments;
+      }
+      setUnreadCounts((previous) => ({ ...previous, metaAds: (previous.metaAds || 0) + 1 }));
+      setUploadPopupData({
+        projectName: task.clientName || "Meta Ads Campaign",
+        clientName: task.clientName,
+        alertTitle: "New Meta Ads Task",
+        alertMessage: "A new Meta Ads task has been assigned to you.",
+        targetPath: "/meta-ads-tasks",
+      });
+    };
+    const metaAdsEvents = [
+      "meta-ads-task-assigned",
+      "meta-ads-task-assigned-popup",
+      "meta-ads-assigned",
+    ];
+    metaAdsEvents.forEach((eventName) => socketInstance.on(eventName, handleMetaAdsAssigned));
 
     socketInstance.on("task-submitted-popup", (data) => {
       recordDepartmentNotification(data);
@@ -244,6 +277,7 @@ export default function ProfessionalSidebar({ children }) {
     });
 
     return () => {
+      metaAdsEvents.forEach((eventName) => socketInstance.off(eventName, handleMetaAdsAssigned));
       ["task-approved-popup", "task-verified-popup", "task-submission-approved-popup"].forEach((eventName) => {
         socketInstance.off(eventName, handleTaskApproved);
       });
@@ -293,6 +327,70 @@ export default function ProfessionalSidebar({ children }) {
   }, [role, user?.id]);
 
   useEffect(() => {
+    if (role !== "MANAGER" || !(user?.id || user?._id)) return;
+
+    const checkMetaAdsAssignments = async () => {
+      try {
+        const response = await API.get("/api/meta-ads-tasks");
+          const payload = response.data?.data ?? response.data;
+          const tasks = Array.isArray(payload)
+            ? payload
+            : payload?.tasks || payload?.items || [];
+          const taskAssignments = new Map(
+            tasks
+              .map((task) => [
+                String(task.id || task._id || ""),
+                String(
+                  task.assignedToId ||
+                    task.assignedTo?.id ||
+                    task.assignedTo?._id ||
+                    "",
+                ),
+              ])
+              .filter(([taskId]) => taskId),
+          );
+        if (knownMetaAdsTaskIds.current) {
+          const newTask = tasks.find((task) => {
+            const taskId = task.id || task._id;
+              const assignedToId = String(
+                task.assignedToId ||
+                  task.assignedTo?.id ||
+                  task.assignedTo?._id ||
+                  "",
+              );
+              const previousAssignee = knownMetaAdsTaskIds.current.get(String(taskId));
+              return taskId &&
+                (!knownMetaAdsTaskIds.current.has(String(taskId)) ||
+                  (assignedToId && assignedToId !== previousAssignee));
+          });
+
+          if (newTask) {
+            setUnreadCounts((previous) => ({
+              ...previous,
+              metaAds: (previous.metaAds || 0) + 1,
+            }));
+            setUploadPopupData({
+              projectName: newTask.clientName || "Meta Ads Campaign",
+              clientName: newTask.clientName,
+              alertTitle: "New Meta Ads Task",
+              alertMessage: "A new Meta Ads task has been assigned to you.",
+              targetPath: "/meta-ads-tasks",
+            });
+          }
+        }
+
+        knownMetaAdsTaskIds.current = taskAssignments;
+      } catch (error) {
+        console.error("Failed to check Meta Ads assignments:", error);
+      }
+    };
+
+    checkMetaAdsAssignments();
+    const interval = setInterval(checkMetaAdsAssignments, 5000);
+    return () => clearInterval(interval);
+  }, [role, user?.id]);
+
+  useEffect(() => {
     if (!user?.id) return;
     const fetchUnreads = async () => {
       try {
@@ -300,7 +398,12 @@ export default function ProfessionalSidebar({ children }) {
           API.get("/api/sidebar-unread"),
           API.get("/api/projects"),
         ]);
-        if (res.data?.success) setUnreadCounts(res.data.data);
+        if (res.data?.success) {
+          setUnreadCounts((previous) => ({
+            ...res.data.data,
+            metaAds: previous.metaAds || 0,
+          }));
+        }
 
         const projects = projectsRes.data?.data || [];
         const projectIds = new Set(projects.map((project) => project.id));
@@ -380,6 +483,9 @@ export default function ProfessionalSidebar({ children }) {
     if (departmentBadgeKey) {
       setDepartmentUnreadCounts((prev) => ({ ...prev, [departmentBadgeKey]: 0 }));
     }
+    if (item.id === "meta-ads-tasks") {
+      setUnreadCounts((prev) => ({ ...prev, metaAds: 0 }));
+    }
 
     let menuIdToReset = null;
     if ((item.id === "project" || item.id === "tasks-emp") && unreadCounts.projects > 0) {
@@ -438,6 +544,7 @@ export default function ProfessionalSidebar({ children }) {
             if (item.id === "project" || item.id === "tasks-emp") badgeCount = unreadCounts.projects;
             if (item.id === "shoots") badgeCount = unreadCounts.shoots;
             if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
+            if (item.id === "meta-ads-tasks") badgeCount = unreadCounts.metaAds || 0;
             const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 
             return (

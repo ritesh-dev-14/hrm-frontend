@@ -49,7 +49,7 @@ export default function TodayUploadPopup({ data, onClose }) {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 100, scale: 0.92 }}
           transition={{ type: "spring", stiffness: 280, damping: 28 }}
-          className="fixed top-4 right-4 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] pointer-events-auto"
+          className={`fixed z-[9999] w-[360px] max-w-[calc(100vw-2rem)] pointer-events-auto ${data?.alertTitle === "New Meta Ads Task" ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "top-4 right-4"}`}
           style={{ fontFamily: "inherit" }}
         >
           {/* Card */}

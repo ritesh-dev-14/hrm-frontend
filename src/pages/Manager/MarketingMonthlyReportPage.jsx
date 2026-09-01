@@ -15,9 +15,9 @@ const INITIAL_ROW = {
   leadAdsEnabled: "",
   leadsFund: "",
   leadArea: "",
-  requiredLeads: "",
   adsStartingDate: "",
   monthlyBudget: "",
+  objective: "",
 };
 
 const asList = (payload) => {
@@ -40,9 +40,9 @@ const toFormRow = (row = {}, projects) => {
     leadAdsEnabled: typeof row.leadAdsEnabled === "boolean" ? String(row.leadAdsEnabled) : "",
     leadsFund: row.leadsFund ?? "",
     leadArea: row.leadArea || "",
-    requiredLeads: row.requiredLeads ?? "",
     adsStartingDate: row.adsStartingDate ? String(row.adsStartingDate).split("T")[0] : "",
     monthlyBudget: row.monthlyBudget ?? "",
+    objective: row.awarenessEnabled === true ? "AWARENESS" : row.leadAdsEnabled === true ? "LEAD" : "",
   };
 };
 
@@ -52,7 +52,7 @@ const errorMessage = (error, fallback) =>
 export default function MarketingMonthlyReportPage() {
   const { role } = useAuth();
   const normalizedRole = String(role || "").trim().toUpperCase();
-  const canEdit = ["ADMIN", "HR", "EA"].includes(normalizedRole);
+  const canEdit = normalizedRole === "MANAGER";
   const [projects, setProjects] = useState([]);
   const [report, setReport] = useState(null);
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
@@ -124,10 +124,20 @@ export default function MarketingMonthlyReportPage() {
     if (rows.some((row) => !["yes", "no"].includes(row.currentlyRunning))) {
       return "Choose Yes or No for Currently Running in every row.";
     }
-    if (rows.some((row) => !["true", "false"].includes(row.awarenessEnabled) || !["true", "false"].includes(row.leadAdsEnabled))) {
-      return "Choose Yes or No for both ad types in every row.";
+    if (rows.some((row) => !["AWARENESS", "LEAD"].includes(row.objective))) {
+      return "Choose AWARENESS or LEAD for every campaign.";
     }
-    const numericFields = ["awarenessFunds", "leadsFund", "requiredLeads", "monthlyBudget"];
+    if (rows.some((row) => {
+      const area = row.objective === "AWARENESS" ? row.awarenessArea : row.leadArea;
+      const dailyBudget = row.objective === "AWARENESS" ? row.awarenessFunds : row.leadsFund;
+      return !area.trim() || dailyBudget === "" || Number(dailyBudget) < 0;
+    })) {
+      return "Area and Daily Budget are required for every campaign.";
+    }
+    if (rows.some((row) => row.monthlyBudget === "" || Number(row.monthlyBudget) < 0)) {
+      return "Monthly Budget is required for every campaign.";
+    }
+    const numericFields = ["awarenessFunds", "leadsFund", "monthlyBudget"];
     if (rows.some((row) => numericFields.some((field) => row[field] !== "" && (!Number.isFinite(Number(row[field])) || Number(row[field]) < 0)))) {
       return "Funds, leads, and budget values cannot be negative or invalid.";
     }
@@ -136,14 +146,13 @@ export default function MarketingMonthlyReportPage() {
 
   const apiRow = (row) => ({
     projectId: row.projectId,
-    awarenessEnabled: row.awarenessEnabled === "true",
+    awarenessEnabled: row.objective === "AWARENESS",
     currentlyRunning: row.currentlyRunning,
     awarenessArea: row.awarenessArea.trim(),
     awarenessFunds: row.awarenessFunds === "" ? null : Number(row.awarenessFunds),
-    leadAdsEnabled: row.leadAdsEnabled === "true",
+    leadAdsEnabled: row.objective === "LEAD",
     leadsFund: row.leadsFund === "" ? null : Number(row.leadsFund),
     leadArea: row.leadArea.trim(),
-    requiredLeads: row.requiredLeads === "" ? null : Number(row.requiredLeads),
     adsStartingDate: row.adsStartingDate || null,
     monthlyBudget: row.monthlyBudget === "" ? null : Number(row.monthlyBudget),
   });
@@ -204,15 +213,15 @@ export default function MarketingMonthlyReportPage() {
     <main className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px]">
         <header className="mb-6 flex flex-col gap-4 rounded-2xl bg-slate-900 p-5 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3"><div className="rounded-xl bg-emerald-500 p-3"><TrendingUp size={22} /></div><div><h1 className="text-2xl font-bold">Marketing Monthly Calendar</h1><p className="text-sm text-slate-300">Company-level campaign planning and remarks</p></div></div>
+          <div className="flex items-center gap-3"><div className="rounded-xl bg-emerald-500 p-3"><TrendingUp size={22} /></div><div><h1 className="text-2xl font-bold">Meeta Ads Calander</h1><p className="text-sm text-slate-300">Company-level campaign planning and remarks</p></div></div>
           <div className="flex gap-3"><label className="text-sm text-slate-300">Month<select value={month} onChange={(event) => setMonth(Number(event.target.value))} className="mt-1 block rounded-lg border-0 bg-white px-3 py-2 text-slate-800">{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{new Date(2000, index).toLocaleString("en", { month: "long" })}</option>)}</select></label><label className="text-sm text-slate-300">Year<input value={year} onChange={(event) => setYear(event.target.value)} inputMode="numeric" maxLength={4} className="mt-1 block w-24 rounded-lg border-0 bg-white px-3 py-2 text-slate-800" /></label></div>
         </header>
 
         {reportLoading || projectsLoading ? <div className="flex items-center justify-center py-20 text-slate-500"><LoaderCircle className="mr-2 animate-spin" size={22} />Loading report...</div> : <>
           <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-semibold text-slate-900">Campaign rows</h2><p className="text-sm text-slate-500">{report ? "Existing calendar loaded" : "No calendar exists for this period"}</p>{!canEdit && <p className="mt-1 text-xs font-medium text-amber-700">You are viewing this calendar as {normalizedRole || "a viewer"}. Only Admin, HR, and EA users can create or update it.</p>}</div><div className="flex flex-wrap items-center gap-2">{[ ["", "All", "border-slate-300 text-slate-600"], ["yes", "Running", "border-emerald-300 text-emerald-700"], ["no", "Not Running", "border-red-300 text-red-700"] ].map(([value, label, color]) => <button key={label} type="button" onClick={() => setRunningFilter(value)} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${color} ${runningFilter === value ? "bg-slate-100 ring-2 ring-slate-200" : "bg-white"}`}>{label}</button>)}{canEdit && <button type="button" onClick={() => setRows((current) => [...current, { ...INITIAL_ROW }])} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"><Plus size={16} />Add Campaign Row</button>}</div></div>
-            <div className="overflow-x-auto"><div className="min-w-[1250px] p-4">{visibleRows.map((row) => { const index = rows.indexOf(row); return <div key={index} className={`mb-4 rounded-xl border p-4 last:mb-0 ${row.currentlyRunning === "yes" ? "border-emerald-300 bg-emerald-50" : row.currentlyRunning === "no" ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}><div className="mb-4 flex items-center justify-between"><h3 className={`font-semibold ${row.currentlyRunning === "yes" ? "text-emerald-800" : row.currentlyRunning === "no" ? "text-red-800" : "text-slate-700"}`}>Campaign {index + 1}</h3>{canEdit && rows.length > 1 && <button type="button" onClick={() => setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))} className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700"><Trash2 size={15} />Remove Row</button>}</div><div className="grid grid-cols-6 gap-3"><label><span className={labelClass}>Project / Client</span><select disabled={!canEdit || projectsLoading} value={row.projectId} onChange={(event) => updateRow(index, "projectId", event.target.value)} className={inputClass}><option value="">Select project</option>{projects.map((project) => <option disabled={rows.some((candidate, candidateIndex) => candidateIndex !== index && candidate.projectId === String(project.id || project._id))} key={project.id || project._id} value={project.id || project._id}>{projectName(project)}</option>)}</select></label><label><span className={labelClass}>Currently Running</span><select disabled={!canEdit} value={row.currentlyRunning} onChange={(event) => updateRow(index, "currentlyRunning", event.target.value)} className={`${inputClass} ${row.currentlyRunning === "yes" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : row.currentlyRunning === "no" ? "border-red-500 bg-red-50 text-red-700" : ""}`}><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select></label><label><span className={labelClass}>Awareness Ads</span><select disabled={!canEdit} value={row.awarenessEnabled} onChange={(event) => updateRow(index, "awarenessEnabled", event.target.value)} className={inputClass}><option value="">Choose</option><option value="true">Yes</option><option value="false">No</option></select></label><label><span className={labelClass}>Awareness Area</span><input disabled={!canEdit} value={row.awarenessArea} onChange={(event) => updateRow(index, "awarenessArea", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Awareness Funds</span><input disabled={!canEdit} type="number" min="0" value={row.awarenessFunds} onChange={(event) => updateRow(index, "awarenessFunds", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Lead Ads</span><select disabled={!canEdit} value={row.leadAdsEnabled} onChange={(event) => updateRow(index, "leadAdsEnabled", event.target.value)} className={inputClass}><option value="">Choose</option><option value="true">Yes</option><option value="false">No</option></select></label><label><span className={labelClass}>Leads Fund</span><input disabled={!canEdit} type="number" min="0" value={row.leadsFund} onChange={(event) => updateRow(index, "leadsFund", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Lead Area</span><input disabled={!canEdit} value={row.leadArea} onChange={(event) => updateRow(index, "leadArea", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Required Leads</span><input disabled={!canEdit} type="number" min="0" value={row.requiredLeads} onChange={(event) => updateRow(index, "requiredLeads", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Ads Starting Date</span><input disabled={!canEdit} type="date" value={row.adsStartingDate} onChange={(event) => updateRow(index, "adsStartingDate", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Monthly Budget</span><input disabled={!canEdit} type="number" min="0" value={row.monthlyBudget} onChange={(event) => updateRow(index, "monthlyBudget", event.target.value)} className={inputClass} /></label></div></div>; })}</div></div>
-            {canEdit && <div className="flex justify-end border-t border-slate-200 p-4"><button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{saving && <LoaderCircle size={16} className="animate-spin" />}Create</button></div>}
+            <div className="overflow-x-auto"><div className="min-w-[1100px] p-4">{visibleRows.map((row) => { const index = rows.indexOf(row); const isAwareness = row.objective === "AWARENESS"; return <div key={index} className={`mb-4 rounded-xl border p-4 last:mb-0 ${row.currentlyRunning === "yes" ? "border-emerald-300 bg-emerald-50" : row.currentlyRunning === "no" ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}><div className="mb-4 flex items-center justify-between"><h3 className={`font-semibold ${row.currentlyRunning === "yes" ? "text-emerald-800" : row.currentlyRunning === "no" ? "text-red-800" : "text-slate-700"}`}>Campaign {index + 1}</h3>{canEdit && rows.length > 1 && <button type="button" onClick={() => setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))} className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700"><Trash2 size={15} />Remove Row</button>}</div><div className="grid grid-cols-2 gap-3 md:grid-cols-4"><label><span className={labelClass}>Project / Client</span><select disabled={!canEdit || projectsLoading} value={row.projectId} onChange={(event) => updateRow(index, "projectId", event.target.value)} className={inputClass}><option value="">Select project</option>{projects.map((project) => <option disabled={rows.some((candidate, candidateIndex) => candidateIndex !== index && candidate.projectId === String(project.id || project._id))} key={project.id || project._id} value={project.id || project._id}>{projectName(project)}</option>)}</select></label><label><span className={labelClass}>Currently Running</span><select disabled={!canEdit} value={row.currentlyRunning} onChange={(event) => updateRow(index, "currentlyRunning", event.target.value)} className={`${inputClass} ${row.currentlyRunning === "yes" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : row.currentlyRunning === "no" ? "border-red-500 bg-red-50 text-red-700" : ""}`}><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select></label><label><span className={labelClass}>Objective</span><select required disabled={!canEdit} value={row.objective} onChange={(event) => updateRow(index, "objective", event.target.value)} className={inputClass}><option value="">Choose</option><option value="AWARENESS">AWARENESS</option><option value="LEAD">LEAD</option></select></label><label><span className={labelClass}>Area</span><input required disabled={!canEdit} value={isAwareness ? row.awarenessArea : row.leadArea} onChange={(event) => updateRow(index, isAwareness ? "awarenessArea" : "leadArea", event.target.value)} className={inputClass} placeholder="Enter area" /></label><label><span className={labelClass}>Daily Budget</span><input required disabled={!canEdit} type="number" min="0" value={isAwareness ? row.awarenessFunds : row.leadsFund} onChange={(event) => updateRow(index, isAwareness ? "awarenessFunds" : "leadsFund", event.target.value)} className={inputClass} placeholder="Enter daily budget" /></label><label><span className={labelClass}>Ads Starting Date</span><input required disabled={!canEdit} type="date" value={row.adsStartingDate} onChange={(event) => updateRow(index, "adsStartingDate", event.target.value)} className={inputClass} /></label><label><span className={labelClass}>Monthly Budget</span><input required disabled={!canEdit} type="number" min="0" value={row.monthlyBudget} onChange={(event) => updateRow(index, "monthlyBudget", event.target.value)} className={inputClass} /></label></div></div>; })}</div></div>
+            {canEdit && <div className="flex justify-end border-t border-slate-200 p-4"><button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{saving && <LoaderCircle size={16} className="animate-spin" />}Save</button></div>}
           </form>
 
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 font-semibold text-slate-900">Remarks</h2>{remarks.length ? <div className="space-y-3">{remarks.map((item) => <div key={item.id || item._id} className="flex items-start justify-between gap-4 rounded-lg bg-slate-50 p-3"><div><p className="text-sm text-slate-800">{item.remark}</p><p className="mt-1 text-xs text-slate-500">{item.manager?.name || item.managerName || item.createdBy?.name || "Manager"} · {item.createdAt ? new Date(item.createdAt).toLocaleString() : "Date unavailable"}</p></div>{canEdit && <button type="button" title="Delete remark" onClick={() => deleteRemark(item.id || item._id)} className="text-red-600 hover:text-red-700"><Trash2 size={16} /></button>}</div>)}</div> : <p className="text-sm text-slate-500">No remarks for this period.</p>}{canEdit && <form onSubmit={addRemark} className="mt-4 flex flex-col gap-2 sm:flex-row"><input value={remark} onChange={(event) => setRemark(event.target.value)} placeholder="Add a remark" className={`${inputClass} flex-1`} /><button disabled={remarkSaving || !report} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{remarkSaving && <LoaderCircle size={16} className="animate-spin" />}Add Remark</button></form>}</section>

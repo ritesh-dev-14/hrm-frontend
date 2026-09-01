@@ -1,1 +1,8 @@
+main.meta-ads-tasks-page .meta-ads-manager article button.mt-5 {
+	display: none;
+}
 @import "tailwindcss";
+
+main.meta-ads-tasks-page .meta-ads-hr > section:first-of-type {
+	display: none;
+}
