@@ -295,7 +295,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing"
             element={
-              role === "MANAGER" ? (
+              ["ADMIN", "HR", "MANAGER"].includes(role) ? (
                 <MarketingReportsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -317,7 +317,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing-monthly-reports"
             element={
-              role === "MANAGER" ? (
+              ["ADMIN", "HR", "MANAGER"].includes(role) ? (
                 <MarketingMonthlyReportPage />
               ) : (
                 <Navigate to="/dashboard" replace />
