@@ -161,7 +161,7 @@ export default function MarketingReportsPage() {
     if (!form.projectId) return showToast("error", "Please select a project.");
     if (!["Awareness", "Lead"].includes(form.typeOfAds)) return showToast("error", "Please select Awareness or Lead.");
     if (!["true", "false"].includes(form.isAdRunning)) return showToast("error", "Please select whether the ad is running.");
-    if (form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
+    if (form.typeOfAds !== "Lead" && form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
     if (form.typeOfAds === "Lead" && !["true", "false"].includes(form.leadSentToClient)) return showToast("error", "Please select whether the lead was sent to the client.");
     setSubmitting(true);
     try {
@@ -171,7 +171,7 @@ export default function MarketingReportsPage() {
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
         todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
         leadObtained: form.leadObtained !== "" ? Number(form.leadObtained) : null,
-        decidedDailyBudget: form.decidedDailyBudget !== "" ? Number(form.decidedDailyBudget) : null,
+        decidedDailyBudget: form.typeOfAds === "Lead" ? null : form.decidedDailyBudget !== "" ? Number(form.decidedDailyBudget) : null,
         leadSentToClient: form.leadSentToClient === "true" ? true : form.leadSentToClient === "false" ? false : null,
         startDate: form.startDate || null,
         isAdRunning: form.isAdRunning === "true" ? true : form.isAdRunning === "false" ? false : null,
@@ -497,7 +497,6 @@ export default function MarketingReportsPage() {
 
               {form.typeOfAds === "Lead" && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Decided Daily Budget (₹)</label><input type="number" min="0" step="0.01" value={form.decidedDailyBudget} onChange={(e) => setForm((f) => ({ ...f, decidedDailyBudget: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
                   <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Leads Obtained</label><input type="number" min="0" value={form.leadObtained} onChange={(e) => setForm((f) => ({ ...f, leadObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
                   <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Lead Sent to Client</label><select value={form.leadSentToClient} onChange={(e) => setForm((f) => ({ ...f, leadSentToClient: e.target.value }))} className={selectCls}><option value="">— Select —</option><option value="true">Yes</option><option value="false">No</option></select></div>
                   <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
