@@ -171,7 +171,7 @@ const ShootManagerPage = () => {
             className="group flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-indigo-600 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl shadow-slate-900/20 hover:shadow-indigo-600/30 w-full md:w-auto justify-center"
           >
             <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-            Launch Workspace
+            Plane Shoot
           </button>
         </motion.div>
 
