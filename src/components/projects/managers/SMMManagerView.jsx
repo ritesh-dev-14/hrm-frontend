@@ -34,6 +34,13 @@ const EMPTY_DAY_SHAPE = {
   description: "",
 };
 
+const calendarDateKey = (date) => {
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime())
+    ? String(date || "")
+    : parsedDate.toISOString().slice(0, 10);
+};
+
 const RESPONSIVE_CSS = `
   .smm-container {
     max-width: 1280px;
@@ -414,6 +421,36 @@ const SMMManagerView = ({ projectId }) => {
     setSelectedCalendar((prev) => ({ ...prev, days: updatedDays }));
   };
 
+  const handleDayDateChange = (index, value) => {
+    if (!value) return;
+    const nextDate = new Date(`${value}T00:00:00Z`).toISOString();
+    if (
+      sheetDays.some(
+        (day, dayIndex) =>
+          dayIndex !== index && calendarDateKey(day.date) === calendarDateKey(nextDate),
+      )
+    ) {
+      alert("A row for this date already exists.");
+      return;
+    }
+    handleDayFieldChange(index, "date", nextDate);
+  };
+
+  const handleSelectedDayDateChange = (index, value) => {
+    if (!selectedCalendar || !value) return;
+    const nextDate = new Date(`${value}T00:00:00Z`).toISOString();
+    if (
+      selectedCalendar.days.some(
+        (day, dayIndex) =>
+          dayIndex !== index && calendarDateKey(day.date) === calendarDateKey(nextDate),
+      )
+    ) {
+      alert("A row for this date already exists.");
+      return;
+    }
+    handleSelectedDayChange(index, "date", nextDate);
+  };
+
   // API Call: PATCH Project Base Operational Data (plain JSON)
   const handlePatchDetails = async (e) => {
     e.preventDefault();
@@ -570,6 +607,12 @@ const SMMManagerView = ({ projectId }) => {
       return;
     }
 
+    const dateKeys = activeDaysPayload.map((day) => calendarDateKey(day.date));
+    if (new Set(dateKeys).size !== dateKeys.length) {
+      alert("Each tactical row must use a different date.");
+      return;
+    }
+
     try {
       setIsSubmittingSheet(true);
 
@@ -588,7 +631,6 @@ const SMMManagerView = ({ projectId }) => {
         totalPostsUploaded: sheetMeta.totalPostsUploaded
           ? parseInt(sheetMeta.totalPostsUploaded, 10)
           : 0,
-        moodBoardLink: sheetMeta.moodBoardLink.trim() || null,
         days: activeDaysPayload.map((day) => ({
           date: day.date,
           // Normalise values: backend expects either "SHOOT_REQUIRED", "AI_REQUIRED", "DATA_AVAILABLE" or null for postType/reelType
@@ -605,6 +647,8 @@ const SMMManagerView = ({ projectId }) => {
           description: day.description,
         })),
       };
+      const moodBoardLink = String(sheetMeta.moodBoardLink || "").trim();
+      if (moodBoardLink) payload.moodBoardLink = moodBoardLink;
 
       const response = await API.post(
         `/api/projects/${projectId}/monthly-sheets`,
@@ -2258,13 +2302,18 @@ const SMMManagerView = ({ projectId }) => {
                                       className="hover:bg-slate-50/90 transition-colors group align-top"
                                     >
                                       <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
-                                        {new Date(
-                                          dayItem.date,
-                                        ).toLocaleDateString(undefined, {
-                                          day: "numeric",
-                                          month: "short",
-                                          timeZone: "UTC",
-                                        })}
+                                        <input
+                                          type="date"
+                                          value={calendarDateKey(dayItem.date)}
+                                          onChange={(e) =>
+                                            handleSelectedDayDateChange(
+                                              index,
+                                              e.target.value,
+                                            )
+                                          }
+                                          className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                          aria-label={`Date for row ${index + 1}`}
+                                        />
                                       </td>
                                       <td className="px-4 py-3 whitespace-nowrap pt-4">
                                         <select
@@ -2574,7 +2623,7 @@ const SMMManagerView = ({ projectId }) => {
                                         {dayItem.rejectionReason || "—"}
                                       </td>
                                       {/* ACTIONS */}
-                                      <td className="px-4 py-3 whitespace-nowrap pt-4 text-center">
+                                      <td className="sticky right-0 z-10 bg-white px-4 py-3 whitespace-nowrap pt-4 text-center group-hover:bg-slate-50/90">
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -2878,6 +2927,16 @@ const SMMManagerView = ({ projectId }) => {
                                 const parsedDate = new Date(newDayForm.date);
                                 if (isNaN(parsedDate.getTime())) {
                                   alert("Invalid date selected.");
+                                  return;
+                                }
+                                if (
+                                  selectedCalendar.days.some(
+                                    (day) =>
+                                      calendarDateKey(day.date) ===
+                                      calendarDateKey(parsedDate),
+                                  )
+                                ) {
+                                  alert("A row for this date already exists.");
                                   return;
                                 }
 
@@ -3207,13 +3266,15 @@ const SMMManagerView = ({ projectId }) => {
                                     className="hover:bg-slate-50/90 transition-colors group align-top"
                                   >
                                     <td className="px-4 py-3 whitespace-nowrap font-black text-slate-800 text-sm sticky left-0 bg-white group-hover:bg-slate-50/90 z-10 border-r border-slate-100 transition-colors pt-4">
-                                      {new Date(
-                                        dayItem.date,
-                                      ).toLocaleDateString(undefined, {
-                                        day: "numeric",
-                                        month: "short",
-                                        timeZone: "UTC",
-                                      })}
+                                      <input
+                                        type="date"
+                                        value={calendarDateKey(dayItem.date)}
+                                        onChange={(e) =>
+                                          handleDayDateChange(idx, e.target.value)
+                                        }
+                                        className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                                        aria-label={`Date for row ${idx + 1}`}
+                                      />
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap pt-4">
                                       <select
@@ -3397,7 +3458,7 @@ const SMMManagerView = ({ projectId }) => {
                                     </td>
 
                                     {/* ACTIONS */}
-                                    <td className="px-4 py-3 whitespace-nowrap pt-4 text-center">
+                                    <td className="sticky right-0 z-10 bg-white px-4 py-3 whitespace-nowrap pt-4 text-center group-hover:bg-slate-50/90">
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -3718,6 +3779,16 @@ const SMMManagerView = ({ projectId }) => {
                                 const parsedDate = new Date(newDayForm.date);
                                 if (isNaN(parsedDate.getTime())) {
                                   alert("Invalid date selected.");
+                                  return;
+                                }
+                                if (
+                                  sheetDays.some(
+                                    (day) =>
+                                      calendarDateKey(day.date) ===
+                                      calendarDateKey(parsedDate),
+                                  )
+                                ) {
+                                  alert("A row for this date already exists.");
                                   return;
                                 }
 

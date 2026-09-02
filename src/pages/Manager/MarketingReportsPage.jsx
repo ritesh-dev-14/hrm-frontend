@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
 import {
@@ -57,6 +57,7 @@ export default function MarketingReportsPage() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submitInFlight = useRef(false);
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -158,11 +159,16 @@ export default function MarketingReportsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitInFlight.current) return;
     if (!form.projectId) return showToast("error", "Please select a project.");
     if (!["Awareness", "Lead"].includes(form.typeOfAds)) return showToast("error", "Please select Awareness or Lead.");
     if (!["true", "false"].includes(form.isAdRunning)) return showToast("error", "Please select whether the ad is running.");
     if (form.typeOfAds !== "Lead" && form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
     if (form.typeOfAds === "Lead" && !["true", "false"].includes(form.leadSentToClient)) return showToast("error", "Please select whether the lead was sent to the client.");
+    const reportDate = String(form.date || "").split("T")[0];
+    const duplicateReport = reports.some((report) => String(report.date || "").split("T")[0] === reportDate && String(report.id) !== String(editTarget?.id));
+    if (duplicateReport) return showToast("error", "A report already exists for this date.");
+    submitInFlight.current = true;
     setSubmitting(true);
     try {
       const payload = {
@@ -189,6 +195,7 @@ export default function MarketingReportsPage() {
     } catch (err) {
       showToast("error", err?.response?.data?.message || "Failed to save report.");
     } finally {
+      submitInFlight.current = false;
       setSubmitting(false);
     }
   };

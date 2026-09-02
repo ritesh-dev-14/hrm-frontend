@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CheckCircle2, LoaderCircle, Plus, Trash2, TrendingUp, XCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
@@ -63,6 +63,7 @@ export default function MarketingMonthlyReportPage() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [reportLoading, setReportLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const saveInFlight = useRef(false);
   const [remarkSaving, setRemarkSaving] = useState(false);
   const [runningFilter, setRunningFilter] = useState("");
 
@@ -117,7 +118,9 @@ export default function MarketingMonthlyReportPage() {
     if (!/^\d{4}$/.test(String(year))) return "Year must be a four-digit year.";
     if (!rows.length) return "Add at least one campaign row.";
     if (rows.some((row) => !row.projectId)) return "Select a project in every campaign row.";
-    const projectIds = rows.map((row) => row.projectId).filter(Boolean);
+    const projectIds = rows
+      .map((row) => String(row.projectId || "").trim())
+      .filter(Boolean);
     if (new Set(projectIds).size !== projectIds.length) {
       return "The same project cannot be added more than once to this calendar.";
     }
@@ -159,8 +162,10 @@ export default function MarketingMonthlyReportPage() {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (saveInFlight.current) return;
     const validationError = validate();
     if (validationError) return notifyError(validationError);
+    saveInFlight.current = true;
     setSaving(true);
     try {
       const payload = { month: Number(month), year: Number(year), rows: rows.map(apiRow) };
@@ -175,6 +180,7 @@ export default function MarketingMonthlyReportPage() {
     } catch (error) {
       notifyError(errorMessage(error, "Unable to save the monthly calendar."));
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   };
