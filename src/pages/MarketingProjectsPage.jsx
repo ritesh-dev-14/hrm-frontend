@@ -78,7 +78,9 @@ const MarketingProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [runningFilter, setRunningFilter] = useState("all");
   const [openModal, setOpenModal] = useState(false);
+  const [updatingProjectId, setUpdatingProjectId] = useState(null);
 
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -116,11 +118,19 @@ const MarketingProjectsPage = () => {
   const filteredProjects = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return allProjects.filter(
-      (p) =>
-        p.projectName?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q),
+      (p) => {
+        const matchesSearch =
+          p.projectName?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q);
+        const isRunning = p.isRunning === true || p.isRunning === "true";
+        const matchesRunningFilter =
+          runningFilter === "all" ||
+          (runningFilter === "running" && isRunning) ||
+          (runningFilter === "not-running" && !isRunning);
+        return matchesSearch && matchesRunningFilter;
+      },
     );
-  }, [allProjects, searchQuery]);
+  }, [allProjects, searchQuery, runningFilter]);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -133,6 +143,25 @@ const MarketingProjectsPage = () => {
 
   const handleProjectCreated = (project) => {
     setAllProjects((previous) => [normalizeMetaAdsProject(project), ...previous]);
+  };
+
+  const toggleProjectRunning = async (event, project) => {
+    event.stopPropagation();
+    const projectId = project.id || project._id;
+    const nextIsRunning = !(project.isRunning === true || project.isRunning === "true");
+    try {
+      setUpdatingProjectId(projectId);
+      await API.patch(`/api/projects/${projectId}`, { isRunning: nextIsRunning });
+      setAllProjects((previous) => previous.map((item) => (
+        String(item.id || item._id) === String(projectId)
+          ? { ...item, isRunning: nextIsRunning }
+          : item
+      )));
+    } catch (error) {
+      console.error("Failed to update Meta Ads running status:", error);
+    } finally {
+      setUpdatingProjectId(null);
+    }
   };
 
   return (
@@ -191,7 +220,8 @@ const MarketingProjectsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-4 md:p-6 shadow-sm"
         >
-          <div className="relative w-full group">
+          <div className="flex flex-col gap-3 md:flex-row">
+            <div className="relative w-full group">
             <Search
               size={18}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-pink-500 transition-colors"
@@ -203,6 +233,17 @@ const MarketingProjectsPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 transition-all bg-white"
             />
+            </div>
+            <select
+              value={runningFilter}
+              onChange={(event) => setRunningFilter(event.target.value)}
+              className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 md:min-w-44"
+              aria-label="Filter projects by running status"
+            >
+              <option value="all">All Projects</option>
+              <option value="running">Running Ads</option>
+              <option value="not-running">Not Running Ads</option>
+            </select>
           </div>
         </motion.div>
 
@@ -218,7 +259,7 @@ const MarketingProjectsPage = () => {
               No Meta Ads Found
             </h3>
             <p className="text-sm font-medium text-slate-500 max-w-sm">
-              {searchQuery
+              {searchQuery || runningFilter !== "all"
                 ? "No projects match your search. Try a different keyword."
                 : "There are no projects assigned to the Marketing Department yet."}
             </p>
@@ -232,6 +273,9 @@ const MarketingProjectsPage = () => {
           >
             <AnimatePresence>
               {filteredProjects.map((project) => (
+                (() => {
+                  const isRunning = project.isRunning === true || project.isRunning === "true";
+                  return (
                 <motion.div
                   layout
                   variants={itemVariants}
@@ -240,7 +284,7 @@ const MarketingProjectsPage = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   key={project.id}
                   onClick={() => navigate(`/project/${project.id}`)}
-                  className="bg-white/90 backdrop-blur-xl border border-pink-100/60 rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
+                  className={`${isRunning ? "bg-emerald-50/90 border-emerald-200" : "bg-red-50/90 border-red-200"} backdrop-blur-xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full border-2`}
                 >
                   {/* Status + Arrow */}
                   <div className="flex justify-between items-start mb-4">
@@ -275,7 +319,10 @@ const MarketingProjectsPage = () => {
                       <p><span className="font-bold text-slate-400">Funds:</span> {project.fundsAddedBy || "-"}</p>
                     </div>
                     <p><span className="font-bold text-slate-400">Manager:</span> {project.assignments?.map((assignment) => assignment.manager?.name || assignment.manager?.fullName || assignment.manager?.employeeId || assignment.managerId).filter(Boolean).join(", ") || project.assignedTo?.name || project.assignedTo?.fullName || "-"}</p>
-                    <p><span className="font-bold text-slate-400">Running:</span> <span className={`font-black ${project.isRunning ? "text-emerald-600" : "text-red-600"}`}>{project.isRunning ? "Yes" : "No"}</span></p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p><span className="font-bold text-slate-400">Running:</span> <span className={`font-black ${isRunning ? "text-emerald-600" : "text-red-600"}`}>{isRunning ? "Yes" : "No"}</span></p>
+                      {role === "MANAGER" && <button type="button" onClick={(event) => toggleProjectRunning(event, project)} disabled={updatingProjectId === (project.id || project._id)} className={`rounded-lg px-2.5 py-1 text-[10px] font-black transition disabled:opacity-50 ${isRunning ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{updatingProjectId === (project.id || project._id) ? "Updating" : isRunning ? "Set No" : "Set Yes"}</button>}
+                    </div>
                   </div>
 
                   {/* Footer */}
@@ -309,6 +356,8 @@ const MarketingProjectsPage = () => {
                     )}
                   </div>
                 </motion.div>
+                  );
+                })()
               ))}
             </AnimatePresence>
           </motion.div>

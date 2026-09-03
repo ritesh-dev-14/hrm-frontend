@@ -75,6 +75,7 @@ export default function PerformanceMarketingManagerView({ projectId, campaignId 
   const [campaignNames, setCampaignNames] = useState([""]);
   const [campaignModalOpen, setCampaignModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
+  const [campaignReports, setCampaignReports] = useState({});
   const canManageCampaigns = user?.role === "MANAGER";
   const isAssignedManager = project?.assignments?.some((assignment) =>
     String(assignment.managerId || assignment.manager?.id || assignment.manager?.employeeId) === String(user?.id || user?.employeeId),
@@ -114,7 +115,20 @@ export default function PerformanceMarketingManagerView({ projectId, campaignId 
         setCampaignLoading(true);
         const campaignRes = await API.get(`/api/projects/${projectId}/campaigns`);
         const campaignData = campaignRes.data?.data ?? campaignRes.data;
-        setCampaigns(Array.isArray(campaignData) ? campaignData : campaignData?.items || []);
+        const loadedCampaigns = Array.isArray(campaignData) ? campaignData : campaignData?.items || [];
+        setCampaigns(loadedCampaigns);
+        const reportEntries = await Promise.all(loadedCampaigns.map(async (campaign) => {
+          try {
+            const reportResponse = await API.get(`/api/campaigns/${campaign.id}/reports`);
+            const reportData = reportResponse.data?.data ?? reportResponse.data;
+            return [campaign.id, Array.isArray(reportData) ? reportData : []];
+          } catch {
+            return [campaign.id, []];
+          }
+        }));
+        const reportsByCampaign = Object.fromEntries(reportEntries);
+        setCampaignReports(reportsByCampaign);
+        setReports(Object.values(reportsByCampaign).flat());
         setCampaignLoading(false);
       }
 
@@ -123,8 +137,6 @@ export default function PerformanceMarketingManagerView({ projectId, campaignId 
         const repRes = await API.get(`/api/campaigns/${campaignId}/reports`);
         const data = Array.isArray(repRes.data) ? repRes.data : repRes.data?.data || [];
         setReports(data);
-      } else {
-        setReports([]);
       }
 
     } catch (error) {
@@ -420,7 +432,7 @@ export default function PerformanceMarketingManagerView({ projectId, campaignId 
                 </div>
                 {canManageCampaigns && isAssignedManager && <button type="button" onClick={() => { setEditingCampaign(null); setCampaignName(""); setCampaignCount("1"); setCampaignNames([""]); setCampaignModalOpen(true); }} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"><Plus size={16} />Create Campaign</button>}
               </div>
-              {campaignLoading ? <p className="py-8 text-center text-sm text-slate-500">Loading campaigns...</p> : campaignError ? <p className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">{campaignError}</p> : campaigns.length === 0 ? <p className="rounded-xl bg-white p-8 text-center text-sm font-semibold text-slate-500">No campaigns found.</p> : <div className="grid gap-3 md:grid-cols-2">{campaigns.map((campaign) => <article key={campaign.id} className="rounded-2xl border border-slate-200 bg-white p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-black text-slate-900">{campaign.name}</h3><p className="mt-1 text-xs text-slate-500">Created {fmtDate(campaign.createdAt)} · {(campaign.reports || []).length} reports</p></div><span className="rounded-lg bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase text-indigo-600">Campaign</span></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => navigate(`/project/${projectId}/campaign/${campaign.id}`)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white">View Reports</button>{canManageCampaigns && isAssignedManager && <><button type="button" onClick={() => { setEditingCampaign(campaign); setCampaignName(campaign.name); setCampaignModalOpen(true); }} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><Edit3 size={13} />Edit</button><button type="button" onClick={() => deleteCampaign(campaign)} className="inline-flex items-center gap-1 rounded-xl border border-red-100 px-3 py-2 text-xs font-bold text-red-600"><Trash2 size={13} />Delete</button></>}</div></article>)}</div>}
+              {campaignLoading ? <p className="py-8 text-center text-sm text-slate-500">Loading campaigns...</p> : campaignError ? <p className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">{campaignError}</p> : campaigns.length === 0 ? <p className="rounded-xl bg-white p-8 text-center text-sm font-semibold text-slate-500">No campaigns found.</p> : <div className="grid gap-3 md:grid-cols-2">{campaigns.map((campaign) => { const campaignReportList = campaignReports[campaign.id] || campaign.reports || []; const campaignSpend = campaignReportList.reduce((sum, report) => sum + Number(report.todayAmountSpend || 0), 0); const campaignReach = campaignReportList.reduce((sum, report) => sum + Number(report.todayReachObtained || 0), 0); const campaignLeads = campaignReportList.reduce((sum, report) => sum + Number(report.leadObtained || 0), 0); return <article key={campaign.id} className="rounded-2xl border border-slate-200 bg-white p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-black text-slate-900">{campaign.name}</h3><p className="mt-1 text-xs text-slate-500">Created {fmtDate(campaign.createdAt)} · {campaignReportList.length} reports</p></div><span className="rounded-lg bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase text-indigo-600">Campaign</span></div><div className="mt-4 grid grid-cols-3 gap-2"><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] font-bold uppercase text-slate-400">Spend</p><p className="text-xs font-black text-slate-800">{fmtCur(campaignSpend)}</p></div><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] font-bold uppercase text-slate-400">Reach</p><p className="text-xs font-black text-slate-800">{fmt(campaignReach)}</p></div><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] font-bold uppercase text-slate-400">Leads</p><p className="text-xs font-black text-slate-800">{fmt(campaignLeads)}</p></div></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => navigate(`/project/${projectId}/campaign/${campaign.id}`)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white">View Reports</button>{canManageCampaigns && isAssignedManager && <><button type="button" onClick={() => { setEditingCampaign(campaign); setCampaignName(campaign.name); setCampaignModalOpen(true); }} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><Edit3 size={13} />Edit</button><button type="button" onClick={() => deleteCampaign(campaign)} className="inline-flex items-center gap-1 rounded-xl border border-red-100 px-3 py-2 text-xs font-bold text-red-600"><Trash2 size={13} />Delete</button></>}</div></article>; })}</div>}
             </section>
           )}
 
