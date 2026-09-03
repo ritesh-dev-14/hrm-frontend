@@ -8,6 +8,7 @@ import {
   User2,
   ChevronRight,
   Search,
+  Edit,
   ClipboardList,
 } from "lucide-react";
 import ProfessionalLoader from "../components/ProfessionalLoader";
@@ -80,6 +81,7 @@ const MarketingProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [runningFilter, setRunningFilter] = useState("all");
   const [openModal, setOpenModal] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState(null);
   const [updatingProjectId, setUpdatingProjectId] = useState(null);
 
   const navigate = useNavigate();
@@ -142,7 +144,19 @@ const MarketingProjectsPage = () => {
   };
 
   const handleProjectCreated = (project) => {
-    setAllProjects((previous) => [normalizeMetaAdsProject(project), ...previous]);
+    if (projectToEdit) {
+      const editedId = String(projectToEdit.id || projectToEdit._id);
+      setAllProjects((previous) =>
+        previous.map((p) =>
+          String(p.id || p._id) === editedId
+            ? normalizeMetaAdsProject({ ...p, ...project })
+            : p
+        )
+      );
+      setProjectToEdit(null);
+    } else {
+      setAllProjects((previous) => [normalizeMetaAdsProject(project), ...previous]);
+    }
   };
 
   const toggleProjectRunning = async (event, project) => {
@@ -295,8 +309,13 @@ const MarketingProjectsPage = () => {
                     >
                       {project.status}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ChevronRight size={16} className="text-pink-500" />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setProjectToEdit(project); setOpenModal(true); }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-pink-600 transition-colors">
+                        <Edit size={16} />
+                      </button>
+                      <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ChevronRight size={16} className="text-pink-500" />
+                      </div>
                     </div>
                   </div>
 
@@ -365,9 +384,10 @@ const MarketingProjectsPage = () => {
       </div>
       {role !== "MANAGER" && <MetaAdsProjectModal
           open={openModal}
-          onClose={() => setOpenModal(false)}
+          onClose={() => { setOpenModal(false); setProjectToEdit(null); }}
           onProjectCreated={handleProjectCreated}
           defaultDepartmentName="marketing"
+          projectToEdit={projectToEdit}
         />}
     </div>
   );
