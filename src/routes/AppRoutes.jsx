@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+﻿import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 
@@ -45,6 +45,7 @@ import ManagerAttendence from "../pages/Manager/ManagerAttendence";
 import ManagerLeave from "../pages/Manager/ManagerLeave";
 import ManagerPayslips from "../pages/Manager/ManagerPayslips";
 import ManagerSettings from "../pages/Manager/ManagerSettings";
+import ManagerPendingPage from "../pages/Manager/ManagerPendingPage";
 import ManagerTaskPage from "../pages/Manager/ManagerTasksPage.jsx";
 import ManagerWhatsappMessages from "../pages/Manager/ManagerWhatsappMessages.jsx";
 
@@ -56,11 +57,11 @@ import ShootWorkspaceDetails from "../components/shoots/manager/ShootWorkspaceDe
 import EditorPage from "../components/editor/EditorPage.jsx";
 import EditorWorkSpaceDetails from "../components/editor/manager/EditorWorkspaceDetails.jsx";
 
-/* NEW — COORDINATOR */
+/* NEW â€” COORDINATOR */
 import CoordinatorHomePage from "../pages/Coordinator/CoordinatorHomePage.jsx";
 import CoordinatorPriorityActions from "../pages/Coordinator/CoordinatorPriorityActions.jsx";
 
-/* NEW — EMPLOYEE ACTIONS */
+/* NEW â€” EMPLOYEE ACTIONS */
 import AssignedActionsPage from "../pages/Employee/AssignedActionsPage.jsx";
 import CordinatorTasks from "../pages/CordinatorTasks.jsx";
 import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
@@ -290,6 +291,18 @@ export const AppRoutes = () => {
               )
             }
           />
+
+          <Route
+            path="/manager-pending"
+            element={
+              role === "MANAGER" ? (
+                <ManagerPendingPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
           <Route path="/tasks" element={<CordinatorTasks />} />
 
           <Route
@@ -549,4 +562,5 @@ export const AppRoutes = () => {
 };
 
 export default AppRoutes;
+
 
