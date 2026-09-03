@@ -382,13 +382,13 @@ const MarketingProjectsPage = () => {
           </motion.div>
         )}
       </div>
-      {role !== "MANAGER" && <MetaAdsProjectModal
+      <MetaAdsProjectModal
           open={openModal}
           onClose={() => { setOpenModal(false); setProjectToEdit(null); }}
           onProjectCreated={handleProjectCreated}
           defaultDepartmentName="marketing"
           projectToEdit={projectToEdit}
-        />}
+        />
     </div>
   );
 };

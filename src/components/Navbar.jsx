@@ -476,10 +476,16 @@ export default function ProfessionalSidebar({ children }) {
             
             let badgeCount = 0;
             if (item.id === "assigned-actions") badgeCount = assignedActionsCount;
-            if (item.id === "project" || item.id === "tasks-emp") badgeCount = unreadCounts.projects;
+            if (item.id === "project" || item.id === "tasks-emp") {
+              badgeCount = (unreadCounts.projects || 0) +
+                           (departmentUnreadCounts.marketing || 0) +
+                           (departmentUnreadCounts.socialMedia || 0) +
+                           (departmentUnreadCounts.seo || 0) +
+                           (departmentUnreadCounts.webDevelopment || 0) +
+                           (unreadCounts.metaAds || 0);
+            }
             if (item.id === "shoots") badgeCount = unreadCounts.shoots;
             if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
-            if (item.id === "meta-ads-tasks") badgeCount = unreadCounts.metaAds || 0;
             const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 
             return (
@@ -551,16 +557,16 @@ export default function ProfessionalSidebar({ children }) {
                       <div className="ml-[22px] mt-1 mb-1 space-y-0.5 border-l border-slate-700/50 pl-2">
                         {item.children.map((child) => {
                           const childActive = activeId === child.id;
-                          const childBadgeCount = child.id === "meta-ads-tasks"
-                            ? unreadCounts.metaAds || 0
-                            : departmentUnreadCounts[
-                              {
-                                "marketing-projects": "marketing",
-                                "social-media-projects": "socialMedia",
-                                "seo-projects": "seo",
-                                "web-development-projects": "webDevelopment",
-                              }[child.id]
-                            ] || 0;
+                          const childBadgeKey = {
+                            "marketing-projects": "marketing",
+                            "social-media-projects": "socialMedia",
+                            "seo-projects": "seo",
+                            "web-development-projects": "webDevelopment",
+                          }[child.id];
+                          let childBadgeCount = childBadgeKey ? (departmentUnreadCounts[childBadgeKey] || 0) : 0;
+                          if (child.id === "marketing-projects") {
+                            childBadgeCount += (unreadCounts.metaAds || 0);
+                          }
                           return (
                             <button
                               key={child.id}
