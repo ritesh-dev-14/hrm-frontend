@@ -68,7 +68,6 @@ const NAV_CONFIG = [
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing", icon: TrendingUp, path: "/marketing", roles: ["MANAGER"], departments: ["marketing", "marketing department", "performance marketing"] },
-  { id: "meta-ads-tasks", label: "Meta Ads Task", icon: Megaphone, path: "/meta-ads-tasks", roles: ["HR", "MANAGER"] },
   { id: "marketing-monthly-reports", label: "Meeta Ads Calander", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR", "MANAGER"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "data", label: "Data", icon: Database, path: "/data", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
@@ -179,11 +178,11 @@ export default function ProfessionalSidebar({ children }) {
       }
       setUnreadCounts((previous) => ({ ...previous, metaAds: (previous.metaAds || 0) + 1 }));
       setUploadPopupData({
-        projectName: task.clientName || "Meta Ads Campaign",
-        clientName: task.clientName,
+        projectName: task.projectName || task.clientName || "Meta Ads Campaign",
+        clientName: task.clientName || task.projectName,
         alertTitle: "New Meta Ads Task",
         alertMessage: "A new Meta Ads task has been assigned to you.",
-        targetPath: "/meta-ads-tasks",
+        targetPath: "/marketing-projects",
       });
     };
     const metaAdsEvents = [
@@ -323,70 +322,6 @@ export default function ProfessionalSidebar({ children }) {
 
     fetchAssignedActionsCount();
     const interval = setInterval(fetchAssignedActionsCount, 3000);
-    return () => clearInterval(interval);
-  }, [role, user?.id]);
-
-  useEffect(() => {
-    if (role !== "MANAGER" || !(user?.id || user?._id)) return;
-
-    const checkMetaAdsAssignments = async () => {
-      try {
-        const response = await API.get("/api/meta-ads-tasks");
-          const payload = response.data?.data ?? response.data;
-          const tasks = Array.isArray(payload)
-            ? payload
-            : payload?.tasks || payload?.items || [];
-          const taskAssignments = new Map(
-            tasks
-              .map((task) => [
-                String(task.id || task._id || ""),
-                String(
-                  task.assignedToId ||
-                    task.assignedTo?.id ||
-                    task.assignedTo?._id ||
-                    "",
-                ),
-              ])
-              .filter(([taskId]) => taskId),
-          );
-        if (knownMetaAdsTaskIds.current) {
-          const newTask = tasks.find((task) => {
-            const taskId = task.id || task._id;
-              const assignedToId = String(
-                task.assignedToId ||
-                  task.assignedTo?.id ||
-                  task.assignedTo?._id ||
-                  "",
-              );
-              const previousAssignee = knownMetaAdsTaskIds.current.get(String(taskId));
-              return taskId &&
-                (!knownMetaAdsTaskIds.current.has(String(taskId)) ||
-                  (assignedToId && assignedToId !== previousAssignee));
-          });
-
-          if (newTask) {
-            setUnreadCounts((previous) => ({
-              ...previous,
-              metaAds: (previous.metaAds || 0) + 1,
-            }));
-            setUploadPopupData({
-              projectName: newTask.clientName || "Meta Ads Campaign",
-              clientName: newTask.clientName,
-              alertTitle: "New Meta Ads Task",
-              alertMessage: "A new Meta Ads task has been assigned to you.",
-              targetPath: "/meta-ads-tasks",
-            });
-          }
-        }
-
-        knownMetaAdsTaskIds.current = taskAssignments;
-      } catch (error) {
-        console.error("Failed to check Meta Ads assignments:", error);
-      }
-    };
-
-    checkMetaAdsAssignments();
-    const interval = setInterval(checkMetaAdsAssignments, 5000);
     return () => clearInterval(interval);
   }, [role, user?.id]);
 
@@ -616,14 +551,16 @@ export default function ProfessionalSidebar({ children }) {
                       <div className="ml-[22px] mt-1 mb-1 space-y-0.5 border-l border-slate-700/50 pl-2">
                         {item.children.map((child) => {
                           const childActive = activeId === child.id;
-                          const childBadgeCount = departmentUnreadCounts[
-                            {
-                              "marketing-projects": "marketing",
-                              "social-media-projects": "socialMedia",
-                              "seo-projects": "seo",
-                              "web-development-projects": "webDevelopment",
-                            }[child.id]
-                          ] || 0;
+                          const childBadgeCount = child.id === "meta-ads-tasks"
+                            ? unreadCounts.metaAds || 0
+                            : departmentUnreadCounts[
+                              {
+                                "marketing-projects": "marketing",
+                                "social-media-projects": "socialMedia",
+                                "seo-projects": "seo",
+                                "web-development-projects": "webDevelopment",
+                              }[child.id]
+                            ] || 0;
                           return (
                             <button
                               key={child.id}

@@ -15,7 +15,7 @@ const SEO_DEPT_KEYS = ["seo"];
 const MARKETING_DEPT_KEYS = ["marketing", "performance marketing"];
 
 const ProjectDetailsWrapper = () => {
-  const { id } = useParams();
+  const { id, campaignId } = useParams();
   const { user } = useAuth();
 
   const [deptName, setDeptName] = useState(null);
@@ -65,7 +65,7 @@ const ProjectDetailsWrapper = () => {
 
     // Marketing department → Performance Marketing View (for ALL roles)
     if (MARKETING_DEPT_KEYS.some((key) => normalised.includes(key))) {
-      return <PerformanceMarketingManagerView projectId={id} />;
+      return <PerformanceMarketingManagerView projectId={id} campaignId={campaignId} />;
     }
 
     // Web Development projects use the dedicated web development workspace for every role.

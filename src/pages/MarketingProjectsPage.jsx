@@ -14,7 +14,7 @@ import ProfessionalLoader from "../components/ProfessionalLoader";
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import CreateTaskButton from "../components/taskCreation/CreateTaskButton";
-import CreateTaskModal from "../components/taskCreation/CreateTaskModal";
+import MetaAdsProjectModal from "../components/projects/MetaAdsProjectModal";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -52,6 +52,28 @@ const isMarketingProject = (project) => {
   return MARKETING_KEYWORDS.some((kw) => deptName.includes(kw));
 };
 
+const getMetaAdsDetails = (project) =>
+  project?.metaAds ||
+  project?.metaAdsDetails ||
+  project?.marketingDetails ||
+  project?.projectDetails ||
+  project?.metadata ||
+  {};
+
+const normalizeMetaAdsProject = (project) => {
+  const details = getMetaAdsDetails(project);
+  const assignments = project?.assignments || details?.assignments || [];
+  return {
+    ...project,
+    clientName: project?.clientName || details?.clientName || project?.client?.name || "",
+    monthlyBudget: project?.monthlyBudget ?? details?.monthlyBudget,
+    objective: project?.objective || details?.objective || "",
+    area: project?.area || details?.area || details?.areaName || "",
+    fundsAddedBy: project?.fundsAddedBy || details?.fundsAddedBy || "",
+    assignments,
+  };
+};
+
 const MarketingProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +89,19 @@ const MarketingProjectsPage = () => {
       const response = await API.get("/api/projects");
       const projects = response?.data?.data || [];
       // Filter only Marketing Department projects
-      setAllProjects(projects.filter(isMarketingProject));
+      const marketingProjects = projects.filter(isMarketingProject).map(normalizeMetaAdsProject);
+      const detailedProjects = await Promise.all(
+        marketingProjects.map(async (project) => {
+          try {
+            const detailResponse = await API.get(`/api/projects/${project.id || project._id}`);
+            const details = detailResponse?.data?.data || detailResponse?.data;
+            return normalizeMetaAdsProject({ ...project, ...details });
+          } catch {
+            return project;
+          }
+        }),
+      );
+      setAllProjects(detailedProjects);
     } catch (error) {
       console.error("Failed to load marketing projects:", error);
     } finally {
@@ -98,7 +132,7 @@ const MarketingProjectsPage = () => {
   };
 
   const handleProjectCreated = (project) => {
-    setAllProjects((previous) => [project, ...previous]);
+    setAllProjects((previous) => [normalizeMetaAdsProject(project), ...previous]);
   };
 
   return (
@@ -232,10 +266,17 @@ const MarketingProjectsPage = () => {
                   <h3 className="text-xl font-black text-slate-900 mb-2 group-hover:text-pink-600 transition-colors line-clamp-2">
                     {project.projectName}
                   </h3>
-                  <p className="text-sm font-medium text-slate-500 mb-6 line-clamp-3 flex-1">
-                    {project.description ||
-                      "No detailed description provided for this project."}
-                  </p>
+                  <div className="mb-6 flex-1 space-y-2 text-xs font-semibold text-slate-600">
+                    <p><span className="font-bold text-slate-400">Client:</span> {project.clientName || project.projectName || "-"}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <p><span className="font-bold text-slate-400">Budget:</span> {project.monthlyBudget ?? "-"}</p>
+                      <p><span className="font-bold text-slate-400">Area:</span> {project.area || "-"}</p>
+                      <p><span className="font-bold text-slate-400">Objective:</span> {project.objective || "-"}</p>
+                      <p><span className="font-bold text-slate-400">Funds:</span> {project.fundsAddedBy || "-"}</p>
+                    </div>
+                    <p><span className="font-bold text-slate-400">Manager:</span> {project.assignments?.map((assignment) => assignment.manager?.name || assignment.manager?.fullName || assignment.manager?.employeeId || assignment.managerId).filter(Boolean).join(", ") || project.assignedTo?.name || project.assignedTo?.fullName || "-"}</p>
+                    <p><span className="font-bold text-slate-400">Running:</span> <span className={`font-black ${project.isRunning ? "text-emerald-600" : "text-red-600"}`}>{project.isRunning ? "Yes" : "No"}</span></p>
+                  </div>
 
                   {/* Footer */}
                   <div className="space-y-4 mt-auto border-t border-slate-100 pt-5">
@@ -273,10 +314,10 @@ const MarketingProjectsPage = () => {
           </motion.div>
         )}
       </div>
-      {role !== "MANAGER" && <CreateTaskModal
+      {role !== "MANAGER" && <MetaAdsProjectModal
           open={openModal}
           onClose={() => setOpenModal(false)}
-          onTaskCreated={handleProjectCreated}
+          onProjectCreated={handleProjectCreated}
           defaultDepartmentName="marketing"
         />}
     </div>

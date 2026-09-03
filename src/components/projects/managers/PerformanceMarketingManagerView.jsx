@@ -16,6 +16,8 @@ import {
   Calendar,
   ArrowLeft,
   Trash2,
+  Edit3,
+  Save,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -28,6 +30,7 @@ const fmtCur = (n) =>
     : "—";
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const labelClass = "mb-1.5 block text-[11px] font-black uppercase tracking-widest text-slate-500";
 
 const INITIAL_FORM = {
   clientName: "",
@@ -49,13 +52,12 @@ const INITIAL_FORM = {
 };
 
 /* ─── component ───────────────────────────────────────────────────────────── */
-export default function PerformanceMarketingManagerView({ projectId }) {
+export default function PerformanceMarketingManagerView({ projectId, campaignId = null }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [project, setProject] = useState(null);
   const [reports, setReports] = useState([]);
-  const [monthlyCalendar, setMonthlyCalendar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const submitInFlight = useRef(false);
@@ -65,6 +67,18 @@ export default function PerformanceMarketingManagerView({ projectId }) {
   const [search, setSearch] = useState("");
   const [adTypeFilter, setAdTypeFilter] = useState("");
   const [toast, setToast] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignError, setCampaignError] = useState("");
+  const [campaignName, setCampaignName] = useState("");
+  const [campaignCount, setCampaignCount] = useState("1");
+  const [campaignNames, setCampaignNames] = useState([""]);
+  const [campaignModalOpen, setCampaignModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
+  const canManageCampaigns = user?.role === "MANAGER";
+  const isAssignedManager = project?.assignments?.some((assignment) =>
+    String(assignment.managerId || assignment.manager?.id || assignment.manager?.employeeId) === String(user?.id || user?.employeeId),
+  );
 
   /* toast helper */
   const showToast = (type, msg) => {
@@ -92,27 +106,35 @@ export default function PerformanceMarketingManagerView({ projectId }) {
       const projRes = await API.get(`/api/projects/${projectId}`);
       setProject(projRes.data?.data || null);
 
-      // Load marketing reports
-      const repRes = await API.get(`/api/marketing-reports?projectId=${projectId}`);
-      const data = Array.isArray(repRes.data)
-        ? repRes.data
-        : repRes.data?.data || [];
-      setReports(data);
+      if (campaignId) {
+        const campaignRes = await API.get(`/api/campaigns/${campaignId}`);
+        const campaignData = campaignRes.data?.data ?? campaignRes.data;
+        setCampaigns(campaignData ? [campaignData] : []);
+      } else {
+        setCampaignLoading(true);
+        const campaignRes = await API.get(`/api/projects/${projectId}/campaigns`);
+        const campaignData = campaignRes.data?.data ?? campaignRes.data;
+        setCampaigns(Array.isArray(campaignData) ? campaignData : campaignData?.items || []);
+        setCampaignLoading(false);
+      }
 
-      const today = new Date();
-      const monthlyRes = await API.get(
-        `/api/marketing-monthly-reports?month=${today.getMonth() + 1}&year=${today.getFullYear()}`,
-      );
-      const monthlyData = monthlyRes?.data && Object.prototype.hasOwnProperty.call(monthlyRes.data, "data")
-        ? monthlyRes.data.data
-        : monthlyRes?.data;
-      setMonthlyCalendar(monthlyData || null);
-    } catch {
-      showToast("error", "Failed to load marketing details.");
+      // Load reports at the project or campaign scope.
+      if (campaignId) {
+        const repRes = await API.get(`/api/campaigns/${campaignId}/reports`);
+        const data = Array.isArray(repRes.data) ? repRes.data : repRes.data?.data || [];
+        setReports(data);
+      } else {
+        setReports([]);
+      }
+
+    } catch (error) {
+      setCampaignLoading(false);
+      if (!campaignId) setCampaignError(error?.response?.data?.message || "Failed to load campaigns.");
+      showToast("error", error?.response?.data?.message || "Failed to load marketing details.");
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, campaignId]);
 
   useEffect(() => {
     loadData();
@@ -177,7 +199,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
     try {
       const payload = {
         ...form,
-        projectId,
+        ...(campaignId ? {} : { projectId }),
         clientContactNumber: form.clientContactNumber?.trim() || null,
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
         todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
@@ -192,7 +214,11 @@ export default function PerformanceMarketingManagerView({ projectId }) {
         await API.patch(`/api/marketing-reports/${editTarget.id}`, payload);
         showToast("success", "Report updated successfully!");
       } else {
-        await API.post("/api/marketing-reports", payload);
+        if (campaignId) {
+          await API.post(`/api/campaigns/${campaignId}/reports`, payload);
+        } else {
+          await API.post("/api/marketing-reports", payload);
+        }
         showToast("success", "Report submitted successfully!");
       }
       setShowForm(false);
@@ -202,6 +228,49 @@ export default function PerformanceMarketingManagerView({ projectId }) {
     } finally {
       submitInFlight.current = false;
       setSubmitting(false);
+    }
+  };
+
+  const saveCampaign = async (event) => {
+    event.preventDefault();
+    const names = editingCampaign
+      ? [campaignName.trim()]
+      : campaignNames.map((name) => name.trim());
+    if (names.some((name) => !name)) return showToast("error", "Every campaign name is required.");
+    if (new Set(names.map((name) => name.toLowerCase())).size !== names.length) return showToast("error", "Campaign names must be unique.");
+    try {
+      if (editingCampaign) {
+        const response = await API.patch(`/api/campaigns/${editingCampaign.id}`, { name: names[0] });
+        const updated = response.data?.data || response.data;
+        setCampaigns((current) => current.map((item) => item.id === updated.id ? updated : item));
+        showToast("success", "Campaign renamed successfully.");
+      } else {
+        const created = [];
+        for (const name of names) {
+          const response = await API.post(`/api/projects/${projectId}/campaigns`, { name });
+          created.push(response.data?.data || response.data);
+        }
+        setCampaigns((current) => [...current, ...created]);
+        showToast("success", `${created.length} campaign${created.length === 1 ? "" : "s"} created successfully.`);
+      }
+      setCampaignModalOpen(false);
+      setEditingCampaign(null);
+      setCampaignName("");
+      setCampaignCount("1");
+      setCampaignNames([""]);
+    } catch (error) {
+      showToast("error", error?.response?.data?.message || "Failed to save campaign.");
+    }
+  };
+
+  const deleteCampaign = async (campaign) => {
+    if (!window.confirm(`Delete ${campaign.name}?`)) return;
+    try {
+      await API.delete(`/api/campaigns/${campaign.id}`);
+      setCampaigns((current) => current.filter((item) => item.id !== campaign.id));
+      showToast("success", "Campaign deleted successfully.");
+    } catch (error) {
+      showToast("error", error?.response?.data?.message || "Campaign cannot be deleted because it already has reports.");
     }
   };
 
@@ -220,16 +289,6 @@ export default function PerformanceMarketingManagerView({ projectId }) {
   const totalSpend = reports.reduce((s, r) => s + (r.todayAmountSpend || 0), 0);
   const totalReach = reports.reduce((s, r) => s + (r.todayReachObtained || 0), 0);
   const totalLeads = reports.reduce((s, r) => s + (r.leadObtained || 0), 0);
-  const monthlyRows = (monthlyCalendar?.rows || []).filter(
-    (row) => String(row.projectId || row.project?.id) === String(projectId),
-  );
-  const monthlyStats = [
-    { icon: BarChart3, label: "Monthly Campaigns", value: monthlyRows.length, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { icon: CheckCircle2, label: "Currently Running", value: monthlyRows.filter((row) => row.currentlyRunning === true || row.currentlyRunning === "yes").length, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { icon: Users, label: "Required Leads", value: fmt(monthlyRows.reduce((total, row) => total + Number(row.requiredLeads || 0), 0)), color: "text-blue-600", bg: "bg-blue-50" },
-    { icon: DollarSign, label: "Ad Funds", value: fmtCur(monthlyRows.reduce((total, row) => total + Number(row.awarenessFunds || 0) + Number(row.leadsFund || 0), 0)), color: "text-orange-600", bg: "bg-orange-50" },
-    { icon: Calendar, label: "Monthly Budget", value: fmtCur(monthlyRows.reduce((total, row) => total + Number(row.monthlyBudget || 0), 0)), color: "text-violet-600", bg: "bg-violet-50" },
-  ];
 
   const inputCls =
     "w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3.5 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all";
@@ -264,7 +323,7 @@ export default function PerformanceMarketingManagerView({ projectId }) {
           className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-          Back to Projects
+          {campaignId ? "Back to Project" : "Back to Projects"}
         </button>
 
         <div className="flex items-center gap-3">
@@ -278,13 +337,15 @@ export default function PerformanceMarketingManagerView({ projectId }) {
             </button>
           )}
 
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition shadow-sm"
-          >
-            <Plus size={16} />
-            Add Marketing Report
-          </button>
+          {campaignId && isAssignedManager && (
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition shadow-sm"
+            >
+              <Plus size={16} />
+              Create Report
+            </button>
+          )}
         </div>
       </div>
 
@@ -304,12 +365,30 @@ export default function PerformanceMarketingManagerView({ projectId }) {
               </div>
               <div>
                 <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 mb-2">
-                  Marketing Department
+                  {campaignId ? "Meta Ads Campaign" : "Marketing Department"}
                 </span>
                 <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-                  {project?.projectName || "Marketing Project"}
+                      {campaignId ? `${campaigns.find((item) => String(item.id) === String(campaignId))?.name || "Campaign"} Reports` : project?.projectName || "Marketing Project"}
                 </h1>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+              {[
+                { label: "Client", value: project?.clientName || project?.projectName || "-" },
+                { label: "Monthly Budget", value: project?.monthlyBudget != null ? fmtCur(project.monthlyBudget) : "-" },
+                { label: "Objective", value: project?.objective || "-" },
+                { label: "Area", value: project?.area || "-" },
+                { label: "Funds Added By", value: project?.fundsAddedBy === "HARSH_SIR" ? "HARSH" : project?.fundsAddedBy || "-" },
+                { label: "Manager", value: project?.assignments?.map((assignment) => assignment.manager?.name || assignment.manager?.fullName || assignment.manager?.employeeId).filter(Boolean).join(", ") || "-" },
+                { label: "Start Date", value: project?.startDate ? fmtDate(project.startDate) : "-" },
+                { label: "End Date", value: project?.endDate ? fmtDate(project.endDate) : "-" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p>
+                  <p className="mt-1 truncate text-sm font-black text-slate-800" title={item.value}>{item.value}</p>
+                </div>
+              ))}
             </div>
             
             {/* Stats */}
@@ -330,26 +409,24 @@ export default function PerformanceMarketingManagerView({ projectId }) {
               ))}
             </div>
 
-            <div className="mt-8 border-t border-slate-100 pt-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Monthly Calendar</h2>
-                  <p className="text-xs text-slate-500">Current month stats for this project</p>
-                </div>
-                <button onClick={() => navigate("/marketing-monthly-reports")} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Open Calendar</button>
-              </div>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                {monthlyStats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${stat.bg}`}><stat.icon size={17} className={stat.color} /></div>
-                    <p className="text-lg font-black text-slate-900">{stat.value}</p>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
+          {!campaignId && (
+            <section className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900">Campaigns</h2>
+                  <p className="text-xs text-slate-500">Create and manage campaigns inside this marketing project.</p>
+                </div>
+                {canManageCampaigns && isAssignedManager && <button type="button" onClick={() => { setEditingCampaign(null); setCampaignName(""); setCampaignCount("1"); setCampaignNames([""]); setCampaignModalOpen(true); }} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"><Plus size={16} />Create Campaign</button>}
+              </div>
+              {campaignLoading ? <p className="py-8 text-center text-sm text-slate-500">Loading campaigns...</p> : campaignError ? <p className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">{campaignError}</p> : campaigns.length === 0 ? <p className="rounded-xl bg-white p-8 text-center text-sm font-semibold text-slate-500">No campaigns found.</p> : <div className="grid gap-3 md:grid-cols-2">{campaigns.map((campaign) => <article key={campaign.id} className="rounded-2xl border border-slate-200 bg-white p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-black text-slate-900">{campaign.name}</h3><p className="mt-1 text-xs text-slate-500">Created {fmtDate(campaign.createdAt)} · {(campaign.reports || []).length} reports</p></div><span className="rounded-lg bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase text-indigo-600">Campaign</span></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => navigate(`/project/${projectId}/campaign/${campaign.id}`)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white">View Reports</button>{canManageCampaigns && isAssignedManager && <><button type="button" onClick={() => { setEditingCampaign(campaign); setCampaignName(campaign.name); setCampaignModalOpen(true); }} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><Edit3 size={13} />Edit</button><button type="button" onClick={() => deleteCampaign(campaign)} className="inline-flex items-center gap-1 rounded-xl border border-red-100 px-3 py-2 text-xs font-bold text-red-600"><Trash2 size={13} />Delete</button></>}</div></article>)}</div>}
+            </section>
+          )}
+
+          {campaignModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"><form onSubmit={saveCampaign} className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-black">{editingCampaign ? "Rename Campaign" : "Create Campaigns"}</h2><button type="button" onClick={() => setCampaignModalOpen(false)} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>{editingCampaign ? <label><span className={labelClass}>Campaign Name</span><input autoFocus required minLength={1} maxLength={200} value={campaignName} onChange={(event) => setCampaignName(event.target.value)} className={inputCls} placeholder="Enter campaign name" /></label> : <><label><span className={labelClass}>Number Of Campaigns</span><select value={campaignCount} onChange={(event) => { const count = Number(event.target.value); setCampaignCount(event.target.value); setCampaignNames((current) => Array.from({ length: count }, (_, index) => current[index] || "")); }} className={inputCls}>{Array.from({ length: 10 }, (_, index) => index + 1).map((count) => <option key={count} value={count}>{count}</option>)}</select></label><div className="mt-4 max-h-64 space-y-3 overflow-y-auto pr-1">{campaignNames.map((name, index) => <label key={index} className="block"><span className={labelClass}>Campaign {index + 1} Name</span><input autoFocus={index === 0} required minLength={1} maxLength={200} value={name} onChange={(event) => setCampaignNames((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className={inputCls} placeholder={`Enter campaign ${index + 1} name`} /></label>)}</div></>}<button type="submit" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"><Save size={16} />{editingCampaign ? "Save Name" : `Create ${campaignNames.length} Campaign${campaignNames.length === 1 ? "" : "s"}`}</button></form></div>}
+
+          {campaignId && <>
           {/* Search + refresh */}
           <div className="flex flex-wrap items-center gap-3 mb-5">
             <div className="relative flex-1 max-w-sm">
@@ -429,11 +506,12 @@ export default function PerformanceMarketingManagerView({ projectId }) {
               </div>
             </div>
           )}
+          </>}
         </>
       )}
 
       {/* ─── Form Modal ─────────────────────────────────────────────────────── */}
-      {showForm && (
+      {campaignId && isAssignedManager && showForm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
