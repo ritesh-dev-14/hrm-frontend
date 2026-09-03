@@ -56,8 +56,7 @@ export default function AssignedActionsPage() {
   const [actions, setActions] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   // Dual View Tracking Mechanism
   const [viewMode, setViewMode] = useState("PERSONAL"); // PERSONAL or DELEGATED
@@ -267,20 +266,19 @@ export default function AssignedActionsPage() {
       const matchesTab = activeTab === "ALL" || item?.status === activeTab;
 
       let matchesDate = true;
-      if (dateFrom || dateTo) {
+      if (dateFilter) {
         const due = item?.completionDate ? new Date(item.completionDate) : null;
         if (!due) {
           matchesDate = false;
         } else {
-          if (dateFrom) {
-            const from = new Date(dateFrom);
-            from.setHours(0, 0, 0, 0);
-            if (due < from) matchesDate = false;
-          }
-          if (dateTo && matchesDate) {
-            const to = new Date(dateTo);
-            to.setHours(23, 59, 59, 999);
-            if (due > to) matchesDate = false;
+          // Compare local dates
+          const filterD = new Date(dateFilter);
+          if (
+            due.getFullYear() !== filterD.getFullYear() ||
+            due.getMonth() !== filterD.getMonth() ||
+            due.getDate() !== filterD.getDate()
+          ) {
+            matchesDate = false;
           }
         }
       }
@@ -307,7 +305,7 @@ export default function AssignedActionsPage() {
 
       return assignedA - assignedB;
     });
-  }, [actions, search, activeTab, dateFrom, dateTo]);
+  }, [actions, search, activeTab, dateFilter]);
 
   const stats = useMemo(() => {
     return {
@@ -379,28 +377,19 @@ export default function AssignedActionsPage() {
             />
           </div>
 
-          {/* Date Range Filter */}
+          {/* Single Date Filter */}
           <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3 py-1.5 h-10">
             <Filter size={14} className="text-slate-400 shrink-0" />
             <input
               type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              title="From date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              title="Filter by Due Date"
               className="text-xs text-slate-700 outline-none bg-transparent w-[110px] cursor-pointer"
             />
-            <span className="text-slate-300 text-xs">→</span>
-            <input
-              type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(e) => setDateTo(e.target.value)}
-              title="To date"
-              className="text-xs text-slate-700 outline-none bg-transparent w-[110px] cursor-pointer"
-            />
-            {(dateFrom || dateTo) && (
+            {dateFilter && (
               <button
-                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                onClick={() => setDateFilter("")}
                 className="ml-1 text-slate-400 hover:text-rose-500 transition"
                 title="Clear date filter"
               >
