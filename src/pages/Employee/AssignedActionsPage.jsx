@@ -19,6 +19,7 @@ import {
   Send,
   Plus,
   X,
+  Filter,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -55,6 +56,8 @@ export default function AssignedActionsPage() {
   const [actions, setActions] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // Dual View Tracking Mechanism
   const [viewMode, setViewMode] = useState("PERSONAL"); // PERSONAL or DELEGATED
@@ -262,7 +265,27 @@ export default function AssignedActionsPage() {
       const title = (item?.task?.projectName || item?.task?.name || "").toLowerCase();
       const matchesSearch = title.includes(search.toLowerCase());
       const matchesTab = activeTab === "ALL" || item?.status === activeTab;
-      return matchesSearch && matchesTab;
+
+      let matchesDate = true;
+      if (dateFrom || dateTo) {
+        const due = item?.completionDate ? new Date(item.completionDate) : null;
+        if (!due) {
+          matchesDate = false;
+        } else {
+          if (dateFrom) {
+            const from = new Date(dateFrom);
+            from.setHours(0, 0, 0, 0);
+            if (due < from) matchesDate = false;
+          }
+          if (dateTo && matchesDate) {
+            const to = new Date(dateTo);
+            to.setHours(23, 59, 59, 999);
+            if (due > to) matchesDate = false;
+          }
+        }
+      }
+
+      return matchesSearch && matchesTab && matchesDate;
     });
 
     return [...underlyingSelection].sort((a, b) => {
@@ -284,7 +307,7 @@ export default function AssignedActionsPage() {
 
       return assignedA - assignedB;
     });
-  }, [actions, search, activeTab]);
+  }, [actions, search, activeTab, dateFrom, dateTo]);
 
   const stats = useMemo(() => {
     return {
@@ -341,7 +364,7 @@ export default function AssignedActionsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto justify-end">
           <div className="relative w-full sm:w-64">
             <Search
               size={16}
@@ -354,6 +377,36 @@ export default function AssignedActionsPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 rounded-lg border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-800 transition"
             />
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3 py-1.5 h-10">
+            <Filter size={14} className="text-slate-400 shrink-0" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              title="From date"
+              className="text-xs text-slate-700 outline-none bg-transparent w-[110px] cursor-pointer"
+            />
+            <span className="text-slate-300 text-xs">→</span>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+              title="To date"
+              className="text-xs text-slate-700 outline-none bg-transparent w-[110px] cursor-pointer"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="ml-1 text-slate-400 hover:text-rose-500 transition"
+                title="Clear date filter"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
 
           <button
