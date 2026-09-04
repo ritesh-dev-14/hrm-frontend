@@ -396,9 +396,12 @@ export default function PerformanceMarketingManagerView({ projectId, campaignId 
                 { label: "Start Date", value: project?.startDate ? fmtDate(project.startDate) : "-" },
                 { label: "End Date", value: project?.endDate ? fmtDate(project.endDate) : "-" },
               ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                <div key={item.label} className="group relative min-w-0 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p>
                   <p className="mt-1 truncate text-sm font-black text-slate-800" title={item.value}>{item.value}</p>
+                  <span className="pointer-events-none invisible absolute left-2 top-full z-30 mt-2 w-max max-w-[min(22rem,calc(100vw-2rem))] -translate-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold leading-5 text-slate-800 opacity-0 shadow-xl transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                    {item.value}
+                  </span>
                 </div>
               ))}
             </div>
