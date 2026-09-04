@@ -329,15 +329,15 @@ const MarketingProjectsPage = () => {
                   <h3 className="text-xl font-black text-slate-900 mb-2 group-hover:text-pink-600 transition-colors line-clamp-2">
                     {project.projectName}
                   </h3>
-                  <div className="mb-6 flex-1 space-y-2 text-xs font-semibold text-slate-600">
-                    <p><span className="font-bold text-slate-400">Client:</span> {project.clientName || project.projectName || "-"}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <p><span className="font-bold text-slate-400">Budget:</span> {project.monthlyBudget ?? "-"}</p>
-                      <p><span className="font-bold text-slate-400">Area:</span> {project.area || "-"}</p>
-                      <p><span className="font-bold text-slate-400">Objective:</span> {project.objective || "-"}</p>
-                      <p><span className="font-bold text-slate-400">Funds:</span> {project.fundsAddedBy || "-"}</p>
+                  <div className="mb-6 min-w-0 flex-1 space-y-2 text-xs font-semibold text-slate-600">
+                    <p className="min-w-0 break-words"><span className="font-bold text-slate-400">Client:</span> {project.clientName || project.projectName || "-"}</p>
+                    <div className="grid min-w-0 grid-cols-2 gap-2">
+                      <p className="min-w-0 break-words"><span className="font-bold text-slate-400">Budget:</span> {project.monthlyBudget ?? "-"}</p>
+                      <p className="min-w-0 break-words"><span className="font-bold text-slate-400">Area:</span> {project.area || "-"}</p>
+                      <p className="min-w-0 break-words"><span className="font-bold text-slate-400">Objective:</span> {project.objective || "-"}</p>
+                      <p className="min-w-0 break-words"><span className="font-bold text-slate-400">Funds:</span> {project.fundsAddedBy || "-"}</p>
                     </div>
-                    <p><span className="font-bold text-slate-400">Manager:</span> {project.assignments?.map((assignment) => assignment.manager?.name || assignment.manager?.fullName || assignment.manager?.employeeId || assignment.managerId).filter(Boolean).join(", ") || project.assignedTo?.name || project.assignedTo?.fullName || "-"}</p>
+                    <p className="min-w-0 break-words"><span className="font-bold text-slate-400">Manager:</span> {project.assignments?.map((assignment) => assignment.manager?.name || assignment.manager?.fullName || assignment.manager?.employeeId || assignment.managerId).filter(Boolean).join(", ") || project.assignedTo?.name || project.assignedTo?.fullName || "-"}</p>
                     <div className="flex items-center justify-between gap-2">
                       <p><span className="font-bold text-slate-400">Running:</span> <span className={`font-black ${isRunning ? "text-emerald-600" : "text-red-600"}`}>{isRunning ? "Yes" : "No"}</span></p>
                       {role === "MANAGER" && <button type="button" onClick={(event) => toggleProjectRunning(event, project)} disabled={updatingProjectId === (project.id || project._id)} className={`rounded-lg px-2.5 py-1 text-[10px] font-black transition disabled:opacity-50 ${isRunning ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{updatingProjectId === (project.id || project._id) ? "Updating" : isRunning ? "Set No" : "Set Yes"}</button>}
