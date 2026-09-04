@@ -373,6 +373,18 @@ const MarketingProjectsPage = () => {
                         </div>
                       </div>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        navigate(`/project/${project.id || project._id}`);
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-pink-600"
+                    >
+                      Open Project
+                      <ChevronRight size={16} />
+                    </button>
                   </div>
                 </motion.div>
                   );

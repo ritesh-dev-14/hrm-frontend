@@ -16,6 +16,8 @@ import CreateTaskModal from "../../components/taskCreation/CreateTaskModal";
 
 import API from "../../services/api";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
+import { getManagerAssignedTasks, submitManagerTask, refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
+import { useAuth } from "../../context/AuthContext";
 
 const statusStyles = {
   DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
@@ -42,12 +44,33 @@ const itemVariants = {
 };
 const ManagerTaskPage = () => {
   const [tasks, setTasks] = useState([]);
+  const [eaTasks, setEaTasks] = useState([]);
+  const [eaTasksLoading, setEaTasksLoading] = useState(true);
+  const [eaTasksError, setEaTasksError] = useState("");
+  const [submittingAssignment, setSubmittingAssignment] = useState(null);
+  const [submitMessage, setSubmitMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
 
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  const loadEaTasks = async () => {
+    if (String(role || "").toUpperCase() !== "MANAGER") return;
+    try {
+      setEaTasksLoading(true);
+      setEaTasksError("");
+      const assignments = await getManagerAssignedTasks();
+      setEaTasks(assignments.filter((assignment) => assignment.task?.createdBy?.role === "EA"));
+    } catch (error) {
+      console.error("Failed to load EA-assigned tasks", error);
+      setEaTasksError("Unable to load tasks assigned by EA. Please try again.");
+    } finally {
+      setEaTasksLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -65,6 +88,26 @@ const ManagerTaskPage = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    loadEaTasks();
+  }, [role]);
+
+  const handleSubmitEaTask = async (assignmentId) => {
+    try {
+      setSubmittingAssignment(assignmentId);
+      setSubmitMessage("");
+      await submitManagerTask(assignmentId);
+      setSubmitMessage("Task submitted to EA");
+      await loadEaTasks();
+      await refreshManagerLogoutStatus();
+    } catch (error) {
+      console.error("Failed to submit task to EA", error);
+      setEaTasksError("Unable to submit this task right now. Please try again.");
+    } finally {
+      setSubmittingAssignment(null);
+    }
+  };
 
   const handleTaskCreated = (newTask) => {
     setTasks((prev) => [newTask, ...prev]);
@@ -100,6 +143,60 @@ const ManagerTaskPage = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
+        {String(role || "").toUpperCase() === "MANAGER" && (
+          <section className="bg-white border border-indigo-100 rounded-[2rem] p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              <div>
+                <p className="text-xs font-bold tracking-widest uppercase text-indigo-500 mb-1">EA assignments</p>
+                <h2 className="text-2xl font-black text-slate-900">Tasks Assigned by EA</h2>
+              </div>
+              {submitMessage && <p className="text-sm font-semibold text-emerald-600">{submitMessage}</p>}
+            </div>
+
+            {eaTasksLoading ? (
+              <div className="flex items-center gap-2 text-sm text-slate-500"><Loader2 size={16} className="animate-spin" /> Loading assigned tasks...</div>
+            ) : eaTasksError ? (
+              <p className="text-sm text-red-600">{eaTasksError}</p>
+            ) : eaTasks.length === 0 ? (
+              <p className="text-sm text-slate-500">No tasks assigned by EA.</p>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {eaTasks.map((assignment) => {
+                  const task = assignment.task;
+                  const isSubmitted = ["SUBMITTED", "VERIFIED"].includes(assignment.status);
+                  return (
+                    <article key={assignment.assignmentId} className="rounded-2xl border border-slate-200 p-5 bg-slate-50/60">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-bold text-slate-900">{task.title || "Untitled task"}</h3>
+                        <span className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase text-indigo-700">{assignment.status}</span>
+                      </div>
+                      <div className="mt-3 space-y-1 text-sm text-slate-600">
+                        <p><strong>Project:</strong> {task.projectName || "-"}</p>
+                        <p><strong>Description:</strong> {task.description || "-"}</p>
+                        <p><strong>Instructions:</strong> {task.instructions || "-"}</p>
+                        <p><strong>Dates:</strong> {formatDate(task.startDate)} - {formatDate(task.endDate)}</p>
+                        <p><strong>Progress:</strong> {assignment.progress ?? 0}%</p>
+                        <p><strong>EA:</strong> {task.createdBy?.name || "-"}</p>
+                      </div>
+                      {!isSubmitted && (
+                        <button
+                          type="button"
+                          disabled={submittingAssignment === assignment.assignmentId}
+                          onClick={() => handleSubmitEaTask(assignment.assignmentId)}
+                          className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {submittingAssignment === assignment.assignmentId && <Loader2 size={15} className="animate-spin" />}
+                          Submit to EA
+                        </button>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* HEADER */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

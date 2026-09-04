@@ -168,16 +168,6 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
                     </div>
                   ))}
                 </div>
-                <button
-                  onClick={() => {
-                    onClose();
-                    navigate("/marketing");
-                  }}
-                  className="mt-3 w-full flex items-center justify-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 py-2.5 rounded-xl border border-orange-200 transition-colors"
-                >
-                  Submit Marketing Report
-                  <ArrowRight size={15} />
-                </button>
               </div>
             )}
           </div>

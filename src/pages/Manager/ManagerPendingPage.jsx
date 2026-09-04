@@ -1,168 +1,100 @@
-import { useState, useEffect } from "react";
-import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
-import { useAuth } from "../../context/AuthContext";
-import { AlertTriangle, ClipboardList, BarChart2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, BarChart2, CheckCircle2, ClipboardList, Eye, Loader2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import {
+  getManagerAssignedTasks,
+  getManagerAssignment,
+  refreshManagerLogoutStatus,
+  submitManagerTask,
+} from "../../utils/managerLogoutStatus";
+
+const pendingStatus = new Set(["ASSIGNED", "IN_PROGRESS", "COMPLETED", "REJECTED", "UNABLE_TO_SUBMIT"]);
+
+const errorMessage = (error, fallback) => {
+  if (error?.response?.status === 403) return "You are not allowed to perform this action.";
+  if (error?.response?.status === 404) return "This task could not be found.";
+  return error?.response?.data?.message || fallback;
+};
+
+const taskName = (task) => task.projectName || task.task?.projectName || task.task?.name || task.task?.title || "Untitled Task";
+const assignedBy = (task) => task.assignedBy?.name || task.createdBy?.name || task.task?.createdBy?.name || "EA";
 
 export default function ManagerPendingPage() {
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const navigate = useNavigate();
+  const [tasks, setTasks] = useState([]);
+  const [status, setStatus] = useState({ pendingMarketingReports: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submittingId, setSubmittingId] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
 
-  useEffect(() => {
-    if (role === "MANAGER") {
-      refreshManagerLogoutStatus().then((res) => {
-        setStatus(res);
-        setLoading(false);
-      });
-    } else {
-      setLoading(false);
-    }
-  }, [role]);
-
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-10 h-full">
-        <Loader2 className="animate-spin text-indigo-500 w-8 h-8" />
-      </div>
-    );
+  const loadData = async () => {
+  if (role !== "MANAGER" || !user?.id) return;
+  setLoading(true);
+  setError("");
+  try {
+    const [assignedTasks, logoutStatus] = await Promise.all([
+    getManagerAssignedTasks(user.id),
+    refreshManagerLogoutStatus(),
+    ]);
+    setTasks(assignedTasks.filter((task) => pendingStatus.has(task.status) || !["SUBMITTED", "VERIFIED"].includes(task.status)));
+    setStatus(logoutStatus || { pendingMarketingReports: [] });
+  } catch (requestError) {
+    setError(errorMessage(requestError, "Unable to load pending obligations right now."));
+  } finally {
+    setLoading(false);
   }
-
-  const hasPendingTasks = status?.pendingEaTasks?.length > 0;
-  const hasPendingReports = status?.pendingMarketingReports?.length > 0;
-  const canLogout = status?.canLogout;
-
-  const STATUS_COLORS = {
-    ASSIGNED: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-    IN_PROGRESS: { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200" },
-    PENDING: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200" },
-    REJECTED: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
   };
 
-  const getStatusStyle = (s) =>
-    STATUS_COLORS[s] || { bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200" };
+  useEffect(() => { loadData(); }, [role, user?.id]);
+
+  const handleView = async (assignmentId) => {
+  try {
+    setError("");
+    setSelectedTask(await getManagerAssignment(assignmentId));
+  } catch (requestError) {
+    setError(errorMessage(requestError, "Unable to load task details."));
+  }
+  };
+
+  const handleSubmit = async (assignmentId) => {
+  if (submittingId) return;
+  setSubmittingId(assignmentId);
+  setError("");
+  try {
+    await submitManagerTask(assignmentId);
+    setTasks((current) => current.map((task) => (task.assignmentId || task.id) === assignmentId ? { ...task, status: "SUBMITTED" } : task));
+    await refreshManagerLogoutStatus();
+    window.dispatchEvent(new CustomEvent("manager-task-submitted", { detail: { assignmentId } }));
+    setError("Task submitted to EA successfully.");
+  } catch (requestError) {
+    setError(errorMessage(requestError, "Unable to submit this task right now."));
+  } finally {
+    setSubmittingId(null);
+  }
+  };
+
+  if (loading) return <div className="flex h-full flex-1 items-center justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>;
+
+  const reports = status.pendingMarketingReports || [];
+  const visibleTasks = tasks.filter((task) => !["SUBMITTED", "VERIFIED"].includes(task.status));
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-5 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Pending Obligations</h1>
-        <p className="text-sm text-slate-500 mt-1">Complete your assigned tasks and reports to unlock logout.</p>
-      </div>
+  <div className="mx-auto max-w-4xl px-5 py-8 lg:px-8">
+    <div className="mb-8"><h1 className="text-2xl font-bold text-slate-900">Pending Obligations</h1><p className="mt-1 text-sm text-slate-500">Complete your assigned tasks and reports to unlock logout.</p></div>
+    {error && <p className={`mb-6 rounded-xl border p-4 text-sm font-semibold ${error.startsWith("Task submitted") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}>{error}</p>}
 
-      {!hasPendingTasks && !hasPendingReports ? (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-4">
-            <CheckCircle2 size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900">All caught up!</h2>
-          <p className="text-emerald-700 mt-2">You have completed all pending obligations for today.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* EA Tasks Section */}
-          {hasPendingTasks && (
-            <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6 lg:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                  <ClipboardList size={20} className="text-indigo-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Pending EA Tasks</h2>
-                  <p className="text-sm text-slate-500">Tasks assigned by EA today that are not completed.</p>
-                </div>
-                <span className="ml-auto bg-red-100 text-red-700 text-sm font-bold px-3 py-1 rounded-full">
-                  {status.pendingEaTasks.length} pending
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                {status.pendingEaTasks.map((task, i) => {
-                  const s = getStatusStyle(task.status);
-                  return (
-                    <div
-                      key={task.assignmentId || i}
-                      className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${s.border} ${s.bg}`}
-                    >
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 truncate">
-                          {task.projectName || "Untitled Task"}
-                        </p>
-                        {task.assignedBy?.name && (
-                          <p className="text-sm text-slate-600 mt-1">
-                            Assigned by: {task.assignedBy.name}
-                          </p>
-                        )}
-                      </div>
-                      <span className={`shrink-0 text-xs font-bold uppercase px-3 py-1.5 rounded-xl ${s.bg} ${s.text} border ${s.border}`}>
-                        {task.status}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={() => navigate("/projects")}
-                className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl transition-all"
-              >
-                Go to Tasks
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          )}
-
-          {/* Marketing Reports Section */}
-          {hasPendingReports && (
-            <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6 lg:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                  <BarChart2 size={20} className="text-orange-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Missing Marketing Reports</h2>
-                  <p className="text-sm text-slate-500">Running marketing projects missing today's report.</p>
-                </div>
-                <span className="ml-auto bg-orange-100 text-orange-700 text-sm font-bold px-3 py-1 rounded-full">
-                  {status.pendingMarketingReports.length} missing
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                {status.pendingMarketingReports.map((project, i) => (
-                  <div
-                    key={project.projectId || i}
-                    className="flex items-center justify-between gap-4 p-4 rounded-2xl border border-orange-200 bg-orange-50/50"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900 truncate">
-                        {project.projectName || "Unnamed Project"}
-                      </p>
-                      {project.clientName && (
-                        <p className="text-sm text-slate-600 mt-1">
-                          Client: {project.clientName}
-                        </p>
-                      )}
-                    </div>
-                    <span className="shrink-0 text-xs font-bold uppercase px-3 py-1.5 rounded-xl bg-orange-100 text-orange-700 border border-orange-200">
-                      Report Missing
-                    </span>
-                  </div>
-                ))}
-              </div>
-              
-              <button
-                onClick={() => navigate("/marketing")}
-                className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 py-3 rounded-xl transition-all"
-              >
-                Go to Marketing Reports
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+    <div className="mb-6 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+    <div className="mb-6 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50"><ClipboardList size={20} className="text-indigo-600" /></div><h2 className="text-lg font-bold text-slate-900">Pending Tasks Assigned by EA</h2></div>
+    {visibleTasks.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">No pending EA tasks.</p> : <div className="space-y-3">{visibleTasks.map((task, index) => { const id = task.assignmentId || task.id; return <div key={id || index} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4"><div className="min-w-0"><p className="font-semibold text-slate-900">{taskName(task)}</p><p className="mt-1 text-sm text-slate-600">Assigned by: {assignedBy(task)}</p><p className="mt-1 text-xs text-slate-500">Status: {task.status || "ASSIGNED"} · Work date: {task.workDate ? new Date(task.workDate).toLocaleDateString() : "—"}</p></div><div className="flex items-center gap-2"><button type="button" onClick={() => handleView(id)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><Eye size={14} />View Task</button><button type="button" disabled={submittingId === id} onClick={() => handleSubmit(id)} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{submittingId === id ? "Submitting..." : "Submit to EA"}</button></div></div>; })}</div>}
     </div>
+
+    <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8"><div className="mb-6 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50"><BarChart2 size={20} className="text-orange-600" /></div><h2 className="text-lg font-bold text-slate-900">Missing Marketing Reports</h2></div>{reports.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">All marketing reports are submitted.</p> : <div className="space-y-3">{reports.map((report, index) => <div key={report.projectId || index} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-200 bg-orange-50 p-4"><div><p className="font-semibold text-slate-900">{report.projectName || "Unnamed Project"}</p><p className="mt-1 text-sm text-slate-600">Client: {report.clientName || "—"}</p></div>{report.projectId && <button type="button" onClick={() => navigate(`/project/${report.projectId}`)} className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600"><Eye size={14} />View Project</button>}</div>)}</div>}</div>
+
+    {!visibleTasks.length && !reports.length && <div className="mt-6 flex flex-col items-center rounded-3xl border border-emerald-200 bg-emerald-50 p-8 text-center"><CheckCircle2 className="mb-3 text-emerald-600" size={32} /><h2 className="font-bold text-slate-900">All obligations completed. You can logout.</h2></div>}
+    {selectedTask && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"><div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl"><div className="flex items-center justify-between"><h2 className="text-xl font-bold text-slate-900">{taskName(selectedTask)}</h2><button type="button" onClick={() => setSelectedTask(null)}><X /></button></div><div className="mt-5 space-y-3 text-sm text-slate-600"><p><strong>Project:</strong> {selectedTask.task?.projectName || selectedTask.projectName || "—"}</p><p><strong>Description:</strong> {selectedTask.task?.description || "—"}</p><p><strong>Instructions:</strong> {selectedTask.task?.instructions || "—"}</p><p><strong>Assigned by:</strong> {selectedTask.createdBy?.name || selectedTask.assignedBy || "EA"}</p><p><strong>Status:</strong> {selectedTask.status || "—"}</p><p><strong>Completion date:</strong> {selectedTask.completionDate ? new Date(selectedTask.completionDate).toLocaleString() : "—"}</p></div></div></div>}
+  </div>
   );
 }

@@ -70,7 +70,7 @@ const NAV_CONFIG = [
   { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
-  { id: "marketing", label: "Marketing", icon: TrendingUp, path: "/marketing", roles: ["MANAGER"], departments: ["marketing", "marketing department", "performance marketing"] },
+  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["HR", "MANAGER"] },
   { id: "marketing-monthly-reports", label: "Meeta Ads Calander", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "data", label: "Data", icon: Database, path: "/data", roles: ["ADMIN", "HR", "EA"] },
@@ -120,6 +120,56 @@ export default function ProfessionalSidebar({ children }) {
   );
 
   const [managerLogoutStatus, setManagerLogoutStatus] = useState(null);
+  const [marketingReportsCount, setMarketingReportsCount] = useState(0);
+
+  useEffect(() => {
+    if (!["HR", "MANAGER"].includes(String(role || "").toUpperCase())) return undefined;
+
+    let active = true;
+    const loadMarketingReportCount = async () => {
+      try {
+        if (String(role || "").toUpperCase() === "MANAGER") {
+          const status = await refreshManagerLogoutStatus();
+          if (active) setMarketingReportsCount(status?.pendingMarketingReports?.length || 0);
+          return;
+        }
+
+        const projectsResponse = await API.get("/api/projects");
+        const projects = projectsResponse?.data?.data ?? projectsResponse?.data ?? [];
+        const reportResponses = await Promise.all(
+          (Array.isArray(projects) ? projects : []).filter((project) =>
+            String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing"),
+          ).map(async (project) => {
+            const projectId = project.id || project._id;
+            if (!projectId) return [];
+            try {
+              const response = await API.get(`/api/marketing-reports?projectId=${encodeURIComponent(projectId)}`);
+              return response?.data?.data ?? response?.data ?? [];
+            } catch {
+              return [];
+            }
+          }),
+        );
+        const reports = reportResponses.flat();
+        if (active) {
+          setMarketingReportsCount(
+            (Array.isArray(reports) ? reports : reports?.items || []).filter(
+              (report) => report.approvalStatus !== "APPROVED",
+            ).length,
+          );
+        }
+      } catch {
+        // The sidebar count is informational; the logout guard remains authoritative.
+      }
+    };
+
+    loadMarketingReportCount();
+    const interval = setInterval(loadMarketingReportCount, 10000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [role]);
 
   const handleLogoutClick = async () => {
     // MANAGER logout guard
@@ -508,6 +558,7 @@ const renderSidebarContent = (isMobile = false) => {
           }
           if (item.id === "shoots") badgeCount = unreadCounts.shoots;
           if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
+          if (item.id === "marketing") badgeCount = marketingReportsCount;
           const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 
           return (

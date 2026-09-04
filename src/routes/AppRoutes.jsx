@@ -67,6 +67,7 @@ import CordinatorTasks from "../pages/CordinatorTasks.jsx";
 import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
 import MarketingReportsPage from "../pages/Manager/MarketingReportsPage.jsx";
 import MarketingMonthlyReportPage from "../pages/Manager/MarketingMonthlyReportPage.jsx";
+import MarketingReportsApprovalPage from "../pages/HR/MarketingReportsApprovalPage.jsx";
 import MarketingProjectsPage from "../pages/MarketingProjectsPage.jsx";
 import SocialMediaProjectsPage from "../pages/SocialMediaProjectsPage.jsx";
 import SEOProjectsPage from "../pages/SEOProjectsPage.jsx";
@@ -308,7 +309,9 @@ export const AppRoutes = () => {
           <Route
             path="/marketing"
             element={
-              ["ADMIN", "HR", "MANAGER"].includes(role) ? (
+              role === "HR" ? (
+                <MarketingReportsApprovalPage />
+              ) : role === "MANAGER" ? (
                 <MarketingReportsPage />
               ) : (
                 <Navigate to="/dashboard" replace />

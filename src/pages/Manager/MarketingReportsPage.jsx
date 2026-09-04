@@ -1,536 +1,120 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useCallback, useEffect, useState } from "react";
+import { BarChart3, CheckCircle2, FileText, Loader2, RefreshCw, TriangleAlert } from "lucide-react";
 import API from "../../services/api";
-import {
-  TrendingUp,
-  Plus,
-  RefreshCw,
-  Search,
-  ChevronDown,
-  X,
-  CheckCircle2,
-  XCircle,
-  BarChart3,
-  DollarSign,
-  Users,
-  Eye,
-  Calendar,
-  Filter,
-} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
 
-/* ─── helpers ─────────────────────────────────────────────────────────────── */
-const fmt = (n) =>
-  n != null ? Number(n).toLocaleString("en-IN") : "—";
-const fmtCur = (n) =>
-  n != null
-    ? "₹ " + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })
-    : "—";
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-
-const INITIAL_FORM = {
-  projectId: "",
-  clientName: "",
-  clientContactNumber: "",
-  videoLink: "",
-  areaName: "",
-  isAdRunning: "",
-  campaignStartDate: "",
-  campaignEndDate: "",
-  todayReachObtained: "",
-  todayAmountSpend: "",
-  reasonNotRunning: "",
-  typeOfAds: "",
-  leadObtained: "",
-  decidedDailyBudget: "",
-  leadSentToClient: "",
-  startDate: "",
-  date: new Date().toISOString().split("T")[0],
+const today = () => new Date().toISOString().split("T")[0];
+const isMarketing = (project) => String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing");
+const errorText = (error) => {
+  if (error?.response?.status === 400) return error.response.data?.message || "Please check the report details.";
+  if (error?.response?.status === 403) return "You are not allowed to perform this action.";
+  if (error?.response?.status === 404) return "Report or project not found.";
+  return error?.response?.data?.message || "Unable to complete this request.";
 };
+const statusText = (status) => ({ PENDING: "Waiting for HR approval", APPROVED: "Approved by HR", REJECTED: "Needs correction" }[status] || "Report not submitted");
+const statusStyle = (status) => status === "APPROVED" ? "bg-emerald-50 text-emerald-700" : status === "PENDING" ? "bg-amber-50 text-amber-700" : status === "REJECTED" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600";
 
-/* ─── component ───────────────────────────────────────────────────────────── */
 export default function MarketingReportsPage() {
-  const { user } = useAuth();
-
+  const { user, role } = useAuth();
   const [projects, setProjects] = useState([]);
-  const [reports, setReports] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const submitInFlight = useRef(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [search, setSearch] = useState("");
-  const [adTypeFilter, setAdTypeFilter] = useState("");
-  const [toast, setToast] = useState(null);
+  const [pendingReports, setPendingReports] = useState([]);
+  const [forms, setForms] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState(null);
+  const [message, setMessage] = useState(null);
 
-  /* toast helper */
-  const showToast = (type, msg) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  /* ─── load manager's projects ─────────────────────────────────────────── */
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const res = await API.get("/api/projects");
-        const all = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || res.data?.projects || [];
-        const mine = all.filter((p) =>
-          p.assignments?.some((a) => a.managerId === user?.id)
-        );
-        setProjects(mine.length ? mine : all);
-      } catch {
-        showToast("error", "Failed to load projects.");
-      }
-    };
-    if (user?.id) loadProjects();
-  }, [user?.id]);
-
-  /* ─── load reports for selected project ──────────────────────────────── */
-  const loadReports = useCallback(async (projectId) => {
-    if (!projectId) return;
+  const loadData = useCallback(async () => {
+    if (role !== "MANAGER" || !user?.id) return;
     setLoading(true);
     try {
-      const res = await API.get(`/api/marketing-reports?projectId=${projectId}`);
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data || [];
-      setReports(data);
-    } catch {
-      showToast("error", "Failed to load marketing reports.");
+      const [projectsResponse, logoutStatus] = await Promise.all([API.get("/api/projects"), refreshManagerLogoutStatus()]);
+      const allProjects = projectsResponse.data?.data || projectsResponse.data || [];
+      const assignedProjects = allProjects.filter((project) => isMarketing(project) && project.assignments?.some((assignment) => String(assignment.managerId || assignment.manager?.id) === String(user.id)));
+      const reportResults = await Promise.all(assignedProjects.map(async (project) => {
+        const projectId = project.id || project._id;
+        try {
+          const response = await API.get(`/api/marketing-reports?projectId=${encodeURIComponent(projectId)}`);
+          const reports = response.data?.data || response.data || [];
+          const todayReport = (Array.isArray(reports) ? reports : []).find((report) => String(report.date || "").split("T")[0] === today());
+          return [String(projectId), todayReport];
+        } catch {
+          return [String(projectId), null];
+        }
+      }));
+      const reportsByProject = Object.fromEntries(reportResults);
+      const pending = logoutStatus?.pendingMarketingReports || [];
+      setProjects(assignedProjects.map((project) => ({
+        ...project,
+        todayReport: reportsByProject[String(project.id || project._id)] || null,
+      })));
+      setPendingReports(pending);
+    } catch (error) {
+      setMessage({ type: "error", text: errorText(error) });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [role, user?.id]);
 
-  useEffect(() => {
-    if (selectedProject) loadReports(selectedProject.id);
-  }, [selectedProject, loadReports]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  /* ─── form helpers ─────────────────────────────────────────────────────── */
-  const openCreate = () => {
-    setEditTarget(null);
-    setForm({
-      ...INITIAL_FORM,
-      projectId: selectedProject?.id || "",
-      date: new Date().toISOString().split("T")[0],
-    });
-    setShowForm(true);
+  const updateForm = (id, values) => setForms((current) => ({ ...current, [id]: { ...(current[id] || {}), ...values } }));
+  const pendingFor = (project) => {
+    const id = project.id || project._id;
+    return pendingReports.find((report) => String(report.projectId) === String(id)) || project.todayReport;
   };
 
-  const openEdit = (report) => {
-    setEditTarget(report);
-    setForm({
-      projectId: report.projectId || "",
-      clientName: report.clientName || "",
-      clientContactNumber: report.clientContactNumber || "",
-      videoLink: report.videoLink || "",
-      areaName: report.areaName || "",
-      isAdRunning:
-        report.isAdRunning === true
-          ? "true"
-          : report.isAdRunning === false
-          ? "false"
-          : "",
-      campaignStartDate: report.campaignStartDate
-        ? report.campaignStartDate.split("T")[0]
-        : "",
-      campaignEndDate: report.campaignEndDate
-        ? report.campaignEndDate.split("T")[0]
-        : "",
-      todayReachObtained:
-        report.todayReachObtained != null ? String(report.todayReachObtained) : "",
-      todayAmountSpend:
-        report.todayAmountSpend != null ? String(report.todayAmountSpend) : "",
-      reasonNotRunning: report.reasonNotRunning || "",
-      typeOfAds: report.typeOfAds || "",
-      leadObtained: report.leadObtained != null ? String(report.leadObtained) : "",
-      decidedDailyBudget: report.decidedDailyBudget != null ? String(report.decidedDailyBudget) : "",
-      leadSentToClient: typeof report.leadSentToClient === "boolean" ? String(report.leadSentToClient) : "",
-      startDate: report.startDate ? report.startDate.split("T")[0] : "",
-      date: report.date ? report.date.split("T")[0] : "",
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (submitInFlight.current) return;
-    if (!form.projectId) return showToast("error", "Please select a project.");
-    if (!["Awareness", "Lead"].includes(form.typeOfAds)) return showToast("error", "Please select Awareness or Lead.");
-    if (!["true", "false"].includes(form.isAdRunning)) return showToast("error", "Please select whether the ad is running.");
-    if (form.typeOfAds !== "Lead" && form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
-    if (form.typeOfAds === "Lead" && !["true", "false"].includes(form.leadSentToClient)) return showToast("error", "Please select whether the lead was sent to the client.");
-    const reportDate = String(form.date || "").split("T")[0];
-    const duplicateReport = reports.some((report) => String(report.date || "").split("T")[0] === reportDate && String(report.id) !== String(editTarget?.id));
-    if (duplicateReport) return showToast("error", "A report already exists for this date.");
-    submitInFlight.current = true;
-    setSubmitting(true);
+  const submitReport = async (event, project) => {
+    event.preventDefault();
+    const projectId = project.id || project._id;
+    const form = forms[projectId] || {};
+    const unable = true;
+    if (!form.unableToSubmitReason?.trim()) return setMessage({ type: "error", text: "Please provide a reason before submitting." });
+    setSubmittingId(projectId);
+    setMessage(null);
     try {
-      const payload = {
-        ...form,
-        clientContactNumber: form.clientContactNumber?.trim() || null,
-        todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
-        todayAmountSpend: form.todayAmountSpend !== "" ? Number(form.todayAmountSpend) : null,
-        leadObtained: form.leadObtained !== "" ? Number(form.leadObtained) : null,
-        decidedDailyBudget: form.typeOfAds === "Lead" ? null : form.decidedDailyBudget !== "" ? Number(form.decidedDailyBudget) : null,
-        leadSentToClient: form.leadSentToClient === "true" ? true : form.leadSentToClient === "false" ? false : null,
-        startDate: form.startDate || null,
-        isAdRunning: form.isAdRunning === "true" ? true : form.isAdRunning === "false" ? false : null,
-      };
-
-      if (editTarget) {
-        await API.patch(`/api/marketing-reports/${editTarget.id}`, payload);
-        showToast("success", "Report updated successfully!");
-      } else {
-        await API.post("/api/marketing-reports", payload);
-        showToast("success", "Report submitted successfully!");
-      }
-      setShowForm(false);
-      loadReports(form.projectId);
-    } catch (err) {
-      showToast("error", err?.response?.data?.message || "Failed to save report.");
+      const payload = unable
+        ? { projectId, clientName: project.clientName || project.projectName || project.name, unableToSubmitReason: form.unableToSubmitReason.trim(), date: today() }
+        : { projectId, clientName: project.clientName || project.projectName || project.name, isAdRunning: form.isAdRunning === "true", ...(form.isAdRunning === "false" ? { reasonNotRunning: form.reasonNotRunning.trim() } : {}), ...(form.todayReachObtained ? { todayReachObtained: Number(form.todayReachObtained) } : {}), ...(form.todayAmountSpend ? { todayAmountSpend: Number(form.todayAmountSpend) } : {}), date: today() };
+      await API.post("/api/marketing-reports", payload);
+      await loadData();
+      setMessage({ type: "success", text: unable ? "Reason submitted. Waiting for HR approval." : "Report submitted. Waiting for HR approval." });
+    } catch (error) {
+      setMessage({ type: "error", text: errorText(error) });
     } finally {
-      submitInFlight.current = false;
-      setSubmitting(false);
+      setSubmittingId(null);
     }
   };
 
-  /* ─── filtered list ───────────────────────────────────────────────────── */
-  const filtered = reports.filter((r) => {
-    const q = search.toLowerCase();
-    return (
-      !q ||
-      r.clientName?.toLowerCase().includes(q) ||
-      r.areaName?.toLowerCase().includes(q) ||
-      r.typeOfAds?.toLowerCase().includes(q)
-    ) && (!adTypeFilter || r.typeOfAds === adTypeFilter);
-  });
+  if (role !== "MANAGER") return null;
+  if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>;
 
-  /* ─── summary stats ───────────────────────────────────────────────────── */
-  const totalSpend = reports.reduce((s, r) => s + (r.todayAmountSpend || 0), 0);
-  const totalReach = reports.reduce((s, r) => s + (r.todayReachObtained || 0), 0);
-  const totalLeads = reports.reduce((s, r) => s + (r.leadObtained || 0), 0);
-
-  const inputCls =
-    "w-full bg-slate-800/60 border border-slate-700/50 text-white rounded-xl px-3.5 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all";
-  const selectCls =
-    "w-full appearance-none bg-slate-800/60 border border-slate-700/50 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all pr-8";
-
-  /* ─── render ──────────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 pb-20">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold border backdrop-blur-md transition-all ${
-            toast.type === "success"
-              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-              : "bg-red-500/20 border-red-500/40 text-red-300"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 size={18} />
-          ) : (
-            <XCircle size={18} />
-          )}
-          {toast.msg}
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <TrendingUp size={22} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">
-                Marketing Reports
-              </h1>
-              <p className="text-slate-400 text-sm mt-0.5">
-                Track campaign performance and ad spend
-              </p>
-            </div>
-          </div>
-
-          {selectedProject && (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105 transition-all"
-            >
-              <Plus size={16} />
-              Add Report
-            </button>
-          )}
-        </div>
-
-        {/* Project selector */}
-        <div className="mb-6">
-          <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-            Select Project
-          </label>
-          <div className="relative max-w-sm">
-            <select
-              value={selectedProject?.id || ""}
-              onChange={(e) => {
-                const p = projects.find((x) => x.id === e.target.value);
-                setSelectedProject(p || null);
-                setReports([]);
-              }}
-              className="w-full appearance-none bg-slate-800/60 border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-medium pr-10 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            >
-              <option value="">— Choose a project —</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.projectName || p.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            />
-          </div>
-        </div>
-
-        {/* Stats */}
-        {selectedProject && reports.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {[
-              { icon: BarChart3, label: "Total Reports", value: reports.length, color: "from-indigo-500 to-purple-500", glow: "shadow-indigo-500/20" },
-              { icon: DollarSign, label: "Total Spend", value: fmtCur(totalSpend), color: "from-pink-500 to-rose-500", glow: "shadow-pink-500/20" },
-              { icon: Eye, label: "Total Reach", value: fmt(totalReach), color: "from-cyan-500 to-blue-500", glow: "shadow-cyan-500/20" },
-              { icon: Users, label: "Total Leads", value: fmt(totalLeads), color: "from-emerald-500 to-teal-500", glow: "shadow-emerald-500/20" },
-            ].map((s) => (
-              <div key={s.label} className={`bg-slate-800/50 border border-slate-700/40 rounded-2xl p-5 shadow-lg ${s.glow}`}>
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-md`}>
-                  <s.icon size={18} className="text-white" />
-                </div>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">{s.label}</p>
-                <p className="text-white text-lg font-black">{s.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Search + refresh */}
-        {selectedProject && (
-          <div className="flex flex-wrap items-center gap-3 mb-5">
-            <div className="relative flex-1 max-w-xs">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search reports…"
-                className="w-full bg-slate-800/50 border border-slate-700/40 text-white rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-              />
-            </div>
-            <select value={adTypeFilter} onChange={(e) => setAdTypeFilter(e.target.value)} className="bg-slate-800/50 border border-slate-700/40 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60">
-              <option value="">All Ad Types</option>
-              <option value="Awareness">Awareness</option>
-              <option value="Lead">Lead</option>
-            </select>
-            <button
-              onClick={() => loadReports(selectedProject.id)}
-              disabled={loading}
-              className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40 text-slate-400 hover:text-white hover:border-slate-600 transition-all"
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            </button>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!selectedProject && (
-          <div className="flex flex-col items-center justify-center py-28 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border border-indigo-500/20 flex items-center justify-center mb-5 shadow-xl">
-              <Filter size={32} className="text-indigo-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Select a Project</h3>
-            <p className="text-slate-400 text-sm max-w-xs">
-              Choose a project from the dropdown above to view and manage its marketing reports.
-            </p>
-          </div>
-        )}
-
-        {selectedProject && loading && (
-          <div className="flex justify-center py-20">
-            <div className="w-10 h-10 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-          </div>
-        )}
-
-        {selectedProject && !loading && filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700/40 flex items-center justify-center mb-4">
-              <TrendingUp size={28} className="text-slate-500" />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-1">No reports yet</h3>
-            <p className="text-slate-400 text-sm">Add your first marketing report for this project.</p>
-          </div>
-        )}
-
-        {/* Reports table */}
-        {selectedProject && !loading && filtered.length > 0 && (
-          <div className="overflow-x-auto rounded-2xl border border-slate-700/40 shadow-xl">
-            <table className="w-full min-w-[900px] text-sm">
-              <thead>
-                <tr className="bg-slate-800/80 border-b border-slate-700/40">
-                  {["Date","Client","Contact","Area","Ad Running","Type of Ads","Reach","Spend","Leads","Daily Budget","Lead Sent","Start Date","Actions"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={r.id} className={`border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors ${i % 2 === 0 ? "bg-slate-900/40" : "bg-slate-900/20"}`}>
-                    <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">
-                      <span className="flex items-center gap-1.5"><Calendar size={13} className="text-slate-500" />{fmtDate(r.date)}</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-white font-semibold">{r.clientName || "—"}</td>
-                    <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{r.clientContactNumber || "—"}</td>
-                    <td className="px-4 py-3.5 text-slate-300">{r.areaName || "—"}</td>
-                    <td className="px-4 py-3.5">
-                      {r.isAdRunning === true ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg"><CheckCircle2 size={12} /> Yes</span>
-                      ) : r.isAdRunning === false ? (
-                        <span className="inline-flex items-center gap-1 text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg"><XCircle size={12} /> No</span>
-                      ) : <span className="text-slate-500">—</span>}
-                    </td>
-                    <td className="px-4 py-3.5 text-slate-300">{r.typeOfAds || "—"}</td>
-                    <td className="px-4 py-3.5 text-cyan-400 font-semibold">{fmt(r.todayReachObtained)}</td>
-                    <td className="px-4 py-3.5 text-pink-400 font-semibold">{fmtCur(r.todayAmountSpend)}</td>
-                    <td className="px-4 py-3.5 text-emerald-400 font-semibold">{fmt(r.leadObtained)}</td>
-                    <td className="px-4 py-3.5 text-slate-300">{fmtCur(r.decidedDailyBudget)}</td>
-                    <td className="px-4 py-3.5">{r.leadSentToClient === true ? "Yes" : r.leadSentToClient === false ? "No" : "—"}</td>
-                    <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{fmtDate(r.startDate || r.campaignStartDate)}</td>
-                    <td className="px-4 py-3.5">
-                      <button onClick={() => openEdit(r)} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold hover:underline transition-colors">Edit</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-8">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-8 flex items-start justify-between gap-4">
+          <div><p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-indigo-600"><BarChart3 size={15} /> Marketing Department</p><h1 className="text-3xl font-black tracking-tight text-slate-950">Today&apos;s Reports</h1><p className="mt-2 text-sm text-slate-500">Submit a report or reason for each assigned project.</p></div>
+          <button type="button" onClick={loadData} aria-label="Refresh reports" className="rounded-xl border border-slate-200 bg-white p-3 text-slate-500 shadow-sm hover:border-indigo-300 hover:text-indigo-600"><RefreshCw size={17} /></button>
+        </header>
+        {message && <div className={`mb-6 rounded-xl border px-4 py-3 text-sm font-semibold ${message.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>{message.text}</div>}
+        {projects.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">No assigned Marketing projects found.</div> : <div className="grid gap-5 lg:grid-cols-2">{projects.map((project) => {
+          const projectId = project.id || project._id;
+          const pending = pendingFor(project);
+          const form = forms[projectId] || {};
+          const status = pending?.reportStatus || pending?.approvalStatus || "NOT_SUBMITTED";
+          const locked = status === "PENDING" || status === "APPROVED";
+          const rejected = status === "REJECTED";
+          return <article key={projectId} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5"><div><h2 className="text-lg font-black text-slate-900">{project.projectName || project.name}</h2><p className="mt-1 text-sm text-slate-500">Client: {project.clientName || project.projectName || "-"}</p></div><span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide ${statusStyle(status)}`}>{statusText(status)}</span></div>
+            {rejected && <div className="mt-5 flex gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"><TriangleAlert size={17} /><span>{pending?.reviewNote || "HR requested a correction. Please resubmit."}</span></div>}
+            {locked ? <div className="mt-6 flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700"><CheckCircle2 size={18} />{status === "APPROVED" ? "Today's report was approved by HR." : "Submitted and waiting for HR approval."}</div> : <form onSubmit={(event) => submitReport(event, project)} className="mt-6 space-y-4">
+              <div className="rounded-xl border border-orange-100 bg-orange-50 p-4"><p className="text-sm font-bold text-orange-800">Unable to fill today&apos;s report?</p><p className="mt-1 text-xs text-orange-700">Tell HR why this project cannot be completed today.</p></div>
+              <textarea required value={form.unableToSubmitReason || ""} onChange={(event) => updateForm(projectId, { unableToSubmitReason: event.target.value })} placeholder="Why can't you fill today's report?" className="min-h-28 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+              <button type="submit" disabled={submittingId === projectId} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-50">{submittingId === projectId ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}Submit reason for HR approval</button>
+            </form>}
+          </article>;
+        })}</div>}
       </div>
-
-      {/* ─── Form Modal ─────────────────────────────────────────────────────── */}
-      {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700/50 rounded-3xl shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-800">
-              <h2 className="text-lg font-bold text-white">
-                {editTarget ? "Edit Marketing Report" : "New Marketing Report"}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {/* Project */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Project *</label>
-                <div className="relative">
-                  <select required value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))} className={selectCls}>
-                    <option value="">— Select —</option>
-                    {projects.map((p) => (<option key={p.id} value={p.id}>{p.projectName || p.name}</option>))}
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Client Contact Number</label>
-                  <input type="text" name="clientContactNumber" value={form.clientContactNumber || ''} onChange={(e) => setForm((f) => ({ ...f, clientContactNumber: e.target.value }))} placeholder="e.g. 9876543210" className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Client Name</label>
-                  <input value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. ABC Corp" className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Area Name</label>
-                  <input value={form.areaName} onChange={(e) => setForm((f) => ({ ...f, areaName: e.target.value }))} placeholder="e.g. Mumbai North" className={inputCls} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Video Link</label>
-                <input value={form.videoLink} onChange={(e) => setForm((f) => ({ ...f, videoLink: e.target.value }))} placeholder="https://..." className={inputCls} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Is Ad Running?</label>
-                  <div className="relative">
-                    <select value={form.isAdRunning} onChange={(e) => setForm((f) => ({ ...f, isAdRunning: e.target.value }))} className={selectCls}>
-                      <option value="">— Select —</option>
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Type of Ads</label>
-                  <select value={form.typeOfAds} onChange={(e) => setForm((f) => ({ ...f, typeOfAds: e.target.value }))} className={selectCls}>
-                    <option value="">— Select —</option>
-                    <option value="Awareness">Awareness</option>
-                    <option value="Lead">Lead</option>
-                  </select>
-                </div>
-              </div>
-
-              {form.isAdRunning === "false" && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Reason Not Running</label>
-                  <textarea value={form.reasonNotRunning} onChange={(e) => setForm((f) => ({ ...f, reasonNotRunning: e.target.value }))} rows={2} placeholder="Describe reason..." className={inputCls + " resize-none"} />
-                </div>
-              )}
-
-              {form.typeOfAds === "Awareness" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Today's Reach</label><input type="number" min="0" value={form.todayReachObtained} onChange={(e) => setForm((f) => ({ ...f, todayReachObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
-                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
-                </div>
-              )}
-
-              {form.typeOfAds === "Lead" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Leads Obtained</label><input type="number" min="0" value={form.leadObtained} onChange={(e) => setForm((f) => ({ ...f, leadObtained: e.target.value }))} placeholder="0" className={inputCls} /></div>
-                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Lead Sent to Client</label><select value={form.leadSentToClient} onChange={(e) => setForm((f) => ({ ...f, leadSentToClient: e.target.value }))} className={selectCls}><option value="">— Select —</option><option value="true">Yes</option><option value="false">No</option></select></div>
-                  <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount Spent Today (₹)</label><input type="number" min="0" step="0.01" value={form.todayAmountSpend} onChange={(e) => setForm((f) => ({ ...f, todayAmountSpend: e.target.value }))} placeholder="0.00" className={inputCls} /></div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 gap-4">
-                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Start Date</label><input type="date" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} className={inputCls} /></div>
-                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Campaign Start Date</label><input type="date" value={form.campaignStartDate} onChange={(e) => setForm((f) => ({ ...f, campaignStartDate: e.target.value }))} className={inputCls} /></div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Report Date</label>
-                  <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors font-semibold text-sm">
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
-                  {submitting ? <RefreshCw size={15} className="animate-spin" /> : editTarget ? "Update Report" : "Submit Report"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
