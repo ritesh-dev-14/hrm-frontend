@@ -41,6 +41,7 @@ import ManagerLogoutGuardModal from "./ManagerLogoutGuardModal";
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
+  { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE"] },
   { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR"] },
   { id: "reports-emp", label: "Reports", icon: FileText, path: "/reports/employee", roles: ["EMPLOYEE"] },
   {
@@ -120,7 +121,29 @@ export default function ProfessionalSidebar({ children }) {
   );
 
   const [managerLogoutStatus, setManagerLogoutStatus] = useState(null);
+  const [employeeLogoutStatus, setEmployeeLogoutStatus] = useState({ canLogout: false, loading: true, pendingTasks: [] });
   const [marketingReportsCount, setMarketingReportsCount] = useState(0);
+
+  useEffect(() => {
+    if (String(role || "").toUpperCase() !== "EMPLOYEE") return undefined;
+    let active = true;
+    const refresh = async () => {
+      const status = await refreshEmployeeLogoutStatus();
+      if (active) setEmployeeLogoutStatus({ ...status, loading: false });
+    };
+    const handleStatus = (event) => setEmployeeLogoutStatus({ ...event.detail, loading: false });
+    const handleActive = () => { if (document.visibilityState === "visible") refresh(); };
+    refresh();
+    window.addEventListener("employee-logout-status", handleStatus);
+    window.addEventListener("focus", handleActive);
+    document.addEventListener("visibilitychange", handleActive);
+    return () => {
+      active = false;
+      window.removeEventListener("employee-logout-status", handleStatus);
+      window.removeEventListener("focus", handleActive);
+      document.removeEventListener("visibilitychange", handleActive);
+    };
+  }, [role]);
 
   useEffect(() => {
     if (!["HR", "MANAGER"].includes(String(role || "").toUpperCase())) return undefined;
@@ -195,7 +218,9 @@ export default function ProfessionalSidebar({ children }) {
       return;
     }
 
+    setEmployeeLogoutStatus((current) => ({ ...current, loading: true }));
     const result = await logout({ enforceEmployeeCheck: true });
+    setEmployeeLogoutStatus({ ...(result.status || {}), loading: false, error: result.error });
 
     if (result?.allowed) {
       navigate("/login");
@@ -203,14 +228,24 @@ export default function ProfessionalSidebar({ children }) {
     }
 
     if (result?.error) {
-      toast.error("Unable to verify logout status right now. Please try again.");
+      setLogoutModal({
+        title: "Could not verify logout",
+        message: "Logout is disabled until today’s task status is checked successfully.",
+        pendingTasks: [],
+        retry: true,
+      });
       return;
     }
 
+    const pendingEa = (result?.status?.pendingEaAssignments || []).map((t) => ({
+      id: t.id,
+      title: t.task?.projectName || t.task?.name || t.taskName || t.title || "EA Task",
+      source: "EA",
+    }));
     setLogoutModal({
       title: "You cannot logout yet.",
-      message: "You cannot logout yet. Please submit all of today's assigned tasks and wait for manager approval.",
-      pendingTasks: result?.status?.pendingTasks || [],
+      message: "You cannot logout yet. Please submit all of today's assigned tasks (including EA tasks) and wait for approval.",
+      pendingTasks: [...(result?.status?.pendingTasks || []), ...pendingEa],
     });
   };
 
@@ -559,6 +594,7 @@ const renderSidebarContent = (isMobile = false) => {
           if (item.id === "shoots") badgeCount = unreadCounts.shoots;
           if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
           if (item.id === "marketing") badgeCount = marketingReportsCount;
+          if (item.id === "pending-employee") badgeCount = employeeLogoutStatus.pendingTasks?.length || 0;
           const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 
           return (
@@ -669,8 +705,9 @@ const renderSidebarContent = (isMobile = false) => {
 
       {/* FOOTER */}
       <div className="p-4 border-t border-slate-800/40 relative z-10 bg-[#090C15]">
-        <button
+          <button
           onClick={handleLogoutClick}
+          disabled={role === "EMPLOYEE" && employeeLogoutStatus.loading}
           className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors group outline-none"
         >
           <LogOut size={18} strokeWidth={2} className="group-hover:scale-110 transition-transform" />
@@ -725,6 +762,12 @@ const renderSidebarContent = (isMobile = false) => {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {logoutModal.retry && (
+                <button type="button" onClick={() => { setLogoutModal(null); refreshEmployeeLogoutStatus(); }} className="mt-5 w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">
+                  Retry status check
+                </button>
               )}
 
               <div className="mt-6 flex items-center justify-end gap-3">

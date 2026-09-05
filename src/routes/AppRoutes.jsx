@@ -39,6 +39,7 @@ import EmployeeSettings from "../pages/Employee/EmployeeSettings";
 import EmployeeTaskPage from "../pages/Employee/EmployeeTaskPage.jsx";
 import EmployeeTaskDetailsPage from "../pages/Employee/tasks/EmployeeTaskDetailsPage.jsx";
 import EmployeeReports from "../pages/Employee/EmployeeReports";
+import EmployeePendingPage from "../pages/Employee/EmployeePendingPage.jsx";
 
 import ManagerHomePage from "../pages/Manager/ManagerHomePage";
 import ManagerAttendence from "../pages/Manager/ManagerAttendence";
@@ -251,6 +252,11 @@ export const AppRoutes = () => {
                 <EmployeeTaskPage />
               )
             }
+          />
+
+          <Route
+            path="/employee-pending"
+            element={role === "EMPLOYEE" ? <EmployeePendingPage /> : <Navigate to="/dashboard" replace />}
           />
 
           <Route path="/project/:id" element={<ProjectDetailsViewWrapper />} />

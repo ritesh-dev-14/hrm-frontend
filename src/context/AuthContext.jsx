@@ -1,7 +1,17 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import API from "../services/api";
+import { refreshEmployeeLogoutStatus } from "../utils/employeeLogoutStatus";
 
-const AuthContext = createContext();
+const defaultAuthContext = {
+  user: null,
+  role: null,
+  token: null,
+  login: () => {},
+  logout: async () => ({ allowed: false, error: true }),
+  clearSession: () => {},
+  isLoading: true,
+};
+
+const AuthContext = createContext(defaultAuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -52,10 +62,9 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await API.get("/api/employee/logout-status");
-      const status = response?.data?.data || {};
+      const status = await refreshEmployeeLogoutStatus();
 
-      if (status.canLogout !== false) {
+      if (!status.error && status.canLogout === true) {
         clearSession();
         return { allowed: true, status };
       }
@@ -77,5 +86,5 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  return useContext(AuthContext) || defaultAuthContext;
 };

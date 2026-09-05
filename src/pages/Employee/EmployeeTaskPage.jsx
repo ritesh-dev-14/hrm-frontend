@@ -99,6 +99,7 @@ const EmployeeTaskPage = () => {
         { progress: progressValue },
       );
       notifySuccess("Progress updated");
+      await refreshEmployeeLogoutStatus();
       loadTasks();
     } catch (error) {
       notifyError("Failed to update progress");
