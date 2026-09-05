@@ -4,16 +4,33 @@ import API from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
 
-const today = () => new Date().toISOString().split("T")[0];
+const dateKey = (value) => {
+  if (!value) return "";
+  const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+};
+const today = () => dateKey(new Date());
 const isMarketing = (project) => String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing");
+const getReports = (response) => {
+  const data = response?.data?.data ?? response?.data;
+  return Array.isArray(data) ? data : data?.items || data?.reports || [];
+};
 const errorText = (error) => {
   if (error?.response?.status === 400) return error.response.data?.message || "Please check the report details.";
   if (error?.response?.status === 403) return "You are not allowed to perform this action.";
   if (error?.response?.status === 404) return "Report or project not found.";
   return error?.response?.data?.message || "Unable to complete this request.";
 };
-const statusText = (status) => ({ PENDING: "Waiting for HR approval", APPROVED: "Approved by HR", REJECTED: "Needs correction" }[status] || "Report not submitted");
-const statusStyle = (status) => status === "APPROVED" ? "bg-emerald-50 text-emerald-700" : status === "PENDING" ? "bg-amber-50 text-amber-700" : status === "REJECTED" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600";
+const statusText = (status) => ({
+  SUBMITTED: "Report submitted",
+  PENDING: "Waiting for HR approval",
+  APPROVED: "Approved by HR",
+  REJECTED: "Needs correction",
+}[status] || "Report not submitted");
+const statusStyle = (status) => status === "APPROVED" ? "bg-emerald-50 text-emerald-700" : status === "PENDING" ? "bg-amber-50 text-amber-700" : status === "REJECTED" ? "bg-rose-50 text-rose-700" : status === "SUBMITTED" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600";
 
 export default function MarketingReportsPage() {
   const { user, role } = useAuth();
@@ -35,8 +52,8 @@ export default function MarketingReportsPage() {
         const projectId = project.id || project._id;
         try {
           const response = await API.get(`/api/marketing-reports?projectId=${encodeURIComponent(projectId)}`);
-          const reports = response.data?.data || response.data || [];
-          const todayReport = (Array.isArray(reports) ? reports : []).find((report) => String(report.date || "").split("T")[0] === today());
+          const reports = getReports(response);
+          const todayReport = reports.find((report) => dateKey(report.date) === today());
           return [String(projectId), todayReport];
         } catch {
           return [String(projectId), null];
@@ -101,8 +118,8 @@ export default function MarketingReportsPage() {
           const projectId = project.id || project._id;
           const pending = pendingFor(project);
           const form = forms[projectId] || {};
-          const status = pending?.reportStatus || pending?.approvalStatus || "NOT_SUBMITTED";
-          const locked = status === "PENDING" || status === "APPROVED";
+          const status = pending?.reportStatus || pending?.approvalStatus || pending?.status || "NOT_SUBMITTED";
+          const locked = ["SUBMITTED", "PENDING", "APPROVED"].includes(status);
           const rejected = status === "REJECTED";
           return <article key={projectId} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5"><div><h2 className="text-lg font-black text-slate-900">{project.projectName || project.name}</h2><p className="mt-1 text-sm text-slate-500">Client: {project.clientName || project.projectName || "-"}</p></div><span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide ${statusStyle(status)}`}>{statusText(status)}</span></div>
