@@ -74,6 +74,7 @@ const NAV_CONFIG = [
   { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["HR", "MANAGER"] },
   { id: "marketing-monthly-reports", label: "Meeta Ads Calander", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
+  { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "data", label: "Data", icon: Database, path: "/data", roles: ["ADMIN", "HR", "EA"] },
   { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["ADMIN", "HR"] },
   { id: "complete-details", label: "Complete Details", icon: Layers, path: "/admin/complete-details", roles: ["ADMIN"] },
