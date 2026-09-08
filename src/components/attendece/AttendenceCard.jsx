@@ -10,11 +10,15 @@ import {
   stopAttendance,
   getTodayAttendance,
 } from "../../services/attendanceApi";
+import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
+import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
+import PendingWorkGuardModal from "../PendingWorkGuardModal";
 
 export default function AttendanceCard() {
   const [status, setStatus] = useState("idle");
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pendingWorkStatus, setPendingWorkStatus] = useState(null);
 
   const today = new Date().toDateString();
 
@@ -216,10 +220,31 @@ export default function AttendanceCard() {
     const isConfirmed = window.confirm("Are you sure you want to end your attendance?");
     if (!isConfirmed) return;
 
+    if (loading) return;
+
     try {
       setLoading(true);
 
+      const role = String(user?.role || "").toUpperCase();
+      const refreshStatus = role === "MANAGER"
+        ? refreshManagerLogoutStatus
+        : role === "EMPLOYEE"
+          ? refreshEmployeeLogoutStatus
+          : null;
+
+      if (refreshStatus) {
+        const status = await refreshStatus();
+        if (status.error || status.canLogout === false) {
+          setPendingWorkStatus({ ...status, message: status.errorMessage || status.message });
+          return;
+        }
+      }
+
       await stopAttendance();
+
+      // Re-read the server record so the UI reflects the persisted end time.
+      const attendanceResponse = await getTodayAttendance();
+      const attendance = attendanceResponse.data?.data;
 
       const existing = getAttendanceData() || {};
 
@@ -227,7 +252,7 @@ export default function AttendanceCard() {
         ...existing,
         status: "completed",
         clockedOut: true,
-        endTime: Date.now(),
+        endTime: attendance?.endTime ? new Date(attendance.endTime).getTime() : Date.now(),
         finalSeconds: seconds,
       };
 
@@ -235,8 +260,28 @@ export default function AttendanceCard() {
 
       setStatus("completed");
     } catch (error) {
-      console.log(error);
-      alert("Failed to stop attendance");
+      const responseData = error?.response?.data;
+      if (error?.response?.status === 400 && responseData?.code === "ATT_008") {
+        const role = String(user?.role || "").toUpperCase();
+        const refreshStatus = role === "MANAGER"
+          ? refreshManagerLogoutStatus
+          : refreshEmployeeLogoutStatus;
+        const latestStatus = await refreshStatus().catch(() => ({}));
+        setPendingWorkStatus({
+          ...latestStatus,
+          role,
+          message: responseData.message,
+          pendingTasks: responseData.details?.pendingTasks || latestStatus.pendingTasks,
+          pendingEaTasks: responseData.details?.pendingEaTasks || latestStatus.pendingEaTasks,
+          pendingMarketingReports: responseData.details?.pendingMarketingReports || latestStatus.pendingMarketingReports,
+        });
+      } else if (error?.response?.status === 401) {
+        alert("Your session has expired. Please sign in again.");
+      } else if (!error?.response) {
+        alert("Unable to end work because the network is unavailable. Please try again.");
+      } else {
+        alert(responseData?.message || "Failed to stop attendance");
+      }
     } finally {
       setLoading(false);
     }
@@ -297,12 +342,13 @@ export default function AttendanceCard() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="h-full flex flex-col justify-between"
-    >
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="h-full flex flex-col justify-between"
+      >
       {/* HEADER */}
       <div className="flex items-start justify-between mb-10">
         <div>
@@ -499,6 +545,12 @@ export default function AttendanceCard() {
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+      </motion.div>
+      <PendingWorkGuardModal
+        status={pendingWorkStatus}
+        action="end-work"
+        onClose={() => setPendingWorkStatus(null)}
+      />
+    </>
   );
 }

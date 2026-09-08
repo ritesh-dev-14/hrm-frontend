@@ -47,6 +47,7 @@ export const refreshEmployeeLogoutStatus = async () => {
 
     const status = {
       ...payload,
+      role: "EMPLOYEE",
       // Block logout if manager tasks OR EA tasks are still pending
       canLogout: backendCanLogout && !hasEaPending,
       pendingTasks,
@@ -63,6 +64,7 @@ export const refreshEmployeeLogoutStatus = async () => {
   } catch (error) {
     console.error("Failed to fetch employee logout status", error);
     const status = {
+      role: "EMPLOYEE",
       canLogout: false,
       error: true,
       errorMessage: "Unable to verify logout status right now. Please try again.",

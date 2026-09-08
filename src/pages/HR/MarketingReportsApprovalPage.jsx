@@ -24,6 +24,31 @@ const dateKey = (value) => {
 
 const localToday = () => dateKey(new Date());
 
+const uniqueById = (items, fallbackKey) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = item?.id || item?._id || fallbackKey(item);
+    if (seen.has(String(key))) return false;
+    seen.add(String(key));
+    return true;
+  });
+};
+
+const uniqueByKey = (items, keyFactory) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = String(keyFactory(item));
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const reportBusinessKey = (report) => [
+  report?.projectName || report?.project?.projectName || report?.project?.name || "project",
+  dateKey(report?.date),
+].map((value) => String(value).trim().toLowerCase()).join("-");
+
 export default function MarketingReportsApprovalPage() {
   const [allReports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +61,11 @@ export default function MarketingReportsApprovalPage() {
     setLoading(true);
     try {
       const projectsResponse = await API.get("/api/projects");
-      const projects = getReports(projectsResponse).filter((project) =>
-        String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing"),
+      const projects = uniqueById(
+        getReports(projectsResponse).filter((project) =>
+          String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing"),
+        ),
+        (project) => `${project?.projectName || project?.name || "project"}-${project?.clientName || "client"}`,
       );
       const reportResponses = await Promise.all(
         projects.map(async (project) => {
@@ -55,7 +83,8 @@ export default function MarketingReportsApprovalPage() {
           }
         }),
       );
-      setReports(reportResponses.flat());
+      const reports = reportResponses.flat();
+      setReports(uniqueByKey(reports, reportBusinessKey));
     } catch (error) {
       setMessage({ type: "error", text: getMessage(error, "Unable to load marketing reports.") });
     } finally {
@@ -65,7 +94,10 @@ export default function MarketingReportsApprovalPage() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
-  const reports = allReports.filter((report) => dateKey(report.date) === selectedDate);
+  const reports = uniqueByKey(
+    allReports.filter((report) => dateKey(report.date) === selectedDate),
+    reportBusinessKey,
+  );
   const filteredReports = reports;
 
   const reviewReport = async (reportId, status) => {

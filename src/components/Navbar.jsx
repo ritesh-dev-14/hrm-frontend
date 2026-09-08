@@ -36,7 +36,7 @@ import { toast } from "react-toastify";
 import TodayUploadPopup from "./TodayUploadPopup";
 import { refreshEmployeeLogoutStatus } from "../utils/employeeLogoutStatus";
 import { refreshManagerLogoutStatus } from "../utils/managerLogoutStatus";
-import ManagerLogoutGuardModal from "./ManagerLogoutGuardModal";
+import PendingWorkGuardModal from "./PendingWorkGuardModal";
 
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
@@ -102,7 +102,6 @@ export default function ProfessionalSidebar({ children }) {
   const { role, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [logoutModal, setLogoutModal] = useState(null);
   const [assignedActionsCount, setAssignedActionsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState({ projects: 0, shoots: 0, creative: 0, editor: 0 });
   const [departmentUnreadCounts, setDepartmentUnreadCounts] = useState({
@@ -121,7 +120,7 @@ export default function ProfessionalSidebar({ children }) {
     ),
   );
 
-  const [managerLogoutStatus, setManagerLogoutStatus] = useState(null);
+  const [pendingWorkStatus, setPendingWorkStatus] = useState(null);
   const [employeeLogoutStatus, setEmployeeLogoutStatus] = useState({ canLogout: false, loading: true, pendingTasks: [] });
   const [marketingReportsCount, setMarketingReportsCount] = useState(0);
 
@@ -200,11 +199,11 @@ export default function ProfessionalSidebar({ children }) {
     if (String(role || '').toUpperCase() === 'MANAGER') {
       const status = await refreshManagerLogoutStatus();
       if (status?.error) {
-        toast.error('Unable to verify logout status right now. Please try again.');
+        setPendingWorkStatus(status);
         return;
       }
       if (status?.canLogout === false) {
-        setManagerLogoutStatus(status);
+        setPendingWorkStatus(status);
         return;
       }
       await logout();
@@ -229,24 +228,18 @@ export default function ProfessionalSidebar({ children }) {
     }
 
     if (result?.error) {
-      setLogoutModal({
-        title: "Could not verify logout",
-        message: "Logout is disabled until today’s task status is checked successfully.",
-        pendingTasks: [],
-        retry: true,
+      setPendingWorkStatus({
+        ...(result.status || {}),
+        role: "EMPLOYEE",
+        errorMessage: "Logout is disabled until today’s task status is checked successfully.",
       });
       return;
     }
 
-    const pendingEa = (result?.status?.pendingEaAssignments || []).map((t) => ({
-      id: t.id,
-      title: t.task?.projectName || t.task?.name || t.taskName || t.title || "EA Task",
-      source: "EA",
-    }));
-    setLogoutModal({
-      title: "You cannot logout yet.",
-      message: "You cannot logout yet. Please submit all of today's assigned tasks (including EA tasks) and wait for approval.",
-      pendingTasks: [...(result?.status?.pendingTasks || []), ...pendingEa],
+    setPendingWorkStatus({
+      ...(result?.status || {}),
+      role: "EMPLOYEE",
+      message: "You cannot logout yet. Please complete all assigned work before logging out.",
     });
   };
 
@@ -718,82 +711,10 @@ const renderSidebarContent = (isMobile = false) => {
         </button>
       </div>
 
-      <AnimatePresence>
-        {logoutModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 12 }}
-              className="w-full max-w-lg rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                  <LogOut size={20} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-slate-900">{logoutModal.title}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{logoutModal.message}</p>
-                </div>
-              </div>
-
-              {logoutModal.pendingTasks?.length > 0 && (
-                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    Pending tasks
-                  </p>
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {logoutModal.pendingTasks.map((task, index) => (
-                      <div key={`${task.assignmentId || task.taskItemId || index}`} className="rounded-lg border border-slate-200 bg-white p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-slate-800">{task.title || "Untitled task"}</p>
-                            <p className="text-sm text-slate-500">{task.projectName || "Unknown project"}</p>
-                          </div>
-                          <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                            {task.status || "PENDING"}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {logoutModal.retry && (
-                <button type="button" onClick={() => { setLogoutModal(null); refreshEmployeeLogoutStatus(); }} className="mt-5 w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">
-                  Retry status check
-                </button>
-              )}
-
-              <div className="mt-6 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setLogoutModal(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLogoutModal(null);
-                    navigate("/projects");
-                  }}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                >
-                  View Tasks
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <PendingWorkGuardModal
+        status={pendingWorkStatus}
+        onClose={() => setPendingWorkStatus(null)}
+      />
     </div>
   );
 };
@@ -868,10 +789,6 @@ return (
     {/* GLOBAL POPUP */}
     <TodayUploadPopup data={uploadPopupData} onClose={() => setUploadPopupData(null)} />
 
-    <ManagerLogoutGuardModal
-      status={managerLogoutStatus}
-      onClose={() => setManagerLogoutStatus(null)}
-    />
   </div>
 );
 

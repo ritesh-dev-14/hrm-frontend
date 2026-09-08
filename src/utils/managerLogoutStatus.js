@@ -25,17 +25,6 @@ export const submitManagerTask = async (assignmentId) => {
   return response?.data;
 };
 
-/**
- * Checks whether the currently logged-in MANAGER can log out.
- *
- * Returns:
- *  {
- *    canLogout: boolean,
- *    date: string,
- *    pendingEaTasks: Array,          // tasks assigned by EA not yet done today
- *    pendingMarketingReports: Array, // marketing projects missing today's report
- *  }
- */
 export const refreshManagerLogoutStatus = async () => {
   const rawUser = localStorage.getItem("user");
   const user = rawUser ? JSON.parse(rawUser) : null;
@@ -63,6 +52,7 @@ export const refreshManagerLogoutStatus = async () => {
 
     const status = {
       ...payload,
+      role: "MANAGER",
       pendingEaTasks: pendingAssignments.length > 0
         ? pendingAssignments
         : payload.pendingEaTasks ?? payload.assignedActions ?? [],
@@ -84,11 +74,16 @@ export const refreshManagerLogoutStatus = async () => {
     return status;
   } catch (error) {
     console.error("Failed to fetch manager logout status", error);
-    return {
+    const status = {
+      role: "MANAGER",
       canLogout: false,
       error: true,
       errorMessage: getErrorMessage(error, "Unable to verify logout status right now. Please try again."),
+      pendingEaTasks: [],
+      pendingMarketingReports: [],
     };
+    window.dispatchEvent(new CustomEvent("manager-logout-status", { detail: status }));
+    return status;
   }
 };
 
