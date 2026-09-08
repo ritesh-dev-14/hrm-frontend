@@ -316,7 +316,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing"
             element={
-              role === "HR" ? (
+              role === "HR" || role === "ADMIN" ? (
                 <MarketingReportsApprovalPage />
               ) : role === "MANAGER" ? (
                 <MarketingReportsPage />

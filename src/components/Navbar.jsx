@@ -71,7 +71,7 @@ const NAV_CONFIG = [
   { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
-  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["HR", "MANAGER"] },
+  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR", "MANAGER"] },
   { id: "marketing-monthly-reports", label: "Meeta Ads Calander", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
@@ -146,7 +146,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [role]);
 
   useEffect(() => {
-    if (!["HR", "MANAGER"].includes(String(role || "").toUpperCase())) return undefined;
+    if (!["ADMIN", "HR", "MANAGER"].includes(String(role || "").toUpperCase())) return undefined;
 
     let active = true;
     const loadMarketingReportCount = async () => {
@@ -157,26 +157,16 @@ export default function ProfessionalSidebar({ children }) {
           return;
         }
 
-        const projectsResponse = await API.get("/api/projects");
-        const projects = projectsResponse?.data?.data ?? projectsResponse?.data ?? [];
-        const reportResponses = await Promise.all(
-          (Array.isArray(projects) ? projects : []).filter((project) =>
-            String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing"),
-          ).map(async (project) => {
-            const projectId = project.id || project._id;
-            if (!projectId) return [];
-            try {
-              const response = await API.get(`/api/marketing-reports?projectId=${encodeURIComponent(projectId)}`);
-              return response?.data?.data ?? response?.data ?? [];
-            } catch {
-              return [];
-            }
-          }),
-        );
-        const reports = reportResponses.flat();
+        const today = new Date();
+        const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
+        const response = await API.get("/api/department-reports", {
+          params: { department: "marketing", date },
+        });
+        const payload = response?.data?.data ?? response?.data;
+        const reports = Array.isArray(payload) ? payload : payload?.reports || payload?.items || [];
         if (active) {
           setMarketingReportsCount(
-            (Array.isArray(reports) ? reports : reports?.items || []).filter(
+            reports.filter(
               (report) => report.approvalStatus !== "APPROVED",
             ).length,
           );
