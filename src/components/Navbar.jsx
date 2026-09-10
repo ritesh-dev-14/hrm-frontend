@@ -35,7 +35,7 @@ import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 import TodayUploadPopup from "./TodayUploadPopup";
 import { refreshEmployeeLogoutStatus } from "../utils/employeeLogoutStatus";
-import { refreshManagerLogoutStatus } from "../utils/managerLogoutStatus";
+import { getManagerPendingCategories, refreshManagerLogoutStatus } from "../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "./PendingWorkGuardModal";
 
 const NAV_CONFIG = [
@@ -123,6 +123,12 @@ export default function ProfessionalSidebar({ children }) {
   const [pendingWorkStatus, setPendingWorkStatus] = useState(null);
   const [employeeLogoutStatus, setEmployeeLogoutStatus] = useState({ canLogout: false, loading: true, pendingTasks: [] });
   const [marketingReportsCount, setMarketingReportsCount] = useState(0);
+  const [managerPendingCount, setManagerPendingCount] = useState(0);
+
+  const updateManagerPendingCount = (status) => {
+    const categories = getManagerPendingCategories(status);
+    setManagerPendingCount(Object.values(categories).reduce((total, items) => total + items.length, 0));
+  };
 
   useEffect(() => {
     if (String(role || "").toUpperCase() !== "EMPLOYEE") return undefined;
@@ -153,7 +159,10 @@ export default function ProfessionalSidebar({ children }) {
       try {
         if (String(role || "").toUpperCase() === "MANAGER") {
           const status = await refreshManagerLogoutStatus();
-          if (active) setMarketingReportsCount(status?.pendingMarketingReports?.length || 0);
+          if (active) {
+            setMarketingReportsCount(status?.pendingMarketingReports?.length || 0);
+            updateManagerPendingCount(status);
+          }
           return;
         }
 
@@ -177,10 +186,15 @@ export default function ProfessionalSidebar({ children }) {
     };
 
     loadMarketingReportCount();
+    const handleManagerStatus = (event) => {
+      if (active && String(role || "").toUpperCase() === "MANAGER") updateManagerPendingCount(event.detail);
+    };
+    window.addEventListener("manager-logout-status", handleManagerStatus);
     const interval = setInterval(loadMarketingReportCount, 10000);
     return () => {
       active = false;
       clearInterval(interval);
+      window.removeEventListener("manager-logout-status", handleManagerStatus);
     };
   }, [role]);
 
@@ -578,6 +592,7 @@ const renderSidebarContent = (isMobile = false) => {
           if (item.id === "shoots") badgeCount = unreadCounts.shoots;
           if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
           if (item.id === "marketing") badgeCount = marketingReportsCount;
+          if (item.id === "pending-manager") badgeCount = managerPendingCount;
           if (item.id === "pending-employee") badgeCount = employeeLogoutStatus.pendingTasks?.length || 0;
           const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 

@@ -93,9 +93,10 @@ export const refreshManagerLogoutStatus = async () => {
   }
 
   try {
-    const [response, assignmentsResponse] = await Promise.all([
+    const [response, assignmentsResponse, pendingSeo] = await Promise.all([
       API.get("/api/manager/logout-status"),
       API.get(`/api/coordinator-assignments/assigned-to/${user.id}`),
+      getManagerPendingSeoProjects(new Date().toISOString().slice(0, 10)),
     ]);
     const payload = response?.data?.data || {};
     const assignmentsPayload = assignmentsResponse?.data?.data;
@@ -113,6 +114,7 @@ export const refreshManagerLogoutStatus = async () => {
         ? pendingAssignments
         : payload.pendingEaTasks ?? payload.assignedActions ?? [],
       pendingMarketingReports: payload.pendingMarketingReports ?? payload.metaAdsProjects ?? [],
+      pendingSeo,
       canLogout: payload.canLogout ?? true,
     };
 
