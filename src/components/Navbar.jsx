@@ -71,7 +71,7 @@ const NAV_CONFIG = [
   { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
-  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR", "MANAGER"] },
+  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR"] },
   { id: "marketing-monthly-reports", label: "Meeta Ads Calander", icon: BarChart2, path: "/marketing-monthly-reports", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
   { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["ADMIN", "HR", "EA", "MANAGER"] },
