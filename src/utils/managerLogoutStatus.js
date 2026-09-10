@@ -6,6 +6,28 @@ const getErrorMessage = (error, fallback) => {
   return error?.response?.data?.message || fallback;
 };
 
+const firstArray = (...values) => values.find(Array.isArray) || [];
+
+export const getManagerPendingCategories = (status = {}) => ({
+  ea: firstArray(status.pendingEaTasks, status.assignedActions),
+  metaAds: firstArray(
+    status.pendingMetaAds,
+    status.pendingMarketingReports,
+    status.metaAdsProjects,
+  ),
+  seo: firstArray(status.pendingSeo, status.pendingSEO, status.seoProjects),
+  socialMedia: firstArray(
+    status.pendingSocialMedia,
+    status.pendingSocial,
+    status.socialMediaProjects,
+  ),
+  webDevelopment: firstArray(
+    status.pendingWebDevelopment,
+    status.pendingWeb,
+    status.webDevelopmentProjects,
+  ),
+});
+
 export const getManagerAssignedTasks = async (managerId) => {
   const response = await API.get(`/api/coordinator-assignments/assigned-to/${managerId}`);
   const data = response?.data?.data;
@@ -23,6 +45,16 @@ export const submitManagerTask = async (assignmentId) => {
     { status: "SUBMITTED" },
   );
   return response?.data;
+};
+
+export const submitMarketingUnableReason = async ({ projectId, clientName, reason, date }) => {
+  const response = await API.post("/api/marketing-reports", {
+    projectId,
+    clientName: clientName || null,
+    date,
+    unableToSubmitReason: reason,
+  });
+  return response?.data?.data || response?.data;
 };
 
 export const refreshManagerLogoutStatus = async () => {
@@ -60,9 +92,14 @@ export const refreshManagerLogoutStatus = async () => {
       canLogout: payload.canLogout ?? true,
     };
 
+    const categories = getManagerPendingCategories(status);
+    status.pendingMetaAds = categories.metaAds;
+    status.pendingSeo = categories.seo;
+    status.pendingSocialMedia = categories.socialMedia;
+    status.pendingWebDevelopment = categories.webDevelopment;
+
     status.canLogout = status.canLogout
-      && status.pendingEaTasks.length === 0
-      && status.pendingMarketingReports.length === 0;
+      && Object.values(getManagerPendingCategories(status)).every((items) => items.length === 0);
 
     // Dispatch event so other components can react
     window.dispatchEvent(
@@ -81,6 +118,10 @@ export const refreshManagerLogoutStatus = async () => {
       errorMessage: getErrorMessage(error, "Unable to verify logout status right now. Please try again."),
       pendingEaTasks: [],
       pendingMarketingReports: [],
+      pendingMetaAds: [],
+      pendingSeo: [],
+      pendingSocialMedia: [],
+      pendingWebDevelopment: [],
     };
     window.dispatchEvent(new CustomEvent("manager-logout-status", { detail: status }));
     return status;
