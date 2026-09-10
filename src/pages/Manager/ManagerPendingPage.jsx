@@ -6,6 +6,7 @@ import {
   getManagerAssignedTasks,
   getManagerAssignment,
   getManagerPendingCategories,
+  getManagerPendingSeoProjects,
   refreshManagerLogoutStatus,
   submitMarketingUnableReason,
   submitManagerTask,
@@ -57,12 +58,13 @@ export default function ManagerPendingPage() {
   setLoading(true);
   setError("");
   try {
-    const [assignedTasks, logoutStatus] = await Promise.all([
+    const [assignedTasks, logoutStatus, pendingSeo] = await Promise.all([
     getManagerAssignedTasks(user.id),
     refreshManagerLogoutStatus(),
+    getManagerPendingSeoProjects(today),
     ]);
     setTasks(assignedTasks.filter((task) => !finalStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
-    setStatus(logoutStatus || { pendingMarketingReports: [] });
+    setStatus({ ...(logoutStatus || { pendingMarketingReports: [] }), pendingSeo });
   } catch (requestError) {
     setError(errorMessage(requestError, "Unable to load pending obligations right now."));
   } finally {

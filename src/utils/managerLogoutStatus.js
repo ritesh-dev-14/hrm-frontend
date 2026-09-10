@@ -57,6 +57,30 @@ export const submitMarketingUnableReason = async ({ projectId, clientName, reaso
   return response?.data?.data || response?.data;
 };
 
+export const getManagerPendingSeoProjects = async (date) => {
+  const [projectsResponse, reportResponse] = await Promise.all([
+    API.get("/api/projects/assigned"),
+    API.get("/api/daily-report", { params: { date, department: "seo" } }),
+  ]);
+  const assignedProjects = Array.isArray(projectsResponse?.data?.data)
+    ? projectsResponse.data.data
+    : [];
+  const assignedSeoIds = new Set(
+    assignedProjects
+      .filter((project) => String(project.department?.name || "").toLowerCase().includes("seo"))
+      .map((project) => String(project.id)),
+  );
+  const seoProjects = reportResponse?.data?.data?.seo;
+  return (Array.isArray(seoProjects) ? seoProjects : [])
+    .filter((project) => !project.report?.hasReport && assignedSeoIds.has(String(project.projectId)))
+    .map((project) => ({
+      ...project,
+      projectId: project.projectId,
+      status: "PENDING",
+      date,
+    }));
+};
+
 export const refreshManagerLogoutStatus = async () => {
   const rawUser = localStorage.getItem("user");
   const user = rawUser ? JSON.parse(rawUser) : null;
