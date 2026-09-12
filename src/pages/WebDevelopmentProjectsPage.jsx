@@ -14,17 +14,47 @@ const isWebDevelopmentProject = (project) =>
 export default function WebDevelopmentProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
   const [openModal, setOpenModal] = useState(false);
   const navigate = useNavigate();
   const { role } = useAuth();
 
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setCurrentPage(1); // Reset page on new search
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search, debouncedSearch]);
+
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const response = await API.get("/api/projects");
-      const allProjects = response?.data?.data || [];
-      setProjects(allProjects.filter(isWebDevelopmentProject));
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 15,
+        department: "Web Development",
+      });
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+
+      const response = await API.get(`/api/projects?${params.toString()}`);
+      const responseData = response?.data;
+      
+      const allProjects = responseData?.data?.data || responseData?.data || [];
+      const pagination = responseData?.pagination || responseData?.data?.pagination || {};
+
+      setProjects(allProjects);
+      setTotalPages(pagination.totalPages || 1);
+      setTotalProjects(pagination.total || allProjects.length);
     } finally {
       setLoading(false);
     }
@@ -32,14 +62,7 @@ export default function WebDevelopmentProjectsPage() {
 
   useEffect(() => {
     loadProjects();
-  }, []);
-
-  const filteredProjects = useMemo(() => {
-    const query = search.toLowerCase();
-    return projects.filter((project) =>
-      `${project.projectName || ""} ${project.description || ""}`.toLowerCase().includes(query),
-    );
-  }, [projects, search]);
+  }, [currentPage, debouncedSearch]);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 text-slate-900">
@@ -68,7 +91,7 @@ export default function WebDevelopmentProjectsPage() {
 
         {loading ? <ProfessionalLoader text="Loading. Please wait..." /> : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
               <button
                 type="button"
                 key={project.id}
@@ -83,7 +106,32 @@ export default function WebDevelopmentProjectsPage() {
           </div>
         )}
 
-        {!loading && filteredProjects.length === 0 && (
+        {/* PAGINATION CONTROLS */}
+        {!loading && totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <span className="text-sm font-medium text-slate-500">
+              Showing page <span className="font-bold text-slate-700">{currentPage}</span> of <span className="font-bold text-slate-700">{totalPages}</span> ({totalProjects} total projects)
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 rounded-xl text-sm font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!loading && projects.length === 0 && (
           <div className="py-24 text-center text-slate-500">No Web Development projects found.</div>
         )}
       </div>

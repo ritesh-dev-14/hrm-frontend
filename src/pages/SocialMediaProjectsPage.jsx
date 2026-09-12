@@ -59,6 +59,10 @@ const SocialMediaProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
   const [openModal, setOpenModal] = useState(false);
   
   // Reason Modal state
@@ -68,13 +72,39 @@ const SocialMediaProjectsPage = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
 
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) {
+        setCurrentPage(1); // Reset page on new search
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery, debouncedSearch]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const response = await API.get("/api/projects");
-      const projects = response?.data?.data || [];
-      // Filter only Social Media Department projects
-      setAllProjects(projects.filter(isSocialMediaProject));
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 15,
+        department: "Social Media",
+      });
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+
+      const response = await API.get(`/api/projects?${params.toString()}`);
+      const responseData = response?.data;
+      
+      // Handle different possible backend response structures
+      const projects = responseData?.data?.data || responseData?.data || [];
+      const pagination = responseData?.pagination || responseData?.data?.pagination || {};
+
+      setAllProjects(projects);
+      setTotalPages(pagination.totalPages || 1);
+      setTotalProjects(pagination.total || projects.length);
     } catch (error) {
       console.error("Failed to load social media projects:", error);
     } finally {
@@ -84,16 +114,7 @@ const SocialMediaProjectsPage = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
-
-  const filteredProjects = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    return allProjects.filter(
-      (p) =>
-        p.projectName?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q),
-    );
-  }, [allProjects, searchQuery]);
+  }, [currentPage, debouncedSearch]);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -160,7 +181,7 @@ const SocialMediaProjectsPage = () => {
             </div>
             <div>
               <p className="text-2xl font-black text-slate-900 leading-none">
-                {allProjects.length}
+                {totalProjects}
               </p>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
                 Total Projects
@@ -194,7 +215,7 @@ const SocialMediaProjectsPage = () => {
         {/* PROJECTS GRID */}
         {isLoading ? (
           <ProfessionalLoader text="Loading. Please wait..." />
-        ) : filteredProjects.length === 0 ? (
+        ) : allProjects.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm text-center">
             <div className="w-20 h-20 bg-cyan-50 text-cyan-300 rounded-full flex items-center justify-center mb-6">
               <ClipboardList size={40} />
@@ -209,14 +230,15 @@ const SocialMediaProjectsPage = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          >
-            <AnimatePresence>
-              {filteredProjects.map((project) => (
+          <div className="space-y-6">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              <AnimatePresence>
+                {allProjects.map((project) => (
                 <motion.div
                   layout
                   variants={itemVariants}
@@ -301,7 +323,33 @@ const SocialMediaProjectsPage = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
-          </motion.div>
+            </motion.div>
+
+            {/* PAGINATION CONTROLS */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <span className="text-sm font-medium text-slate-500">
+                  Showing page <span className="font-bold text-slate-700">{currentPage}</span> of <span className="font-bold text-slate-700">{totalPages}</span> ({totalProjects} total projects)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-cyan-50 text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

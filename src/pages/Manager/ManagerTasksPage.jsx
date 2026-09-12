@@ -52,7 +52,11 @@ const ManagerTaskPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
 
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -72,12 +76,43 @@ const ManagerTaskPage = () => {
     }
   };
 
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) {
+        setCurrentPage(1); // Reset page on new search
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm, debouncedSearch]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 15,
+      });
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+      
+      // If activeTab is RECURRING, maybe it means department=Social Media
+      if (activeTab === "RECURRING") {
+        params.append("department", "Social Media");
+      }
+
       // Fetching all workspace project resources
-      const response = await API.get("/api/projects");
-      setTasks(response?.data?.data || []);
+      const response = await API.get(`/api/projects?${params.toString()}`);
+      const responseData = response?.data;
+      
+      const allProjects = responseData?.data?.data || responseData?.data || [];
+      const pagination = responseData?.pagination || responseData?.data?.pagination || {};
+
+      setTasks(allProjects);
+      setTotalPages(pagination.totalPages || 1);
+      setTotalProjects(pagination.total || allProjects.length);
     } catch (error) {
       console.log(error);
     } finally {
@@ -87,7 +122,7 @@ const ManagerTaskPage = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentPage, debouncedSearch, activeTab]);
 
   useEffect(() => {
     loadEaTasks();
@@ -128,13 +163,7 @@ const ManagerTaskPage = () => {
     });
   };
 
-  const filteredTasks = tasks.filter(
-    (task) =>
-      (task.projectName || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (task.description || "").toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredTasks = tasks; // Filtering handled by backend mostly
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
@@ -272,7 +301,10 @@ const ManagerTaskPage = () => {
                 {["ALL", "RECURRING", "OTHER"].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      setCurrentPage(1);
+                    }}
                     className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
                       activeTab === tab
                         ? "bg-indigo-600 text-white shadow-md"
@@ -402,6 +434,31 @@ const ManagerTaskPage = () => {
                   </motion.div>
                 );
               })()}
+
+              {/* PAGINATION CONTROLS */}
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                  <span className="text-sm font-medium text-slate-500">
+                    Showing page <span className="font-bold text-slate-700">{currentPage}</span> of <span className="font-bold text-slate-700">{totalPages}</span> ({totalProjects} total projects)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </motion.div>

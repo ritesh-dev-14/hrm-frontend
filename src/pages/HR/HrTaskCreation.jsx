@@ -47,17 +47,53 @@ const HrTaskCreation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
 
   const navigate = useNavigate();
+
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) {
+        setCurrentPage(1); // Reset page on new search
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery, debouncedSearch]);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const response = await API.get("/api/projects");
-      setTasks(response?.data?.data || []);
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 15,
+      });
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+      
+      // If we know activeTab translates to department filter on backend we can add it,
+      // but without backend support for "exclude" we fetch all and apply local filter, or assume we fetch all.
+      if (activeTab === "RECURRING") {
+        params.append("department", "Social Media");
+      }
+
+      const response = await API.get(`/api/projects?${params.toString()}`);
+      const responseData = response?.data;
+      
+      const allProjects = responseData?.data?.data || responseData?.data || [];
+      const pagination = responseData?.pagination || responseData?.data?.pagination || {};
+
+      setTasks(allProjects);
+      setTotalPages(pagination.totalPages || 1);
+      setTotalProjects(pagination.total || allProjects.length);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +101,7 @@ const HrTaskCreation = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentPage, debouncedSearch, activeTab]);
 
   const handleTaskCreated = (newTask) => {
     setTasks((prev) => [newTask, ...prev]);
@@ -84,14 +120,10 @@ const HrTaskCreation = () => {
     });
   };
 
+  // filteredTasks is now mostly handled by backend, but we keep tab filtering for "OTHER"
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      return (
-        task.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    });
-  }, [tasks, searchQuery]);
+    return tasks;
+  }, [tasks]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
@@ -172,7 +204,10 @@ const HrTaskCreation = () => {
               {["ALL", "RECURRING", "OTHER"].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setCurrentPage(1);
+                  }}
                   className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
                     activeTab === tab
                       ? "bg-indigo-600 text-white shadow-md"
@@ -299,6 +334,31 @@ const HrTaskCreation = () => {
                 </motion.div>
               );
             })()}
+
+            {/* PAGINATION CONTROLS */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <span className="text-sm font-medium text-slate-500">
+                  Showing page <span className="font-bold text-slate-700">{currentPage}</span> of <span className="font-bold text-slate-700">{totalPages}</span> ({totalProjects} total projects)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

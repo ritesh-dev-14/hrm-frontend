@@ -79,7 +79,11 @@ const MarketingProjectsPage = () => {
   const [allProjects, setAllProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [runningFilter, setRunningFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
   const [openModal, setOpenModal] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState(null);
   const [updatingProjectId, setUpdatingProjectId] = useState(null);
@@ -87,13 +91,44 @@ const MarketingProjectsPage = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
 
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) {
+        setCurrentPage(1); // Reset page on new search
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery, debouncedSearch]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const response = await API.get("/api/projects");
-      const projects = response?.data?.data || [];
-      // Filter only Marketing Department projects
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 15,
+        department: "Marketing", // Or Performance Marketing, etc. depending on backend support
+      });
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+      if (runningFilter === "running") {
+        params.append("isRunning", "true");
+      } else if (runningFilter === "not-running") {
+        params.append("isRunning", "false");
+      }
+
+      const response = await API.get(`/api/projects?${params.toString()}`);
+      const responseData = response?.data;
+      
+      const projects = responseData?.data?.data || responseData?.data || [];
+      const pagination = responseData?.pagination || responseData?.data?.pagination || {};
+
+      // Filter natively just in case the backend doesn't fully restrict to marketing, then normalize
       const marketingProjects = projects.filter(isMarketingProject).map(normalizeMetaAdsProject);
+      
+      // Fetch details for the projects on this page
       const detailedProjects = await Promise.all(
         marketingProjects.map(async (project) => {
           try {
@@ -105,7 +140,10 @@ const MarketingProjectsPage = () => {
           }
         }),
       );
+      
       setAllProjects(detailedProjects);
+      setTotalPages(pagination.totalPages || 1);
+      setTotalProjects(pagination.total || detailedProjects.length);
     } catch (error) {
       console.error("Failed to load marketing projects:", error);
     } finally {
@@ -115,24 +153,7 @@ const MarketingProjectsPage = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
-
-  const filteredProjects = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    return allProjects.filter(
-      (p) => {
-        const matchesSearch =
-          p.projectName?.toLowerCase().includes(q) ||
-          p.description?.toLowerCase().includes(q);
-        const isRunning = p.isRunning === true || p.isRunning === "true";
-        const matchesRunningFilter =
-          runningFilter === "all" ||
-          (runningFilter === "running" && isRunning) ||
-          (runningFilter === "not-running" && !isRunning);
-        return matchesSearch && matchesRunningFilter;
-      },
-    );
-  }, [allProjects, searchQuery, runningFilter]);
+  }, [currentPage, debouncedSearch, runningFilter]);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -218,7 +239,7 @@ const MarketingProjectsPage = () => {
             </div>
             <div>
               <p className="text-2xl font-black text-slate-900 leading-none">
-                {allProjects.length}
+                {totalProjects}
               </p>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
                 Total Projects
@@ -250,7 +271,10 @@ const MarketingProjectsPage = () => {
             </div>
             <select
               value={runningFilter}
-              onChange={(event) => setRunningFilter(event.target.value)}
+              onChange={(event) => {
+                setRunningFilter(event.target.value);
+                setCurrentPage(1); // Reset page on filter change
+              }}
               className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 md:min-w-44"
               aria-label="Filter projects by running status"
             >
@@ -264,7 +288,7 @@ const MarketingProjectsPage = () => {
         {/* PROJECTS GRID */}
         {isLoading ? (
           <ProfessionalLoader text="Loading. Please wait..." />
-        ) : filteredProjects.length === 0 ? (
+        ) : allProjects.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-dashed border-slate-200 shadow-sm text-center">
             <div className="w-20 h-20 bg-pink-50 text-pink-300 rounded-full flex items-center justify-center mb-6">
               <ClipboardList size={40} />
@@ -279,14 +303,15 @@ const MarketingProjectsPage = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          >
-            <AnimatePresence>
-              {filteredProjects.map((project) => (
+          <div className="space-y-6">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              <AnimatePresence>
+                {allProjects.map((project) => (
                 (() => {
                   const isRunning = project.isRunning === true || project.isRunning === "true";
                   return (
@@ -391,7 +416,33 @@ const MarketingProjectsPage = () => {
                 })()
               ))}
             </AnimatePresence>
-          </motion.div>
+            </motion.div>
+
+            {/* PAGINATION CONTROLS */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <span className="text-sm font-medium text-slate-500">
+                  Showing page <span className="font-bold text-slate-700">{currentPage}</span> of <span className="font-bold text-slate-700">{totalPages}</span> ({totalProjects} total projects)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-pink-50 text-pink-700 hover:bg-pink-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
       <MetaAdsProjectModal
