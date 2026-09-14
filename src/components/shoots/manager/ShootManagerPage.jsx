@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
 import { 
   Plus, 
   Video, 
-  Folder, 
-  Users, 
   ListTodo, 
-  Calendar, 
   ArrowRight, 
   Loader2, 
   X,
@@ -222,7 +219,6 @@ const ShootManagerPage = () => {
                   <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     <th className="py-4 px-6">Shoot Metadata / Brand</th>
                     <th className="py-4 px-6 text-center">Tasks Count</th>
-                    <th className="py-4 px-6 text-center">Crew Members</th>
                     <th className="py-4 px-6 text-right">Actions Matrix</th>
                   </tr>
                 </thead>
@@ -265,12 +261,6 @@ const ShootManagerPage = () => {
                           <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-1 rounded-md text-[11px] uppercase tracking-wider">
                             <ListTodo size={14} className="text-slate-400" />
                             {shoot.tasks?.length || 0}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-center font-bold text-slate-700 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-1 rounded-md text-[11px] uppercase tracking-wider">
-                            <Users size={14} className="text-slate-400" />
-                            {shoot.members?.length || 0}
                           </span>
                         </td>
                         <td className="py-4 px-6 text-right whitespace-nowrap">

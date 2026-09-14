@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import API from '../../../services/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -45,7 +45,7 @@ const ShootEmployeePage = () => {
     fetchMyTasks()
   }, [])
 
-  const fetchMyTasks = async () => {
+  async function fetchMyTasks() {
     try {
       setLoading(true)
       const response = await API.get('/api/shoot-workspaces/my-tasks')
@@ -223,7 +223,7 @@ const ShootEmployeePage = () => {
                 <Briefcase className="w-5 h-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Workspaces</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assigned Shoots</p>
                 <p className="text-xl font-black text-slate-800">{shoots.length}</p>
               </div>
             </div>
@@ -301,11 +301,27 @@ const ShootEmployeePage = () => {
                     <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 font-medium">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4 text-slate-400" />
-                        <span>{new Date(shoot.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span>{shoot.date ? new Date(shoot.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date pending'}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4 text-slate-400" />
-                        <span>{shoot.arrivalTime}</span>
+                        <span>{shoot.arrivalTime || 'Arrival pending'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                        {shoot.location ? (
+                          <a
+                            href={shoot.location}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            className="truncate text-indigo-600 hover:text-indigo-800 hover:underline"
+                          >
+                            View location
+                          </a>
+                        ) : (
+                          <span>Location pending</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Layers className="w-4 h-4 text-slate-400" />
