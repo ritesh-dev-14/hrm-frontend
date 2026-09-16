@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 
@@ -555,30 +555,30 @@ export const AppRoutes = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </>
       )}
-    
-          <Route
-            path="/daily-reports"
-            element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
-                <DailyDepartmentReportPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
 
-          <Route
-            path="/data/:projectId?"
-            element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
-                <DataDashboardPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
+      <Route
+        path="/daily-reports"
+        element={
+          ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+            <DailyDepartmentReportPage />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
 
-</Routes>
+      <Route
+        path="/data/:projectId?"
+        element={
+          ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+            <DataDashboardPage />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
+
+    </Routes>
   );
 };
 
