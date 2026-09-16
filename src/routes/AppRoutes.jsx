@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { lazy, Suspense, useEffect, useState } from "react";
-
-import API from "../services/api";
+import { lazy, Suspense } from "react";
 // Pages
 const Login = lazy(() => import("../auth/login"));
 
@@ -82,124 +80,7 @@ export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
   const isAuthenticated = user && token;
 
-  // Compute the initial state synchronously to prevent asynchronous state-change flickering
-  const [departmentName, setDepartmentName] = useState(() => {
-    if (role === "HR" || role === "ADMIN") return role.toUpperCase();
-
-    const initialDeptId =
-      user?.departmentId ||
-      user?.department ||
-      user?.deptId ||
-      user?.department_id;
-    const initialDeptsArray = user?.departments || [];
-
-    if (!initialDeptId && initialDeptsArray.length === 0 && user) {
-      return user?.position ? String(user.position).trim() : "GENERAL_STAFF";
-    }
-    return "";
-  });
-
-  const [isDeptLoading, setIsDeptLoading] = useState(() => {
-    if (role === "HR" || role === "ADMIN") return false;
-
-    const initialDeptId =
-      user?.departmentId ||
-      user?.department ||
-      user?.deptId ||
-      user?.department_id;
-    const initialDeptsArray = user?.departments || [];
-
-    if (!initialDeptId && initialDeptsArray.length === 0) return false;
-    return true;
-  });
-
-  useEffect(() => {
-    const getDepartmentName = async () => {
-      if (isLoading) return;
-
-      if (!user) {
-        setIsDeptLoading(false);
-        return;
-      }
-
-      try {
-        if (!role) {
-          setIsDeptLoading(false);
-          return;
-        }
-
-        const normalizedRole = role.toUpperCase();
-        if (normalizedRole === "HR" || normalizedRole === "ADMIN") {
-          setIsDeptLoading(false);
-          return;
-        }
-
-        const assignedDepartmentId =
-          user?.departmentId ||
-          user?.department ||
-          user?.deptId ||
-          user?.department_id;
-
-        const assignedDepartmentsArray = user?.departments || [];
-
-        if (!assignedDepartmentId && assignedDepartmentsArray.length === 0) {
-          setIsDeptLoading(false);
-          return;
-        }
-
-        const res = await API.get("/api/departments");
-        const departmentsList = res.data?.data || [];
-
-        const targetIds = new Set();
-        if (assignedDepartmentId) {
-          if (typeof assignedDepartmentId === "object") {
-            targetIds.add(
-              String(
-                assignedDepartmentId?.id || assignedDepartmentId?._id || "",
-              ),
-            );
-          } else {
-            targetIds.add(String(assignedDepartmentId));
-          }
-        }
-
-        assignedDepartmentsArray.forEach((dept) => {
-          if (typeof dept === "object") {
-            targetIds.add(String(dept?.id || dept?._id || ""));
-          } else {
-            targetIds.add(String(dept));
-          }
-        });
-
-        const matchedDepartment = departmentsList.find((d) => {
-          const systemDeptId = String(d.id || d._id || "");
-          return targetIds.has(systemDeptId);
-        });
-
-        if (matchedDepartment?.name) {
-          setDepartmentName(matchedDepartment.name.trim());
-        } else {
-          if (typeof user?.department === "string" && user?.department) {
-            setDepartmentName(user.department);
-          } else {
-            setDepartmentName("GENERAL_STAFF");
-          }
-        }
-      } catch (err) {
-        console.error(
-          "Failed fetching routing engine context keys via API:",
-          err,
-        );
-        setDepartmentName("GENERAL_STAFF");
-      } finally {
-        setIsDeptLoading(false);
-      }
-    };
-
-    getDepartmentName();
-  }, [role, user, isLoading]);
-
-  if (isLoading || (isAuthenticated && isDeptLoading)) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen w-full bg-white">
         <div className="text-center">

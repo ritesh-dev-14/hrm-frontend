@@ -52,43 +52,34 @@ const EmployeeHomePage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let totalHours = 0;
+        const [tasksResult, attendanceResult] = await Promise.allSettled([
+          API.get("/api/employee-dashboard/items"),
+          API.get("/api/attendance/history"),
+        ]);
+
         let totalTasks = 0;
         let completed = 0;
         let pending = 0;
-
-        // Fetch Tasks
-        try {
-          const tasksRes = await API.get("/api/employee-dashboard/items");
-          if (tasksRes?.data?.success) {
-            const tasks = tasksRes.data.data || [];
-            totalTasks = tasks.length;
-            completed = tasks.filter(t => t.status === "COMPLETED" || t.status === "VERIFIED").length;
-            pending = tasks.filter(t => !["COMPLETED", "VERIFIED"].includes(t.status)).length;
-          }
-        } catch (err) {
-          console.error("Error fetching tasks:", err);
+        if (tasksResult.status === "fulfilled" && tasksResult.value?.data?.success) {
+          const tasks = tasksResult.value.data.data || [];
+          totalTasks = tasks.length;
+          completed = tasks.filter((task) => task.status === "COMPLETED" || task.status === "VERIFIED").length;
+          pending = tasks.filter((task) => !["COMPLETED", "VERIFIED"].includes(task.status)).length;
         }
 
-        // Fetch Attendance
-        try {
-          const attRes = await API.get("/api/attendance/history");
-          if (attRes?.data?.success) {
-            const records = attRes.data.data || [];
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
-            
-            const thisMonthRecords = records.filter(r => {
-              if (!r.date) return false;
-              const d = new Date(r.date);
-              return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-            });
-            
-            totalHours = thisMonthRecords.reduce((sum, r) => sum + (r.totalHours || 0), 0);
-            totalHours = parseFloat(totalHours.toFixed(1));
-          }
-        } catch (err) {
-          console.error("Error fetching attendance:", err);
+        let totalHours = 0;
+        if (attendanceResult.status === "fulfilled" && attendanceResult.value?.data?.success) {
+          const records = attendanceResult.value.data.data || [];
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const thisMonthRecords = records.filter((record) => {
+            if (!record.date) return false;
+            const date = new Date(record.date);
+            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+          });
+          totalHours = parseFloat(
+            thisMonthRecords.reduce((sum, record) => sum + (record.totalHours || 0), 0).toFixed(1),
+          );
         }
 
         setStats({ totalHours, totalTasks, completed, pending });
