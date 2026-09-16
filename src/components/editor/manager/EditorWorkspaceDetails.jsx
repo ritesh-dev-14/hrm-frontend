@@ -61,6 +61,7 @@ const EditorWorkspaceDetails = () => {
     priority: 'MEDIUM',
     description: '',
     status: 'DRAFT',
+    mediaType: 'VIDEO',
     referenceLink: '',
     rawDataLink: ''
   })
@@ -163,6 +164,7 @@ const EditorWorkspaceDetails = () => {
       setIsActionLoading(true)
       const payload = {
         ...subtaskForm,
+        mediaType: subtaskForm.mediaType || 'VIDEO',
         title: subtaskForm.title.trim(),
         description: subtaskForm.description.trim(),
         dueDate: subtaskForm.dueDate ? new Date(subtaskForm.dueDate).toISOString() : null,
@@ -175,7 +177,7 @@ const EditorWorkspaceDetails = () => {
         setShowAddModal(false)
         setSubtaskForm({
           title: '', employeeId: '', dueDate: '', priority: 'MEDIUM',
-          description: '', status: 'DRAFT', referenceLink: '', rawDataLink: ''
+          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: ''
         })
         await refreshSubtaskIndex()
       }
@@ -249,6 +251,7 @@ const EditorWorkspaceDetails = () => {
       priority: item.priority || 'MEDIUM',
       description: item.description || '',
       status: item.status || 'DRAFT',
+      mediaType: item.mediaType || 'VIDEO',
       referenceLink: item.referenceLink || '',
       rawDataLink: item.rawDataLink || ''
     })
@@ -264,6 +267,7 @@ const EditorWorkspaceDetails = () => {
       setIsActionLoading(true)
       const payload = {
         ...editSubtaskForm,
+        mediaType: editSubtaskForm.mediaType || 'VIDEO',
         title: editSubtaskForm.title.trim(),
         description: editSubtaskForm.description.trim(),
         dueDate: editSubtaskForm.dueDate ? new Date(editSubtaskForm.dueDate).toISOString() : null,
@@ -690,7 +694,18 @@ const EditorWorkspaceDetails = () => {
                     <option value="HIGH">HIGH</option>
                   </select>
                 </div>
-                
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Media Type</label>
+                  <select
+                    name="mediaType"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:outline-none rounded-xl px-3 py-2 text-xs font-bold text-slate-600"
+                    value={subtaskForm.mediaType}
+                    onChange={handleFormInputChange}
+                  >
+                    <option value="VIDEO">VIDEO</option>
+                    <option value="PIC">PIC</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -1048,6 +1063,17 @@ const EditorWorkspaceDetails = () => {
                     onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, dueDate: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Media Type</label>
+                  <select
+                    value={editSubtaskForm.mediaType || 'VIDEO'}
+                    onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, mediaType: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                  >
+                    <option value="VIDEO">VIDEO</option>
+                    <option value="PIC">PIC</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status</label>

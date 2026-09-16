@@ -18,6 +18,7 @@ import {
   Search,
   Hash,
   Briefcase,
+  Plus,
   Loader2, 
   X, 
   ExternalLink 
@@ -39,6 +40,11 @@ const ShootEmployeePage = () => {
   const [submissionNote, setSubmissionNote] = useState('')
   const [unableReason, setUnableReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [extraContentTask, setExtraContentTask] = useState(null)
+  const [extraPicsRaw, setExtraPicsRaw] = useState('0')
+  const [extraReelsRaw, setExtraReelsRaw] = useState('0')
+  const [extraDriveLink, setExtraDriveLink] = useState('')
+  const [extraNotes, setExtraNotes] = useState('')
 
   // Fetch Tasks on Mount
   useEffect(() => {
@@ -153,6 +159,52 @@ const ShootEmployeePage = () => {
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Action failed. Please verify submission format.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const openExtraContentModal = (shootId, task) => {
+    setExtraContentTask({ shootId, task })
+    setExtraPicsRaw('0')
+    setExtraReelsRaw('0')
+    setExtraDriveLink('')
+    setExtraNotes('')
+  }
+
+  const handleExtraContentSubmit = async (e) => {
+    e.preventDefault()
+    if (!extraContentTask) return
+
+    const extraPics = Number.parseInt(extraPicsRaw, 10) || 0
+    const extraReels = Number.parseInt(extraReelsRaw, 10) || 0
+    if (extraPics === 0 && extraReels === 0) {
+      alert('Please add at least one extra pic or reel.')
+      return
+    }
+    if (!extraDriveLink.trim()) {
+      alert('Please provide the Drive link for the extra content.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const response = await API.post(
+        `/api/shoot-workspaces/${extraContentTask.shootId}/tasks/${extraContentTask.task.id}/extra-content`,
+        {
+          extraPics,
+          extraReels,
+          driveLink: extraDriveLink.trim(),
+          notes: extraNotes.trim() || undefined,
+        },
+      )
+
+      if (response.data?.success) {
+        await fetchMyTasks()
+        setExtraContentTask(null)
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Extra content submission failed.')
     } finally {
       setSubmitting(false)
     }
@@ -359,21 +411,53 @@ const ShootEmployeePage = () => {
                       className="overflow-hidden border-t border-slate-100/60 bg-slate-50/30"
                     >
                       <div className="p-6 md:p-8 space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-4">
                           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Task Matrix Breakdown</h3>
-                          {shoot.location && (
-                            <a 
-                              href={shoot.location} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-50 rounded-xl transition text-indigo-600 text-xs font-bold border border-slate-200 hover:border-indigo-200 shadow-sm"
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                openExtraContentModal(currentShootId, shoot)
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl transition text-white text-xs font-bold shadow-sm"
                             >
-                              <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                              Open Location
-                              <ExternalLink className="w-3 h-3 text-indigo-400" />
-                            </a>
-                          )}
+                              <Plus className="w-3.5 h-3.5" />
+                              Add Extra Content
+                            </button>
+                            {shoot.location && (
+                              <a 
+                                href={shoot.location} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-50 rounded-xl transition text-indigo-600 text-xs font-bold border border-slate-200 hover:border-indigo-200 shadow-sm"
+                              >
+                                <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                                Open Location
+                                <ExternalLink className="w-3 h-3 text-indigo-400" />
+                              </a>
+                            )}
+                          </div>
                         </div>
+
+                        {shoot.extraContent?.length > 0 && (
+                          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                              <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-700">Submitted Extra Content</h4>
+                              <span className="text-xs font-bold text-emerald-600">{shoot.extraPics || 0} pics / {shoot.extraReels || 0} reels</span>
+                            </div>
+                            <div className="space-y-2">
+                              {shoot.extraContent.map((content) => (
+                                <div key={content.id} className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+                                  <span className="font-semibold">{content.extraPics} pics / {content.extraReels} reels</span>
+                                  <a href={content.driveLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:underline">
+                                    Open Drive Link <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         
                         {shoot.subtasks?.map((subtask) => {
                           const status = getStatus(subtask)
@@ -596,6 +680,62 @@ const ShootEmployeePage = () => {
                   >
                     {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                     {actionType === 'submit' ? 'Confirm Submission' : 'Submit Reason'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {extraContentTask && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white/95 backdrop-blur-xl border border-slate-100 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100/60 flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg">Add Extra Content</h3>
+                  <p className="text-sm text-slate-500 font-medium mt-1">{extraContentTask.task.title}</p>
+                </div>
+                <button type="button" onClick={() => setExtraContentTask(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleExtraContentSubmit} className="p-6 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="space-y-2">
+                    <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Extra Pics</span>
+                    <input type="number" min="0" required value={extraPicsRaw} onChange={(e) => setExtraPicsRaw(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Extra Reels</span>
+                    <input type="number" min="0" required value={extraReelsRaw} onChange={(e) => setExtraReelsRaw(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                  </label>
+                </div>
+                <label className="block space-y-2">
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Drive Link</span>
+                  <input type="url" required placeholder="https://drive.google.com/..." value={extraDriveLink} onChange={(e) => setExtraDriveLink(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                </label>
+                <label className="block space-y-2">
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Notes <span className="normal-case tracking-normal font-medium text-slate-400">(optional)</span></span>
+                  <textarea rows={3} value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} placeholder="Add any useful details about these files..." className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
+                </label>
+                <div className="flex justify-end gap-3 pt-5 border-t border-slate-100">
+                  <button type="button" disabled={submitting} onClick={() => setExtraContentTask(null)} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Cancel</button>
+                  <button type="submit" disabled={submitting} className="px-6 py-2.5 text-sm font-bold rounded-xl shadow-md transition flex items-center gap-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
+                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Submit Extra Content
                   </button>
                 </div>
               </form>

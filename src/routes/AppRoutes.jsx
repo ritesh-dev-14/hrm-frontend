@@ -53,6 +53,7 @@ import ManagerWhatsappMessages from "../pages/Manager/ManagerWhatsappMessages.js
 // shoots
 import ShootPage from "../components/shoots/ShootPage.jsx";
 import ShootWorkspaceDetails from "../components/shoots/manager/ShootWorkspaceDetails.jsx";
+import ShootManagementPage from "../components/shoots/ShootManagementPage.jsx";
 
 // editor
 import EditorPage from "../components/editor/EditorPage.jsx";
@@ -276,6 +277,7 @@ export const AppRoutes = () => {
 
           {/* SAFE ACCESS GUARD GRID FOR MEDIA SHOOTS */}
           <Route path="/shoot" element={<ShootPage />} />
+          <Route path="/shoot-management" element={<ShootManagementPage />} />
 
           <Route
             path="/shoot/:workspaceId"

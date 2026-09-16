@@ -735,11 +735,7 @@ export default function ShootWorkspaceDetails() {
 
   // Map a Selected Monthly Sheet Day onto the Subtask Create Form
   const handleSelectDayForSubtask = (day) => {
-    const inferredType = day.videoType
-      ? "REEL"
-      : day.postType
-        ? "IMAGE"
-        : "REEL";
+    const inferredType = day.videoType ? "REEL" : day.postType ? "PIC" : "REEL";
 
     setIsEditSubtaskMode(false);
     setActiveEditingSubtaskId(null);
@@ -2141,15 +2137,14 @@ export default function ShootWorkspaceDetails() {
                   </label>
                   <select
                     disabled={isActionLoading}
-                    value={subtaskForm.type}
+                    value={subtaskForm.type === "IMAGE" || subtaskForm.type === "PHOTO" ? "PIC" : subtaskForm.type === "VIDEO" ? "REEL" : subtaskForm.type}
                     onChange={(e) =>
                       setSubtaskForm({ ...subtaskForm, type: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/40 text-slate-700 font-medium disabled:opacity-50"
                   >
                     <option value="REEL">REEL</option>
-                    <option value="IMAGE">IMAGE</option>
-                    <option value="VIDEO">VIDEO</option>
+                    <option value="PIC">PIC</option>
                   </select>
                 </div>
 

@@ -131,6 +131,7 @@ const EditorManagerPage = () => {
     // Transform input structures into standard ISO strings expected by backend repositories
     const payload = {
       ...formData,
+      projectId: selectedProjectId,
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null
     }

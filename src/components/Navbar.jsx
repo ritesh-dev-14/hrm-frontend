@@ -58,6 +58,7 @@ const NAV_CONFIG = [
     ],
   },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"] },
+  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "EMPLOYEE", "ADMIN", "HR"] },
   { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
