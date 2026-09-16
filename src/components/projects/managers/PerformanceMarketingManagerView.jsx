@@ -49,11 +49,11 @@ const INITIAL_FORM = {
 };
 
 /* ─── component ───────────────────────────────────────────────────────────── */
-export default function PerformanceMarketingManagerView({ projectId }) {
+export default function PerformanceMarketingManagerView({ projectId, initialProject = null }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [project, setProject] = useState(null);
+  const [project, setProject] = useState(initialProject);
   const [reports, setReports] = useState([]);
   const [monthlyCalendar, setMonthlyCalendar] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,24 +88,20 @@ export default function PerformanceMarketingManagerView({ projectId }) {
     if (!projectId) return;
     setLoading(true);
     try {
-      // Load project details
-      const projRes = await API.get(`/api/projects/${projectId}`);
-      setProject(projRes.data?.data || null);
-
-      // Load marketing reports
-      const repRes = await API.get(`/api/marketing-reports?projectId=${projectId}`);
-      const data = Array.isArray(repRes.data)
-        ? repRes.data
-        : repRes.data?.data || [];
-      setReports(data);
-
       const today = new Date();
-      const monthlyRes = await API.get(
-        `/api/marketing-monthly-reports?month=${today.getMonth() + 1}&year=${today.getFullYear()}`,
-      );
-      const monthlyData = monthlyRes?.data && Object.prototype.hasOwnProperty.call(monthlyRes.data, "data")
-        ? monthlyRes.data.data
-        : monthlyRes?.data;
+      const [reportsResult, monthlyResult] = await Promise.all([
+        API.get(`/api/marketing-reports?projectId=${projectId}`),
+        API.get(
+          `/api/marketing-monthly-reports?month=${today.getMonth() + 1}&year=${today.getFullYear()}`,
+        ),
+      ]);
+      const reportData = Array.isArray(reportsResult.data)
+        ? reportsResult.data
+        : reportsResult.data?.data || [];
+      const monthlyData = monthlyResult?.data && Object.prototype.hasOwnProperty.call(monthlyResult.data, "data")
+        ? monthlyResult.data.data
+        : monthlyResult?.data;
+      setReports(reportData);
       setMonthlyCalendar(monthlyData || null);
     } catch {
       showToast("error", "Failed to load marketing details.");

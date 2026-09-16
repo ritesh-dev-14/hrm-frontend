@@ -19,6 +19,7 @@ const ProjectDetailsWrapper = () => {
   const { user } = useAuth();
 
   const [deptName, setDeptName] = useState(null);
+  const [project, setProject] = useState(null);
   const [loadingDept, setLoadingDept] = useState(true);
 
   useEffect(() => {
@@ -32,7 +33,9 @@ const ProjectDetailsWrapper = () => {
     const fetchDept = async () => {
       try {
         const res = await API.get(`/api/projects/${id}`);
-        const dept = res?.data?.data?.department?.name || "";
+        const projectData = res?.data?.data || null;
+        setProject(projectData);
+        const dept = projectData?.department?.name || "";
         setDeptName(dept.toLowerCase().replace(/\s+/g, " ").trim());
       } catch (err) {
         console.error("ProjectDetailsWrapper – failed to fetch project dept:", err);
@@ -65,7 +68,7 @@ const ProjectDetailsWrapper = () => {
 
     // Marketing department → Performance Marketing View (for ALL roles)
     if (MARKETING_DEPT_KEYS.some((key) => normalised.includes(key))) {
-      return <PerformanceMarketingManagerView projectId={id} campaignId={campaignId} />;
+      return <PerformanceMarketingManagerView projectId={id} campaignId={campaignId} initialProject={project} />;
     }
 
     // Web Development projects use the dedicated web development workspace for every role.
