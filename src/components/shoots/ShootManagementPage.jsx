@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
-import { Activity, Camera, CheckCircle2, Clapperboard, FolderOpen, ImageIcon, Link2, Loader2, PencilLine, UploadCloud, Video, Wand2 } from "lucide-react";
+import { Activity, Camera, CheckCircle2, Clapperboard, Edit3, FolderOpen, ImageIcon, Link2, Loader2, PencilLine, UploadCloud, Video, Wand2, X } from "lucide-react";
 
 const statCardClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
 
@@ -32,26 +32,29 @@ const ShootManagementPage = () => {
   });
   const [error, setError] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+  const [isMetricsEditorOpen, setIsMetricsEditorOpen] = useState(false);
+  const [metricsForm, setMetricsForm] = useState({ pendingUploadCount: "0", videosUploadedCount: "0" });
+  const [metricsSaving, setMetricsSaving] = useState(false);
+
+  const fetchSummary = async () => {
+    try {
+      setLoading(true);
+      const response = await API.get("/api/shoot-workspaces/management-summary");
+      if (response?.data?.success) {
+        const nextSummary = response.data.data || summary;
+        setSummary(nextSummary);
+        setSelectedWorkspaceId((currentId) => currentId || nextSummary.workspaceSummaries?.[0]?.id || "");
+      } else {
+        setError("Failed to load shoot management summary.");
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to load shoot management summary.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setLoading(true);
-        const response = await API.get("/api/shoot-workspaces/management-summary");
-        if (response?.data?.success) {
-          const nextSummary = response.data.data || summary;
-          setSummary(nextSummary);
-          setSelectedWorkspaceId(nextSummary.workspaceSummaries?.[0]?.id || "");
-        } else {
-          setError("Failed to load shoot management summary.");
-        }
-      } catch (err) {
-        setError(err?.response?.data?.message || "Failed to load shoot management summary.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSummary();
   }, []);
 
@@ -59,6 +62,32 @@ const ShootManagementPage = () => {
   const workspaceSummaries = Array.isArray(summary.workspaceSummaries) ? summary.workspaceSummaries : [];
   const selectedWorkspace = workspaceSummaries.find((workspace) => workspace.id === selectedWorkspaceId) || workspaceSummaries[0];
   const displayedSummary = selectedWorkspace || summary;
+
+  const openMetricsEditor = () => {
+    setMetricsForm({
+      pendingUploadCount: String(displayedSummary.pendingForUpload || 0),
+      videosUploadedCount: String(displayedSummary.videosUploaded || 0),
+    });
+    setIsMetricsEditorOpen(true);
+  };
+
+  const saveMetrics = async (event) => {
+    event.preventDefault();
+    if (!selectedWorkspace?.id) return;
+    setMetricsSaving(true);
+    try {
+      await API.patch(`/api/shoot-workspaces/${selectedWorkspace.id}`, {
+        pendingUploadCount: Number(metricsForm.pendingUploadCount) || 0,
+        videosUploadedCount: Number(metricsForm.videosUploadedCount) || 0,
+      });
+      setIsMetricsEditorOpen(false);
+      await fetchSummary();
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not update upload metrics.");
+    } finally {
+      setMetricsSaving(false);
+    }
+  };
 
   const cards = useMemo(() => [
     { label: "No of Reels", value: formatNumber(displayedSummary.totalReels), icon: Clapperboard, tone: "purple" },
@@ -158,6 +187,14 @@ const ShootManagementPage = () => {
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{displayedSummary.shoots?.length || 0} shoots</span>
           </div>
 
+        {selectedWorkspace && (user?.role === "MANAGER" || user?.role === "ADMIN" || user?.role === "HR") && (
+          <div className="mb-4 flex justify-end">
+            <button type="button" onClick={openMetricsEditor} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700">
+              <Edit3 className="h-4 w-4" /> Edit Upload Metrics
+            </button>
+          </div>
+        )}
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
@@ -169,6 +206,7 @@ const ShootManagementPage = () => {
                   <th className="px-4 py-3 font-semibold">Approved</th>
                   <th className="px-4 py-3 font-semibold">Pending Edit</th>
                   <th className="px-4 py-3 font-semibold">Pending Upload</th>
+                  <th className="px-4 py-3 font-semibold">Uploaded</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -182,11 +220,12 @@ const ShootManagementPage = () => {
                       <td className="px-4 py-3 text-slate-700">{shoot.reelsApprovedByManager}/{shoot.picsApprovedByManager}</td>
                       <td className="px-4 py-3 text-slate-700">{shoot.pendingForEdit}</td>
                       <td className="px-4 py-3 text-slate-700">{shoot.pendingForUpload}</td>
+                      <td className="px-4 py-3 text-slate-700">{shoot.videosUploaded ?? "—"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-500">No shoots available in this workspace yet.</td>
+                    <td colSpan={8} className="px-4 py-10 text-center text-slate-500">No shoots available in this workspace yet.</td>
                   </tr>
                 )}
               </tbody>
@@ -194,6 +233,32 @@ const ShootManagementPage = () => {
           </div>
         </div>
       </div>
+
+      {isMetricsEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+          <form onSubmit={saveMetrics} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-black text-slate-900">Edit Upload Metrics</h2>
+                <p className="mt-1 text-sm text-slate-500">{displayedSummary.name}</p>
+              </div>
+              <button type="button" onClick={() => setIsMetricsEditorOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <label className="block text-sm font-semibold text-slate-700">Pending for Upload
+                <input type="number" min="0" required value={metricsForm.pendingUploadCount} onChange={(event) => setMetricsForm({ ...metricsForm, pendingUploadCount: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-indigo-500" />
+              </label>
+              <label className="block text-sm font-semibold text-slate-700">Videos Uploaded
+                <input type="number" min="0" required value={metricsForm.videosUploadedCount} onChange={(event) => setMetricsForm({ ...metricsForm, videosUploadedCount: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-indigo-500" />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setIsMetricsEditorOpen(false)} className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200">Cancel</button>
+              <button type="submit" disabled={metricsSaving} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{metricsSaving ? "Saving..." : "Save Metrics"}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
