@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import API from "../../../services/api";
+import ProfessionalLoader from "../../ProfessionalLoader";
 import {
   TrendingUp,
   Plus,
@@ -285,9 +286,7 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
       </div>
 
       {loading && (
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-        </div>
+        <ProfessionalLoader text="Loading marketing reports..." />
       )}
 
       {!loading && (

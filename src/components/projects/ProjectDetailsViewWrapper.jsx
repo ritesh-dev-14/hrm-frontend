@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
+import ProfessionalLoader from "../ProfessionalLoader";
 
 import HRManagerView from "./managers/HRManagerView";
 import SMMManagerView from "./managers/SMMManagerView";
@@ -55,11 +56,7 @@ const ProjectDetailsWrapper = () => {
 
   // ── Wait for department fetch (HR, ADMIN, MANAGER, EA) ──
   if (loadingDept) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <ProfessionalLoader text="Loading project..." />;
   }
 
   // ── Route by department for all roles ──
