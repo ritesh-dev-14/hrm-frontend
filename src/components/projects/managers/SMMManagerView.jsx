@@ -170,10 +170,10 @@ const RESPONSIVE_CSS = `
   }
 `;
 
-const SMMManagerView = ({ projectId }) => {
+const SMMManagerView = ({ projectId, initialProject = null }) => {
   // Core Component State
-  const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [project, setProject] = useState(initialProject);
+  const [loading, setLoading] = useState(!initialProject);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSubmittingSheet, setIsSubmittingSheet] = useState(false);
@@ -332,7 +332,7 @@ const SMMManagerView = ({ projectId }) => {
   // Fetch Project Core Parameters Context Tree
   const fetchProjectDetails = async () => {
     try {
-      setLoading(true);
+      if (!initialProject) setLoading(true);
       setError(null);
       const response = await API.get(`/api/projects/${projectId}`);
       const resData = response.data ? response.data : response;

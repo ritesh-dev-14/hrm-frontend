@@ -96,7 +96,7 @@ const ProjectDetailsWrapper = () => {
       }
 
       // Default: Social Media / all other departments
-      return <SMMManagerView projectId={id} />;
+      return <SMMManagerView projectId={id} initialProject={project} />;
     }
   }
 
