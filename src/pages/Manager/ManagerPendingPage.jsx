@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart2, CheckCircle2, ClipboardList, Eye, Loader2, X } from "lucide-react";
+import { BarChart2, CheckCircle2, ClipboardList, Eye, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ProfessionalLoader from "../../components/ProfessionalLoader";

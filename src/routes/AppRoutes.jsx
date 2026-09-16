@@ -6,11 +6,9 @@ import ProfessionalLoader from "../components/ProfessionalLoader";
 const Login = lazy(() => import("../auth/login"));
 
 const AdminHomePage = lazy(() => import("../pages/Admin/AdminHomePage"));
-const AdminTaskCreation = lazy(() => import("../pages/Admin/AdminTaskCreation"));
 const AdminCompleteDetailsPage = lazy(() => import("../pages/Admin/AdminCompleteDetailsPage"));
 
 // Shared Task Detail
-const TaskDetailPage = lazy(() => import("../components/taskCreation/TaskDetailPage.jsx"));
 const ProjectDetailsViewWrapper = lazy(() => import("../components/projects/ProjectDetailsViewWrapper"));
 
 const HrHomePage = lazy(() => import("../pages/HR/HrHomePage"));
@@ -36,7 +34,6 @@ const EmployeeLeave = lazy(() => import("../pages/Employee/EmployeeLeave"));
 const EmployeePayslips = lazy(() => import("../pages/Employee/EmployeePayslips"));
 const EmployeeSettings = lazy(() => import("../pages/Employee/EmployeeSettings"));
 const EmployeeTaskPage = lazy(() => import("../pages/Employee/EmployeeTaskPage.jsx"));
-const EmployeeTaskDetailsPage = lazy(() => import("../pages/Employee/tasks/EmployeeTaskDetailsPage.jsx"));
 const EmployeeReports = lazy(() => import("../pages/Employee/EmployeeReports"));
 const EmployeePendingPage = lazy(() => import("../pages/Employee/EmployeePendingPage.jsx"));
 
@@ -47,7 +44,6 @@ const ManagerPayslips = lazy(() => import("../pages/Manager/ManagerPayslips"));
 const ManagerSettings = lazy(() => import("../pages/Manager/ManagerSettings"));
 const ManagerPendingPage = lazy(() => import("../pages/Manager/ManagerPendingPage"));
 const ManagerTaskPage = lazy(() => import("../pages/Manager/ManagerTasksPage.jsx"));
-const ManagerWhatsappMessages = lazy(() => import("../pages/Manager/ManagerWhatsappMessages.jsx"));
 
 // shoots
 const ShootPage = lazy(() => import("../components/shoots/ShootPage.jsx"));
