@@ -57,7 +57,7 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
   const [project, setProject] = useState(initialProject);
   const [reports, setReports] = useState([]);
   const [monthlyCalendar, setMonthlyCalendar] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialProject);
   const [submitting, setSubmitting] = useState(false);
   const submitInFlight = useRef(false);
   const [showForm, setShowForm] = useState(false);
@@ -87,7 +87,7 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
   /* ─── load project & reports ─────────────────────────────────────────── */
   const loadData = useCallback(async () => {
     if (!projectId) return;
-    setLoading(true);
+    if (!initialProject) setLoading(true);
     try {
       const today = new Date();
       const [reportsResult, monthlyResult] = await Promise.all([
@@ -109,7 +109,7 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [initialProject, projectId]);
 
   useEffect(() => {
     loadData();
