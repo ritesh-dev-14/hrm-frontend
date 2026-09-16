@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart2, CheckCircle2, ClipboardList, Eye, Loader2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ProfessionalLoader from "../../components/ProfessionalLoader";
 import {
   getManagerAssignment,
   getManagerPendingCategories,
@@ -127,7 +128,7 @@ export default function ManagerPendingPage() {
     }
   };
 
-  if (loading) return <div className="flex h-full flex-1 items-center justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>;
+  if (loading) return <ProfessionalLoader text="Loading pending obligations..." />;
 
   const categories = getManagerPendingCategories({ ...status, pendingEaTasks: tasks });
   const categoryItems = pendingCategories.reduce((result, category) => {

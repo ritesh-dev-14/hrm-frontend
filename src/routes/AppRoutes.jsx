@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { lazy, Suspense } from "react";
+import ProfessionalLoader from "../components/ProfessionalLoader";
 // Pages
 const Login = lazy(() => import("../auth/login"));
 
@@ -81,25 +82,12 @@ export const AppRoutes = () => {
   const isAuthenticated = user && token;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen w-full bg-white">
-        <div className="text-center">
-          <div className="h-12 w-12 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium text-sm">
-            Loading Environment...
-          </p>
-        </div>
-      </div>
-    );
+    return <ProfessionalLoader text="Loading environment..." />;
   }
 
   return (
     <Suspense
-      fallback={
-        <div className="flex items-center justify-center h-screen w-full bg-white">
-          <div className="h-10 w-10 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-        </div>
-      }
+      fallback={<ProfessionalLoader text="Opening page..." />}
     >
       <Routes>
       {/* LOGIN */}
