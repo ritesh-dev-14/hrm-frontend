@@ -7,6 +7,9 @@ const getErrorMessage = (error, fallback) => {
 };
 
 const firstArray = (...values) => values.find(Array.isArray) || [];
+let managerStatusPromise = null;
+let managerStatusCache = null;
+let managerStatusCachedAt = 0;
 
 export const getManagerPendingCategories = (status = {}) => ({
   ea: firstArray(status.pendingEaTasks, status.assignedActions),
@@ -92,27 +95,26 @@ export const refreshManagerLogoutStatus = async () => {
     return { canLogout: true, skipped: true };
   }
 
-  try {
-    const [response, assignmentsResponse, pendingSeo] = await Promise.all([
+  if (managerStatusCache && Date.now() - managerStatusCachedAt < 5000) {
+    return managerStatusCache;
+  }
+
+  if (managerStatusPromise) {
+    return managerStatusPromise;
+  }
+
+  managerStatusPromise = (async () => {
+    try {
+    const [response, pendingSeo] = await Promise.all([
       API.get("/api/manager/logout-status"),
-      API.get(`/api/coordinator-assignments/assigned-to/${user.id}`),
       getManagerPendingSeoProjects(new Date().toISOString().slice(0, 10)),
     ]);
     const payload = response?.data?.data || {};
-    const assignmentsPayload = assignmentsResponse?.data?.data;
-    const assignments = Array.isArray(assignmentsPayload)
-      ? assignmentsPayload
-      : assignmentsPayload?.data || assignmentsPayload?.items || [];
-    const pendingAssignments = assignments.filter(
-      (assignment) => !["SUBMITTED", "VERIFIED"].includes(String(assignment.status || "").toUpperCase()),
-    );
 
     const status = {
       ...payload,
       role: "MANAGER",
-      pendingEaTasks: pendingAssignments.length > 0
-        ? pendingAssignments
-        : payload.pendingEaTasks ?? payload.assignedActions ?? [],
+      pendingEaTasks: payload.pendingEaTasks ?? payload.assignedActions ?? [],
       pendingMarketingReports: payload.pendingMarketingReports ?? payload.metaAdsProjects ?? [],
       pendingSeo,
       canLogout: payload.canLogout ?? true,
@@ -134,8 +136,10 @@ export const refreshManagerLogoutStatus = async () => {
       })
     );
 
-    return status;
-  } catch (error) {
+      managerStatusCache = status;
+      managerStatusCachedAt = Date.now();
+      return status;
+    } catch (error) {
     console.error("Failed to fetch manager logout status", error);
     const status = {
       role: "MANAGER",
@@ -150,8 +154,13 @@ export const refreshManagerLogoutStatus = async () => {
       pendingWebDevelopment: [],
     };
     window.dispatchEvent(new CustomEvent("manager-logout-status", { detail: status }));
-    return status;
-  }
+      return status;
+    } finally {
+      managerStatusPromise = null;
+    }
+  })();
+
+  return managerStatusPromise;
 };
 
 export { getErrorMessage };

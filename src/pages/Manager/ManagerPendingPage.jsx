@@ -3,7 +3,6 @@ import { BarChart2, CheckCircle2, ClipboardList, Eye, Loader2, X } from "lucide-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
-  getManagerAssignedTasks,
   getManagerAssignment,
   getManagerPendingCategories,
   getManagerPendingSeoProjects,
@@ -58,12 +57,12 @@ export default function ManagerPendingPage() {
   setLoading(true);
   setError("");
   try {
-    const [assignedTasks, logoutStatus, pendingSeo] = await Promise.all([
-    getManagerAssignedTasks(user.id),
-    refreshManagerLogoutStatus(),
-    getManagerPendingSeoProjects(today),
+    const [logoutStatus, pendingSeo] = await Promise.all([
+      refreshManagerLogoutStatus(),
+      getManagerPendingSeoProjects(today),
     ]);
-    setTasks(assignedTasks.filter((task) => !finalStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
+    const pendingEaTasks = logoutStatus?.pendingEaTasks || [];
+    setTasks(pendingEaTasks.filter((task) => !finalStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
     setStatus({ ...(logoutStatus || { pendingMarketingReports: [] }), pendingSeo });
   } catch (requestError) {
     setError(errorMessage(requestError, "Unable to load pending obligations right now."));
