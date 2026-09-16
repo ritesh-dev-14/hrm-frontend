@@ -1298,29 +1298,7 @@ export default function ProjectsReportsOverviewPage() {
       if (endDate) params.set("endDate", endDate);
       const res = await API.get(`/api/reports/projects-overview?${params}`);
       const overview = res.data?.data || {};
-      const projectsRes = await API.get("/api/projects");
-      const webProjects = (projectsRes.data?.data || []).filter((project) => {
-        const name = project.department?.name?.toLowerCase() || "";
-        return name.includes("web development") || name === "it";
-      });
-      const webDevelopment = await Promise.all(webProjects.map(async (project) => {
-        try {
-          const reportsRes = await API.get(`/api/project-reports/${project.id}`);
-          const reports = reportsRes.data?.data || [];
-          return {
-            projectId: project.id,
-            projectName: project.projectName,
-            clientName: project.clientName,
-            reports: reports.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 2).map((report) => ({
-              ...report,
-              employeeName: report.employee?.name || report.createdBy?.name,
-            })),
-          };
-        } catch {
-          return { projectId: project.id, projectName: project.projectName, clientName: project.clientName, reports: [] };
-        }
-      }));
-      setData({ ...overview, webDevelopment });
+      setData(overview);
     } catch {
       toast.error("Failed to load reports");
     } finally {
@@ -1331,6 +1309,46 @@ export default function ProjectsReportsOverviewPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (tab !== "web-development") return undefined;
+
+    let active = true;
+    const loadWebDevelopment = async () => {
+      try {
+        const projectsRes = await API.get("/api/projects");
+        const webProjects = (projectsRes.data?.data || []).filter((project) => {
+          const name = project.department?.name?.toLowerCase() || "";
+          return name.includes("web development") || name === "it";
+        });
+        const webDevelopment = await Promise.all(webProjects.map(async (project) => {
+          try {
+            const reportsRes = await API.get(`/api/project-reports/${project.id}`);
+            const reports = reportsRes.data?.data || [];
+            return {
+              projectId: project.id,
+              projectName: project.projectName,
+              clientName: project.clientName,
+              reports: reports.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 2).map((report) => ({
+                ...report,
+                employeeName: report.employee?.name || report.createdBy?.name,
+              })),
+            };
+          } catch {
+            return { projectId: project.id, projectName: project.projectName, clientName: project.clientName, reports: [] };
+          }
+        }));
+        if (active) setData((current) => ({ ...current, webDevelopment }));
+      } catch {
+        if (active) toast.error("Failed to load web development reports");
+      }
+    };
+
+    loadWebDevelopment();
+    return () => {
+      active = false;
+    };
+  }, [tab]);
 
   const applyPreset = (p) => {
     setPreset(p);

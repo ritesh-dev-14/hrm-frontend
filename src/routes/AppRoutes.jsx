@@ -1,82 +1,82 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import API from "../services/api";
 // Pages
-import Login from "../auth/login";
+const Login = lazy(() => import("../auth/login"));
 
-import AdminHomePage from "../pages/Admin/AdminHomePage";
-import AdminTaskCreation from "../pages/Admin/AdminTaskCreation";
-import AdminCompleteDetailsPage from "../pages/Admin/AdminCompleteDetailsPage";
+const AdminHomePage = lazy(() => import("../pages/Admin/AdminHomePage"));
+const AdminTaskCreation = lazy(() => import("../pages/Admin/AdminTaskCreation"));
+const AdminCompleteDetailsPage = lazy(() => import("../pages/Admin/AdminCompleteDetailsPage"));
 
 // Shared Task Detail
-import TaskDetailPage from "../components/taskCreation/TaskDetailPage.jsx";
-import ProjectDetailsViewWrapper from "../components/projects/ProjectDetailsViewWrapper";
+const TaskDetailPage = lazy(() => import("../components/taskCreation/TaskDetailPage.jsx"));
+const ProjectDetailsViewWrapper = lazy(() => import("../components/projects/ProjectDetailsViewWrapper"));
 
-import HrHomePage from "../pages/HR/HrHomePage";
-import HrTeamPage from "../pages/HR/HrTeamPage";
-import HrLeaveManagement from "../pages/HR/HrEmployeeLeaves";
-import HrPayslips from "../pages/HR/HrPaySlips";
-import HrUploads from "../pages/HR/HrUploads";
-import HrSettings from "../pages/HR/HrSettigns";
-import HrAttendance from "../pages/HR/HrAttendance.jsx";
-import HrLeaves from "../pages/HR/HrLeaves.jsx";
-import HrAllEmployeeAttendence from "../pages/HR/HrAllEmployeeAttendence.jsx";
-import HrTaskCreation from "../pages/HR/HrTaskCreation";
-import HrReports from "../pages/HR/HrReports";
-import ProjectsReportsOverviewPage from "../pages/HR/ProjectsReportsOverviewPage";
-import HrEmployeeProjectReport from "../pages/HR/HrEmployeeProjectReport";
-import HrEmployeeDetailedAttendance from "../pages/HR/HrEmployeeDetailedAttendance";
-import HrWhatsappMessages from "../pages/HR/HrWhatsappMessages.jsx";
+const HrHomePage = lazy(() => import("../pages/HR/HrHomePage"));
+const HrTeamPage = lazy(() => import("../pages/HR/HrTeamPage"));
+const HrLeaveManagement = lazy(() => import("../pages/HR/HrEmployeeLeaves"));
+const HrPayslips = lazy(() => import("../pages/HR/HrPaySlips"));
+const HrUploads = lazy(() => import("../pages/HR/HrUploads"));
+const HrSettings = lazy(() => import("../pages/HR/HrSettigns"));
+const HrAttendance = lazy(() => import("../pages/HR/HrAttendance.jsx"));
+const HrLeaves = lazy(() => import("../pages/HR/HrLeaves.jsx"));
+const HrAllEmployeeAttendence = lazy(() => import("../pages/HR/HrAllEmployeeAttendence.jsx"));
+const HrTaskCreation = lazy(() => import("../pages/HR/HrTaskCreation"));
+const HrReports = lazy(() => import("../pages/HR/HrReports"));
+const ProjectsReportsOverviewPage = lazy(() => import("../pages/HR/ProjectsReportsOverviewPage"));
+const HrEmployeeProjectReport = lazy(() => import("../pages/HR/HrEmployeeProjectReport"));
+const HrEmployeeDetailedAttendance = lazy(() => import("../pages/HR/HrEmployeeDetailedAttendance"));
+const HrWhatsappMessages = lazy(() => import("../pages/HR/HrWhatsappMessages.jsx"));
 
-import EmployeeDetails from "../pages/HR/employeeDetailsHr/EmployeeDetails";
-import EmployeHomePage from "../pages/Employee/EmployeeHomePage";
-import EmployeeAttendence from "../pages/Employee/EmployeeAttendence";
-import EmployeeLeave from "../pages/Employee/EmployeeLeave";
-import EmployeePayslips from "../pages/Employee/EmployeePayslips";
-import EmployeeSettings from "../pages/Employee/EmployeeSettings";
-import EmployeeTaskPage from "../pages/Employee/EmployeeTaskPage.jsx";
-import EmployeeTaskDetailsPage from "../pages/Employee/tasks/EmployeeTaskDetailsPage.jsx";
-import EmployeeReports from "../pages/Employee/EmployeeReports";
-import EmployeePendingPage from "../pages/Employee/EmployeePendingPage.jsx";
+const EmployeeDetails = lazy(() => import("../pages/HR/employeeDetailsHr/EmployeeDetails"));
+const EmployeHomePage = lazy(() => import("../pages/Employee/EmployeeHomePage"));
+const EmployeeAttendence = lazy(() => import("../pages/Employee/EmployeeAttendence"));
+const EmployeeLeave = lazy(() => import("../pages/Employee/EmployeeLeave"));
+const EmployeePayslips = lazy(() => import("../pages/Employee/EmployeePayslips"));
+const EmployeeSettings = lazy(() => import("../pages/Employee/EmployeeSettings"));
+const EmployeeTaskPage = lazy(() => import("../pages/Employee/EmployeeTaskPage.jsx"));
+const EmployeeTaskDetailsPage = lazy(() => import("../pages/Employee/tasks/EmployeeTaskDetailsPage.jsx"));
+const EmployeeReports = lazy(() => import("../pages/Employee/EmployeeReports"));
+const EmployeePendingPage = lazy(() => import("../pages/Employee/EmployeePendingPage.jsx"));
 
-import ManagerHomePage from "../pages/Manager/ManagerHomePage";
-import ManagerAttendence from "../pages/Manager/ManagerAttendence";
-import ManagerLeave from "../pages/Manager/ManagerLeave";
-import ManagerPayslips from "../pages/Manager/ManagerPayslips";
-import ManagerSettings from "../pages/Manager/ManagerSettings";
-import ManagerPendingPage from "../pages/Manager/ManagerPendingPage";
-import ManagerTaskPage from "../pages/Manager/ManagerTasksPage.jsx";
-import ManagerWhatsappMessages from "../pages/Manager/ManagerWhatsappMessages.jsx";
+const ManagerHomePage = lazy(() => import("../pages/Manager/ManagerHomePage"));
+const ManagerAttendence = lazy(() => import("../pages/Manager/ManagerAttendence"));
+const ManagerLeave = lazy(() => import("../pages/Manager/ManagerLeave"));
+const ManagerPayslips = lazy(() => import("../pages/Manager/ManagerPayslips"));
+const ManagerSettings = lazy(() => import("../pages/Manager/ManagerSettings"));
+const ManagerPendingPage = lazy(() => import("../pages/Manager/ManagerPendingPage"));
+const ManagerTaskPage = lazy(() => import("../pages/Manager/ManagerTasksPage.jsx"));
+const ManagerWhatsappMessages = lazy(() => import("../pages/Manager/ManagerWhatsappMessages.jsx"));
 
 // shoots
-import ShootPage from "../components/shoots/ShootPage.jsx";
-import ShootWorkspaceDetails from "../components/shoots/manager/ShootWorkspaceDetails.jsx";
-import ShootManagementPage from "../components/shoots/ShootManagementPage.jsx";
+const ShootPage = lazy(() => import("../components/shoots/ShootPage.jsx"));
+const ShootWorkspaceDetails = lazy(() => import("../components/shoots/manager/ShootWorkspaceDetails.jsx"));
+const ShootManagementPage = lazy(() => import("../components/shoots/ShootManagementPage.jsx"));
 
 // editor
-import EditorPage from "../components/editor/EditorPage.jsx";
-import EditorWorkSpaceDetails from "../components/editor/manager/EditorWorkspaceDetails.jsx";
+const EditorPage = lazy(() => import("../components/editor/EditorPage.jsx"));
+const EditorWorkSpaceDetails = lazy(() => import("../components/editor/manager/EditorWorkspaceDetails.jsx"));
 
 /* NEW â€” COORDINATOR */
-import CoordinatorHomePage from "../pages/Coordinator/CoordinatorHomePage.jsx";
-import CoordinatorPriorityActions from "../pages/Coordinator/CoordinatorPriorityActions.jsx";
+const CoordinatorHomePage = lazy(() => import("../pages/Coordinator/CoordinatorHomePage.jsx"));
+const CoordinatorPriorityActions = lazy(() => import("../pages/Coordinator/CoordinatorPriorityActions.jsx"));
 
 /* NEW â€” EMPLOYEE ACTIONS */
-import AssignedActionsPage from "../pages/Employee/AssignedActionsPage.jsx";
-import CordinatorTasks from "../pages/CordinatorTasks.jsx";
-import EmployeeDailyReports from "../pages/Employee/EmployeeDailyReports.jsx";
-import MarketingReportsPage from "../pages/Manager/MarketingReportsPage.jsx";
-import MarketingMonthlyReportPage from "../pages/Manager/MarketingMonthlyReportPage.jsx";
-import MarketingReportsApprovalPage from "../pages/HR/MarketingReportsApprovalPage.jsx";
-import MarketingProjectsPage from "../pages/MarketingProjectsPage.jsx";
-import SocialMediaProjectsPage from "../pages/SocialMediaProjectsPage.jsx";
-import SEOProjectsPage from "../pages/SEOProjectsPage.jsx";
-import WebDevelopmentProjectsPage from "../pages/WebDevelopmentProjectsPage.jsx";
-import DailyDepartmentReportPage from '../pages/DailyDepartmentReportPage';
-import DepartmentReportsPage from "../pages/DepartmentReportsPage";
-import DataDashboardPage from "../pages/DataDashboardPage";
+const AssignedActionsPage = lazy(() => import("../pages/Employee/AssignedActionsPage.jsx"));
+const CordinatorTasks = lazy(() => import("../pages/CordinatorTasks.jsx"));
+const EmployeeDailyReports = lazy(() => import("../pages/Employee/EmployeeDailyReports.jsx"));
+const MarketingReportsPage = lazy(() => import("../pages/Manager/MarketingReportsPage.jsx"));
+const MarketingMonthlyReportPage = lazy(() => import("../pages/Manager/MarketingMonthlyReportPage.jsx"));
+const MarketingReportsApprovalPage = lazy(() => import("../pages/HR/MarketingReportsApprovalPage.jsx"));
+const MarketingProjectsPage = lazy(() => import("../pages/MarketingProjectsPage.jsx"));
+const SocialMediaProjectsPage = lazy(() => import("../pages/SocialMediaProjectsPage.jsx"));
+const SEOProjectsPage = lazy(() => import("../pages/SEOProjectsPage.jsx"));
+const WebDevelopmentProjectsPage = lazy(() => import("../pages/WebDevelopmentProjectsPage.jsx"));
+const DailyDepartmentReportPage = lazy(() => import("../pages/DailyDepartmentReportPage"));
+const DepartmentReportsPage = lazy(() => import("../pages/DepartmentReportsPage"));
+const DataDashboardPage = lazy(() => import("../pages/DataDashboardPage"));
 
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
@@ -213,7 +213,14 @@ export const AppRoutes = () => {
   }
 
   return (
-    <Routes>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen w-full bg-white">
+          <div className="h-10 w-10 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
+        </div>
+      }
+    >
+      <Routes>
       {/* LOGIN */}
       <Route path="/login" element={<Login />} />
 
@@ -580,7 +587,8 @@ export const AppRoutes = () => {
         }
       />
 
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 };
 

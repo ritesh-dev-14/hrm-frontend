@@ -128,22 +128,9 @@ const MarketingProjectsPage = () => {
       // Filter natively just in case the backend doesn't fully restrict to marketing, then normalize
       const marketingProjects = projects.filter(isMarketingProject).map(normalizeMetaAdsProject);
       
-      // Fetch details for the projects on this page
-      const detailedProjects = await Promise.all(
-        marketingProjects.map(async (project) => {
-          try {
-            const detailResponse = await API.get(`/api/projects/${project.id || project._id}`);
-            const details = detailResponse?.data?.data || detailResponse?.data;
-            return normalizeMetaAdsProject({ ...project, ...details });
-          } catch {
-            return project;
-          }
-        }),
-      );
-      
-      setAllProjects(detailedProjects);
+      setAllProjects(marketingProjects);
       setTotalPages(pagination.totalPages || 1);
-      setTotalProjects(pagination.total || detailedProjects.length);
+      setTotalProjects(pagination.total || marketingProjects.length);
     } catch (error) {
       console.error("Failed to load marketing projects:", error);
     } finally {
