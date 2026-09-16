@@ -234,37 +234,23 @@ const HrUploads = () => {
   const fetchUploads = async () => {
     setLoading(true);
     try {
-      const projectsRes = await API.get("/api/projects");
-      const projects = projectsRes.data?.data || [];
-
-      const results = await Promise.all(
-        projects.map(async (project) => {
-          try {
-            const sheetRes = await API.get(
-              `/api/projects/${project.id}/monthly-sheets`,
-            );
-            const sheets = sheetRes.data?.data || [];
-
-            return (sheets || []).flatMap((sheet) =>
-              (sheet.days || []).map((day) => ({
-                id: `${sheet.id}-${day.id}`,
-                projectId: project.id,
-                sheetId: sheet.id,
-                dayId: day.id,
-                projectName: project.projectName,
-                clientName: project.clientName || "-",
-                uploadDate: day.date,
-                title: day.title,
-                contentUploadLinks: day.contentUploadLinks || [],
-                videoUploadLinks: day.videoUploadLinks || [],
-                uploadStatus: day.uploadStatus || "PENDING",
-                uploadRejectReason: day.uploadRejectReason,
-              })),
-            );
-          } catch (err) {
-            return [];
-          }
-        }),
+      const sheetsRes = await API.get("/api/monthly-sheets/uploads");
+      const sheets = sheetsRes.data?.data || [];
+      const results = sheets.map((sheet) =>
+        (sheet.days || []).map((day) => ({
+          id: `${sheet.id}-${day.id}`,
+          projectId: sheet.projectId,
+          sheetId: sheet.id,
+          dayId: day.id,
+          projectName: sheet.projectName,
+          clientName: sheet.clientName || "-",
+          uploadDate: day.date,
+          title: day.title,
+          contentUploadLinks: day.contentUploadLinks || [],
+          videoUploadLinks: day.videoUploadLinks || [],
+          uploadStatus: day.uploadStatus || "PENDING",
+          uploadRejectReason: day.uploadRejectReason,
+        })),
       );
 
       // Sort globally by date (descending)
