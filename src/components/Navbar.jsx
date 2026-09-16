@@ -427,7 +427,7 @@ export default function ProfessionalSidebar({ children }) {
     };
 
     fetchAssignedActionsCount();
-    const interval = setInterval(fetchAssignedActionsCount, 3000);
+    const interval = setInterval(fetchAssignedActionsCount, 15000);
     return () => clearInterval(interval);
   }, [role, user?.id]);
 

@@ -6,7 +6,6 @@ import ProfessionalLoader from "../../components/ProfessionalLoader";
 import {
   getManagerAssignment,
   getManagerPendingCategories,
-  getManagerPendingSeoProjects,
   refreshManagerLogoutStatus,
   submitMarketingUnableReason,
   submitManagerTask,
@@ -58,13 +57,10 @@ export default function ManagerPendingPage() {
   setLoading(true);
   setError("");
   try {
-    const [logoutStatus, pendingSeo] = await Promise.all([
-      refreshManagerLogoutStatus(),
-      getManagerPendingSeoProjects(today),
-    ]);
+    const logoutStatus = await refreshManagerLogoutStatus();
     const pendingEaTasks = logoutStatus?.pendingEaTasks || [];
     setTasks(pendingEaTasks.filter((task) => !finalStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
-    setStatus({ ...(logoutStatus || { pendingMarketingReports: [] }), pendingSeo });
+    setStatus(logoutStatus || { pendingMarketingReports: [], pendingSeo: [] });
   } catch (requestError) {
     setError(errorMessage(requestError, "Unable to load pending obligations right now."));
   } finally {
