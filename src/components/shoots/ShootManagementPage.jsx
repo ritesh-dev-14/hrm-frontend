@@ -204,9 +204,6 @@ const ShootManagementPage = () => {
                   <th className="px-4 py-3 font-semibold">Pics</th>
                   <th className="px-4 py-3 font-semibold">Extra</th>
                   <th className="px-4 py-3 font-semibold">Approved</th>
-                  <th className="px-4 py-3 font-semibold">Pending Edit</th>
-                  <th className="px-4 py-3 font-semibold">Pending Upload</th>
-                  <th className="px-4 py-3 font-semibold">Uploaded</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -218,14 +215,11 @@ const ShootManagementPage = () => {
                       <td className="px-4 py-3 text-slate-700">{shoot.totalPics}</td>
                       <td className="px-4 py-3 text-slate-700">{shoot.extraReels}/{shoot.extraPics}</td>
                       <td className="px-4 py-3 text-slate-700">{shoot.reelsApprovedByManager}/{shoot.picsApprovedByManager}</td>
-                      <td className="px-4 py-3 text-slate-700">{shoot.pendingForEdit}</td>
-                      <td className="px-4 py-3 text-slate-700">{shoot.pendingForUpload}</td>
-                      <td className="px-4 py-3 text-slate-700">{shoot.videosUploaded ?? "—"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-slate-500">No shoots available in this workspace yet.</td>
+                    <td colSpan={5} className="px-4 py-10 text-center text-slate-500">No shoots available in this workspace yet.</td>
                   </tr>
                 )}
               </tbody>
