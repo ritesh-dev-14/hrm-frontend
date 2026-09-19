@@ -1,9 +1,7 @@
 import  { useState } from "react";
 import { 
   User, 
-
   Lock, 
- 
   ShieldCheck, 
   Camera,
   Save,

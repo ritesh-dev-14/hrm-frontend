@@ -35,6 +35,9 @@ const ShootManagementPage = () => {
   const [isMetricsEditorOpen, setIsMetricsEditorOpen] = useState(false);
   const [metricsForm, setMetricsForm] = useState({ pendingUploadCount: "0", videosUploadedCount: "0" });
   const [metricsSaving, setMetricsSaving] = useState(false);
+  const [uploadFeed, setUploadFeed] = useState(null);
+  const [uploadFeedLoading, setUploadFeedLoading] = useState(false);
+  const [taskAction, setTaskAction] = useState({ id: null, type: null });
 
   const fetchSummary = async () => {
     try {
@@ -55,10 +58,51 @@ const ShootManagementPage = () => {
   };
 
   useEffect(() => {
-    fetchSummary();
+    let cancelled = false;
+
+    const loadSummary = async () => {
+      try {
+        setLoading(true);
+        const response = await API.get("/api/shoot-workspaces/management-summary");
+        if (cancelled) return;
+        if (response?.data?.success) {
+          const nextSummary = response.data.data || {};
+          setSummary(nextSummary);
+          setSelectedWorkspaceId((currentId) => currentId || nextSummary.workspaceSummaries?.[0]?.id || "");
+        } else {
+          setError("Failed to load shoot management summary.");
+        }
+      } catch (err) {
+        if (!cancelled) setError(err?.response?.data?.message || "Failed to load shoot management summary.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadSummary();
+    return () => { cancelled = true; };
   }, []);
 
-  const workspacesList = Array.isArray(summary.workspaces) ? summary.workspaces : [];
+  useEffect(() => {
+    if (!selectedWorkspaceId) return undefined;
+    let cancelled = false;
+
+    const loadUploadFeed = async () => {
+      try {
+        setUploadFeedLoading(true);
+        const response = await API.get(`/api/shoot-workspaces/${selectedWorkspaceId}/upload-feed`);
+        if (!cancelled && response?.data?.success) setUploadFeed(response.data.data || null);
+      } catch {
+        if (!cancelled) setUploadFeed(null);
+      } finally {
+        if (!cancelled) setUploadFeedLoading(false);
+      }
+    };
+
+    loadUploadFeed();
+    return () => { cancelled = true; };
+  }, [selectedWorkspaceId]);
+
   const workspaceSummaries = Array.isArray(summary.workspaceSummaries) ? summary.workspaceSummaries : [];
   const selectedWorkspace = workspaceSummaries.find((workspace) => workspace.id === selectedWorkspaceId) || workspaceSummaries[0];
   const displayedSummary = selectedWorkspace || summary;
@@ -89,6 +133,43 @@ const ShootManagementPage = () => {
     }
   };
 
+  const updateEditorTask = async (itemId, action) => {
+    if (!selectedWorkspace?.id || !itemId || taskAction.id) return;
+
+    setTaskAction({ id: itemId, type: action });
+    try {
+      const endpoint = action === "approve"
+        ? `/api/shoot-workspaces/${selectedWorkspace.id}/editor-items/${itemId}/client-approve`
+        : `/api/shoot-workspaces/${selectedWorkspace.id}/editor-items/${itemId}/uploaded`;
+      const response = await API.post(endpoint);
+      const responseItem = response?.data?.data?.item || response?.data?.data;
+      const nextCount = response?.data?.data?.workspace?.videosUploadedCount;
+      const alreadyApproved = response?.data?.data?.alreadyApproved;
+
+      setUploadFeed((currentFeed) => currentFeed ? {
+        ...currentFeed,
+        approvedByClientCount: currentFeed.approvedByClientCount + (action === "approve" && !alreadyApproved ? 1 : 0),
+        videosUploadedCount: Number.isFinite(Number(nextCount)) ? Number(nextCount) : currentFeed.videosUploadedCount,
+        editorItems: currentFeed.editorItems?.map((item) => item.id === itemId ? { ...item, ...responseItem } : item),
+      } : currentFeed);
+
+      if (Number.isFinite(Number(nextCount))) {
+        setSummary((currentSummary) => ({
+          ...currentSummary,
+          workspaceSummaries: (currentSummary.workspaceSummaries || []).map((workspace) =>
+            workspace.id === selectedWorkspace.id
+              ? { ...workspace, videosUploaded: Number(nextCount) }
+              : workspace
+          ),
+        }));
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not mark this video as uploaded.");
+    } finally {
+      setTaskAction({ id: null, type: null });
+    }
+  };
+
   const cards = useMemo(() => [
     { label: "No of Reels", value: formatNumber(displayedSummary.totalReels), icon: Clapperboard, tone: "purple" },
     { label: "No of Pics", value: formatNumber(displayedSummary.totalPics), icon: ImageIcon, tone: "blue" },
@@ -102,9 +183,10 @@ const ShootManagementPage = () => {
     { label: "Pending Pic Edit", value: formatNumber(displayedSummary.pendingForPicEdit), icon: PencilLine, tone: "amber" },
     { label: "Pending for Upload", value: formatNumber(displayedSummary.pendingForUpload), icon: UploadCloud, tone: "red" },
     { label: "Videos Uploaded", value: formatNumber(displayedSummary.videosUploaded), icon: UploadCloud, tone: "indigo" },
+    { label: "Approved by Client", value: formatNumber(uploadFeed?.approvedByClientCount), icon: CheckCircle2, tone: "red" },
     { label: "Videos Edited", value: formatNumber(displayedSummary.videosEdited), icon: Wand2, tone: "teal" },
     { label: "Pics Edited", value: formatNumber(displayedSummary.picsEdited), icon: Wand2, tone: "cyan" },
-  ], [displayedSummary]);
+  ], [displayedSummary, uploadFeed?.approvedByClientCount]);
 
   if (loading) {
     return (
@@ -225,6 +307,61 @@ const ShootManagementPage = () => {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Uploaded media and task links</h2>
+              <p className="mt-1 text-sm text-slate-500">Shoot submissions and editor task links for this workspace.</p>
+            </div>
+          </div>
+
+          {uploadFeedLoading ? (
+            <div className="flex items-center gap-2 py-8 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> Loading upload details...</div>
+          ) : uploadFeed ? (
+            <div className="space-y-5">
+              <div className="flex flex-wrap gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                <span>Uploaded videos: <strong className="text-slate-900">{uploadFeed.videosUploadedCount || 0}</strong></span>
+                <span>Pending upload: <strong className="text-slate-900">{uploadFeed.pendingUploadCount || 0}</strong></span>
+                <span>Approved by client: <strong className="text-slate-900">{uploadFeed.approvedByClientCount || 0}</strong></span>
+              </div>
+
+              {uploadFeed.editorItems?.length > 0 ? uploadFeed.editorItems.map((item) => (
+                <div key={item.id} className="rounded-xl border border-slate-100 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold text-slate-900">{item.title}</h3>
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">{item.status}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500">{item.description || "No task description."}</p>
+                      <p className="mt-2 text-xs text-slate-500">Shoot: <strong className="text-slate-700">{item.shoot?.title || "Unmapped"}</strong> · Employee: <strong className="text-slate-700">{item.assignments?.[0]?.employee?.name || "Editor"}</strong></p>
+                    </div>
+                    {user?.role === "MANAGER" && (
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => updateEditorTask(item.id, "approve")} disabled={Boolean(item.clientApproved) || taskAction.id === item.id} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${item.clientApproved ? "bg-emerald-100 text-emerald-700" : "bg-rose-600 text-white hover:bg-rose-700"}`}>
+                          {taskAction.id === item.id && taskAction.type === "approve" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                          {item.clientApproved ? "Approved by Client" : "Approve by Client"}
+                        </button>
+                        <button type="button" onClick={() => updateEditorTask(item.id, "upload")} disabled={!item.clientApproved || Boolean(item.instagramUploaded) || taskAction.id === item.id} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${item.instagramUploaded ? "bg-emerald-100 text-emerald-700" : item.clientApproved ? "bg-indigo-600 text-white hover:bg-indigo-700" : "cursor-not-allowed bg-slate-200 text-slate-400"}`}>
+                          {taskAction.id === item.id && taskAction.type === "upload" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                          {item.instagramUploaded ? "Uploaded to Instagram" : "Uploaded"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {item.assignments?.flatMap((assignment) => assignment.submission?.driveLink ? [assignment.submission.driveLink] : []).map((link, index) => <a key={`${item.id}-${index}`} href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800"><Link2 className="h-3.5 w-3.5" /> Edited video {index + 1}</a>)}
+                    {item.rawDataLink && <a href={item.rawDataLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500"><Link2 className="h-3.5 w-3.5" /> Source media</a>}
+                  </div>
+                </div>
+              )) : <p className="py-8 text-sm text-slate-500">No verified editor submissions found for this workspace.</p>}
+
+            </div>
+          ) : (
+            <p className="py-8 text-sm text-slate-500">No upload details available for this workspace.</p>
+          )}
         </div>
       </div>
 

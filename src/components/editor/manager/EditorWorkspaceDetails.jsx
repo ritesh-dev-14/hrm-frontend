@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import API from '../../../services/api'
 import { 
@@ -31,6 +31,8 @@ const EditorWorkspaceDetails = () => {
   // Core States
   const [workspace, setWorkspace] = useState(null)
   const [subtasks, setSubtasks] = useState([])
+  const [shootSubmissionWorkspaces, setShootSubmissionWorkspaces] = useState([])
+  const [selectedShootSubmissionId, setSelectedShootSubmissionId] = useState('')
   const [employees, setAvailableEmployees] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -63,7 +65,8 @@ const EditorWorkspaceDetails = () => {
     status: 'DRAFT',
     mediaType: 'VIDEO',
     referenceLink: '',
-    rawDataLink: ''
+    rawDataLink: '',
+    shootTaskId: '',
   })
 
   // Edit Workspace State Module
@@ -85,45 +88,40 @@ const EditorWorkspaceDetails = () => {
     description: '',
     status: 'DRAFT',
     referenceLink: '',
-    rawDataLink: ''
+    rawDataLink: '',
+    shootTaskId: '',
   })
 
   useEffect(() => {
-    if (workspaceId) {
-      initialWorkspaceHandshake()
+    if (!workspaceId) return undefined
+    let cancelled = false
+
+    const loadWorkspace = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const [workspaceRes, subtasksRes, employeesRes, shootSubmissionsRes] = await Promise.all([
+          API.get(`/api/manager/tasks/${workspaceId}`),
+          API.get(`/api/manager/tasks/${workspaceId}/items`),
+          API.get('/api/manager/my-employees').catch(() => ({ data: { success: true, data: [] } })),
+          API.get('/api/shoot-workspaces/manager-submissions').catch(() => ({ data: { success: true, data: [] } })),
+        ])
+
+        if (cancelled) return
+        if (workspaceRes.data?.success) setWorkspace(workspaceRes.data.data?.task || workspaceRes.data.data)
+        if (subtasksRes.data?.success) setSubtasks(subtasksRes.data.data?.items || [])
+        if (employeesRes.data?.success) setAvailableEmployees(employeesRes.data.data || [])
+        if (shootSubmissionsRes.data?.success) setShootSubmissionWorkspaces(shootSubmissionsRes.data.data || [])
+      } catch (err) {
+        if (!cancelled) setError(err.response?.data?.message || err.message || 'Error occurred communicating with core dataset system.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
+
+    loadWorkspace()
+    return () => { cancelled = true }
   }, [workspaceId])
-
-  const initialWorkspaceHandshake = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      const [workspaceRes, subtasksRes, employeesRes] = await Promise.all([
-        API.get(`/api/manager/tasks/${workspaceId}`),
-        API.get(`/api/manager/tasks/${workspaceId}/items`), 
-        API.get('/api/manager/my-employees').catch(() => ({ data: { success: true, data: [] } })) 
-      ])
-
-      // Adjusting to handle nested structure if API wraps data under a common wrapper response
-      if (workspaceRes.data?.success) {
-        setWorkspace(workspaceRes.data.data?.task || workspaceRes.data.data)
-      }
-      
-      if (subtasksRes.data?.success) {
-        setSubtasks(subtasksRes.data.data?.items || [])
-      }
-
-      if (employeesRes.data?.success) {
-        setAvailableEmployees(employeesRes.data.data || [])
-      }
-
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Error occurred communicating with core dataset system.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const refreshSubtaskIndex = async () => {
     try {
@@ -156,6 +154,43 @@ const EditorWorkspaceDetails = () => {
     setSubtaskForm(prev => ({ ...prev, [name]: value }))
   }
 
+  const shootSubmissionOptions = shootSubmissionWorkspaces.flatMap((shootWorkspace) =>
+    (shootWorkspace.shoots || []).flatMap((shoot) =>
+      (shoot.submissions || []).map((submission) => ({
+        ...submission,
+        shoot,
+        workspaceName: shootWorkspace.name,
+        projectName: shootWorkspace.project?.projectName || '',
+      }))
+    )
+  )
+
+  const handleImportShootSubmission = () => {
+    const selectedSubmission = shootSubmissionOptions.find(
+      (submission) => submission.id === selectedShootSubmissionId
+    )
+
+    if (!selectedSubmission) return
+
+    const submissionType = ['PIC', 'IMAGE', 'PHOTO'].includes(selectedSubmission.type) ? 'PIC' : 'VIDEO'
+    const firstReferenceLink = selectedSubmission.referenceLinks?.find(Boolean) || ''
+    const firstSubmissionLink = selectedSubmission.submissionLinks?.find(Boolean) || ''
+    const shootDate = /^\d{4}-\d{2}-\d{2}$/.test(selectedSubmission.shoot.date || '')
+      ? selectedSubmission.shoot.date
+      : ''
+
+    setSubtaskForm((previous) => ({
+      ...previous,
+      title: selectedSubmission.title || selectedSubmission.shoot.title || '',
+      dueDate: shootDate,
+      mediaType: submissionType,
+      description: selectedSubmission.description || selectedSubmission.shoot.description || '',
+      referenceLink: firstReferenceLink,
+      rawDataLink: firstSubmissionLink,
+      shootTaskId: selectedSubmission.shoot.id,
+    }))
+  }
+
   const handleSubtaskSubmission = async (e) => {
     e.preventDefault()
     if (!subtaskForm.title.trim() || !subtaskForm.employeeId) return
@@ -177,7 +212,7 @@ const EditorWorkspaceDetails = () => {
         setShowAddModal(false)
         setSubtaskForm({
           title: '', employeeId: '', dueDate: '', priority: 'MEDIUM',
-          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: ''
+          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: '', shootTaskId: ''
         })
         await refreshSubtaskIndex()
       }
@@ -643,6 +678,38 @@ const EditorWorkspaceDetails = () => {
             </div>
 
             <form onSubmit={handleSubtaskSubmission} className="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700">Import Shoot Submission</p>
+                    <p className="text-[11px] text-indigo-600/80 mt-0.5">Select submitted shoot work to populate this form.</p>
+                  </div>
+                  <Link2 className="w-4 h-4 text-indigo-500 shrink-0" />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={selectedShootSubmissionId}
+                    onChange={(e) => setSelectedShootSubmissionId(e.target.value)}
+                    className="min-w-0 flex-1 bg-white border border-indigo-100 focus:border-indigo-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-700"
+                  >
+                    <option value="">Select submitted shoot work...</option>
+                    {shootSubmissionOptions.map((submission) => (
+                      <option key={submission.id} value={submission.id}>
+                        {submission.workspaceName} / {submission.shoot.title} / {submission.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleImportShootSubmission}
+                    disabled={!selectedShootSubmissionId}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
+                  >
+                    <Link2 className="w-3.5 h-3.5" /> Import
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Subtask Title Header</label>
                 <input 
