@@ -620,7 +620,7 @@ const EditorWorkspaceDetails = () => {
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
           >
-            <Plus className="w-3.5 h-3.5" /> Inject Subtask Element
+            <Plus className="w-3.5 h-3.5" /> Create Task
           </button>
         </div>
       </div>
