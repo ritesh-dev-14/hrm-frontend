@@ -40,7 +40,9 @@ const EditorWorkspaceDetails = () => {
   const [activeCalendarSheetId, setActiveCalendarSheetId] = useState(null)
   const [calendarPickerLoading, setCalendarPickerLoading] = useState(false)
   const [calendarPickerError, setCalendarPickerError] = useState('')
-  const [selectedShootSubmissionId, setSelectedShootSubmissionId] = useState('')
+  const [selectedShootWorkspaceId, setSelectedShootWorkspaceId] = useState('')
+  const [selectedShootAssetGroup, setSelectedShootAssetGroup] = useState('')
+  const [selectedShootAssetId, setSelectedShootAssetId] = useState('')
   const [employees, setAvailableEmployees] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -100,6 +102,8 @@ const EditorWorkspaceDetails = () => {
     rawDataLink: '',
     shootTaskId: '',
     monthlySheetDayId: '',
+    shootSubTaskId: '',
+    shootExtraContentId: '',
   })
 
   useEffect(() => {
@@ -221,26 +225,39 @@ const EditorWorkspaceDetails = () => {
     }
   }
 
-  const shootSubmissionOptions = shootSubmissionWorkspaces.flatMap((shootWorkspace) =>
-    (shootWorkspace.shoots || []).flatMap((shoot) =>
-      (shoot.submissions || []).map((submission) => ({
-        ...submission,
-        shoot,
-        workspaceName: shootWorkspace.name,
-        projectName: shootWorkspace.project?.projectName || '',
-      }))
-    )
+  const selectedShootWorkspace = shootSubmissionWorkspaces.find((item) => item.id === selectedShootWorkspaceId)
+  const shootWorkspaceOptions = shootSubmissionWorkspaces
+  const shootSubmissionOptions = (selectedShootWorkspace?.shoots || []).flatMap((shoot) =>
+    (shoot.submissions || []).map((submission) => ({
+      ...submission,
+      shoot,
+      source: 'submission',
+      optionId: `submission:${submission.id}`,
+      label: `${shoot.title} / ${submission.title}`,
+    }))
   )
+  const shootExtraContentOptions = (selectedShootWorkspace?.shoots || []).flatMap((shoot) =>
+    (shoot.extraContent || []).map((content) => ({
+      ...content,
+      shoot,
+      source: 'extra',
+      optionId: `extra:${content.id}`,
+      label: `${shoot.title} / ${content.title}`,
+    }))
+  )
+  const selectedShootAssets = selectedShootAssetGroup === 'extra' ? shootExtraContentOptions : shootSubmissionOptions
+  const contentCreativeEmployees = employees.filter((employee) => {
+    const searchable = `${employee.department?.name || employee.department || ''} ${employee.position || ''} ${employee.role || ''}`.toLowerCase()
+    return ['content', 'creative', 'editor', 'video', 'photo', 'designer', 'graphic', 'social media'].some((term) => searchable.includes(term))
+  })
 
   const formatDateInputValue = (date) => {
     const value = String(date || '')
     return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : ''
   }
 
-  const handleImportShootSubmission = () => {
-    const selectedSubmission = shootSubmissionOptions.find(
-      (submission) => submission.id === selectedShootSubmissionId
-    )
+  const handleImportShootSubmission = (submission = shootSubmissionOptions.find((item) => item.optionId === selectedShootAssetId)) => {
+    const selectedSubmission = submission
     if (!selectedSubmission) return
 
     const submissionType = ['PIC', 'IMAGE', 'PHOTO'].includes(selectedSubmission.type) ? 'PIC' : 'VIDEO'
@@ -254,6 +271,32 @@ const EditorWorkspaceDetails = () => {
       rawDataLink: selectedSubmission.submissionLinks?.find(Boolean) || '',
       shootTaskId: selectedSubmission.shoot.id,
       monthlySheetDayId: '',
+      shootSubTaskId: selectedSubmission.id,
+      shootExtraContentId: '',
+    }))
+  }
+
+  const handleImportShootAsset = () => {
+    const selectedAsset = selectedShootAssets.find((asset) => asset.optionId === selectedShootAssetId)
+    if (!selectedAsset) return
+
+    if (selectedAsset.source === 'submission') {
+      handleImportShootSubmission(selectedAsset)
+      return
+    }
+
+    setSubtaskForm((previous) => ({
+      ...previous,
+      title: selectedAsset.title || '',
+      dueDate: formatDateInputValue(selectedAsset.shoot.date),
+      mediaType: selectedAsset.type === 'PIC' ? 'PIC' : 'VIDEO',
+      description: selectedAsset.description || '',
+      referenceLink: selectedAsset.referenceLink || '',
+      rawDataLink: selectedAsset.driveLink || '',
+      shootTaskId: selectedAsset.shoot.id,
+      monthlySheetDayId: '',
+      shootSubTaskId: '',
+      shootExtraContentId: selectedAsset.id,
     }))
   }
 
@@ -295,6 +338,8 @@ const EditorWorkspaceDetails = () => {
         rawDataLink: subtaskForm.rawDataLink.trim() || null,
         shootTaskId: subtaskForm.shootTaskId || null,
         monthlySheetDayId: subtaskForm.monthlySheetDayId || null,
+        shootSubTaskId: subtaskForm.shootSubTaskId || null,
+        shootExtraContentId: subtaskForm.shootExtraContentId || null,
       }
 
       const res = await API.post(`/api/task-items/${workspaceId}`, payload)
@@ -302,9 +347,11 @@ const EditorWorkspaceDetails = () => {
         setShowAddModal(false)
         setSubtaskForm({
           title: '', employeeId: '', dueDate: '', priority: 'MEDIUM',
-          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: '', shootTaskId: '', monthlySheetDayId: ''
+          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: '', shootTaskId: '', monthlySheetDayId: '', shootSubTaskId: '', shootExtraContentId: ''
         })
-        setSelectedShootSubmissionId('')
+        setSelectedShootWorkspaceId('')
+        setSelectedShootAssetGroup('')
+        setSelectedShootAssetId('')
         await refreshSubtaskIndex()
       }
     } catch (err) {
@@ -778,26 +825,54 @@ const EditorWorkspaceDetails = () => {
                   <Link2 className="w-4 h-4 text-indigo-500 shrink-0" />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <select
-                      value={selectedShootSubmissionId}
-                      onChange={(e) => setSelectedShootSubmissionId(e.target.value)}
+                      value={selectedShootWorkspaceId}
+                      onChange={(e) => {
+                        setSelectedShootWorkspaceId(e.target.value)
+                        setSelectedShootAssetGroup('')
+                        setSelectedShootAssetId('')
+                      }}
                       className="min-w-0 flex-1 bg-white border border-indigo-100 focus:border-indigo-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-700"
                     >
-                      <option value="">Select submitted shoot work...</option>
-                      {shootSubmissionOptions.map((submission) => (
-                        <option key={submission.id} value={submission.id}>
-                          {submission.workspaceName} / {submission.shoot.title} / {submission.title}
+                      <option value="">Select Shoot Workspace...</option>
+                      {shootWorkspaceOptions.map((shootWorkspace) => (
+                        <option key={shootWorkspace.id} value={shootWorkspace.id}>
+                          {shootWorkspace.name}
                         </option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedShootAssetGroup}
+                      onChange={(e) => {
+                        setSelectedShootAssetGroup(e.target.value)
+                        setSelectedShootAssetId('')
+                      }}
+                      disabled={!selectedShootWorkspaceId}
+                      className="min-w-0 flex-1 bg-white border border-indigo-100 focus:border-indigo-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                    >
+                      <option value="">Select Asset Group...</option>
+                      {shootSubmissionOptions.length > 0 && <option value="submission">Approved Submissions</option>}
+                      {shootExtraContentOptions.length > 0 && <option value="extra">Extra Content</option>}
+                    </select>
+                    <select
+                      value={selectedShootAssetId}
+                      onChange={(e) => setSelectedShootAssetId(e.target.value)}
+                      disabled={!selectedShootAssetGroup}
+                      className="min-w-0 flex-1 bg-white border border-indigo-100 focus:border-indigo-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                    >
+                      <option value="">Select Exact Asset...</option>
+                      {selectedShootAssets.map((asset) => (
+                        <option key={asset.optionId} value={asset.optionId}>{asset.label}</option>
                       ))}
                     </select>
                     <button
                       type="button"
-                      onClick={handleImportShootSubmission}
-                      disabled={!selectedShootSubmissionId}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
+                      onClick={handleImportShootAsset}
+                      disabled={!selectedShootAssetId}
+                      className="sm:col-span-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
                     >
-                      <Link2 className="w-3.5 h-3.5" /> Import Shoot
+                      <Link2 className="w-3.5 h-3.5" /> Import Selected Shoot Asset
                     </button>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -840,9 +915,10 @@ const EditorWorkspaceDetails = () => {
                     onChange={handleFormInputChange}
                   >
                     <option value="">Select Target Staff</option>
-                    {employees.map(emp => (
-                      <option key={emp.id} value={emp.employeeId}>{emp.name} ({emp.position || 'Editor'})</option>
+                    {(contentCreativeEmployees.length > 0 ? contentCreativeEmployees : employees).map(emp => (
+                      <option key={emp.id} value={emp.employeeId}>{emp.name} ({emp.position || emp.department?.name || 'Content/Creative'})</option>
                     ))}
+                    {contentCreativeEmployees.length === 0 && employees.length === 0 && <option value="" disabled>No employees available</option>}
                   </select>
                 </div>
                 <div className="space-y-1">

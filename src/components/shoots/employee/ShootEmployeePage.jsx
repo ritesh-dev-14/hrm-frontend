@@ -43,7 +43,10 @@ const ShootEmployeePage = () => {
   const [extraContentTask, setExtraContentTask] = useState(null)
   const [extraPicsRaw, setExtraPicsRaw] = useState('0')
   const [extraReelsRaw, setExtraReelsRaw] = useState('0')
+  const [extraContentQueue, setExtraContentQueue] = useState([])
+  const [extraContentIndex, setExtraContentIndex] = useState(0)
   const [extraDriveLink, setExtraDriveLink] = useState('')
+  const [extraReferenceLink, setExtraReferenceLink] = useState('')
   const [extraNotes, setExtraNotes] = useState('')
 
   // Fetch Tasks on Mount
@@ -168,7 +171,10 @@ const ShootEmployeePage = () => {
     setExtraContentTask({ shootId, task })
     setExtraPicsRaw('0')
     setExtraReelsRaw('0')
+    setExtraContentQueue([])
+    setExtraContentIndex(0)
     setExtraDriveLink('')
+    setExtraReferenceLink('')
     setExtraNotes('')
   }
 
@@ -176,32 +182,54 @@ const ShootEmployeePage = () => {
     e.preventDefault()
     if (!extraContentTask) return
 
-    const extraPics = Number.parseInt(extraPicsRaw, 10) || 0
-    const extraReels = Number.parseInt(extraReelsRaw, 10) || 0
-    if (extraPics === 0 && extraReels === 0) {
-      alert('Please add at least one extra pic or reel.')
-      return
-    }
-    if (!extraDriveLink.trim()) {
-      alert('Please provide the Drive link for the extra content.')
+    if (extraContentQueue.length === 0) {
+      const extraPics = Number.parseInt(extraPicsRaw, 10) || 0
+      const extraReels = Number.parseInt(extraReelsRaw, 10) || 0
+      if (extraPics === 0 && extraReels === 0) {
+        alert('Please add at least one extra pic or reel.')
+        return
+      }
+
+      setExtraContentQueue([
+        ...Array.from({ length: extraReels }, () => 'REEL'),
+        ...Array.from({ length: extraPics }, () => 'PIC'),
+      ])
+      setExtraContentIndex(0)
+      setExtraDriveLink('')
+      setExtraReferenceLink('')
+      setExtraNotes('')
       return
     }
 
+    if (!extraDriveLink.trim()) {
+      alert('Please provide the Drive link for this item.')
+      return
+    }
+
+    const currentType = extraContentQueue[extraContentIndex]
     setSubmitting(true)
     try {
       const response = await API.post(
         `/api/shoot-workspaces/${extraContentTask.shootId}/tasks/${extraContentTask.task.id}/extra-content`,
         {
-          extraPics,
-          extraReels,
+          type: currentType,
           driveLink: extraDriveLink.trim(),
+          referenceLink: extraReferenceLink.trim() || undefined,
           notes: extraNotes.trim() || undefined,
         },
       )
 
       if (response.data?.success) {
-        await fetchMyTasks()
-        setExtraContentTask(null)
+        const nextIndex = extraContentIndex + 1
+        if (nextIndex >= extraContentQueue.length) {
+          await fetchMyTasks()
+          setExtraContentTask(null)
+        } else {
+          setExtraContentIndex(nextIndex)
+          setExtraDriveLink('')
+          setExtraReferenceLink('')
+          setExtraNotes('')
+        }
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Extra content submission failed.')
@@ -449,7 +477,9 @@ const ShootEmployeePage = () => {
                             <div className="space-y-2">
                               {shoot.extraContent.map((content) => (
                                 <div key={content.id} className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
-                                  <span className="font-semibold">{content.extraPics} pics / {content.extraReels} reels</span>
+                                  <span className="font-semibold">
+                                    {content.type ? `${content.type === 'PIC' ? 'Pic' : 'Reel'} submission` : `${content.extraPics} pics / ${content.extraReels} reels`}
+                                  </span>
                                   <a href={content.driveLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:underline">
                                     Open Drive Link <ExternalLink className="w-3 h-3" />
                                   </a>
@@ -713,29 +743,48 @@ const ShootEmployeePage = () => {
               </div>
 
               <form onSubmit={handleExtraContentSubmit} className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="space-y-2">
-                    <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Extra Pics</span>
-                    <input type="number" min="0" required value={extraPicsRaw} onChange={(e) => setExtraPicsRaw(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-                  </label>
-                  <label className="space-y-2">
-                    <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Extra Reels</span>
-                    <input type="number" min="0" required value={extraReelsRaw} onChange={(e) => setExtraReelsRaw(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-                  </label>
-                </div>
-                <label className="block space-y-2">
-                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Drive Link</span>
-                  <input type="url" required placeholder="https://drive.google.com/..." value={extraDriveLink} onChange={(e) => setExtraDriveLink(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
-                </label>
-                <label className="block space-y-2">
-                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Notes <span className="normal-case tracking-normal font-medium text-slate-400">(optional)</span></span>
-                  <textarea rows={3} value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} placeholder="Add any useful details about these files..." className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
-                </label>
+                {extraContentQueue.length === 0 ? (
+                  <>
+                    <p className="text-sm text-slate-500">Choose how many individual items you want to submit. You will complete each item separately.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className="space-y-2">
+                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Extra Pics</span>
+                        <input type="number" min="0" required value={extraPicsRaw} onChange={(e) => setExtraPicsRaw(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Extra Reels</span>
+                        <input type="number" min="0" required value={extraReelsRaw} onChange={(e) => setExtraReelsRaw(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-indigo-700">{extraContentQueue[extraContentIndex]} submission</p>
+                        <p className="text-sm font-semibold text-indigo-900 mt-1">Item {extraContentIndex + 1} of {extraContentQueue.length}</p>
+                      </div>
+                      <span className="text-xs font-bold text-indigo-600">{extraContentQueue.filter((type) => type === 'REEL').length} reels / {extraContentQueue.filter((type) => type === 'PIC').length} pics</span>
+                    </div>
+                    <label className="block space-y-2">
+                      <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Drive Link <span className="text-rose-500">*</span></span>
+                      <input type="url" required placeholder="https://drive.google.com/..." value={extraDriveLink} onChange={(e) => setExtraDriveLink(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                    </label>
+                    <label className="block space-y-2">
+                      <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Reference Link <span className="normal-case tracking-normal font-medium text-slate-400">(optional)</span></span>
+                      <input type="url" placeholder="https://..." value={extraReferenceLink} onChange={(e) => setExtraReferenceLink(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                    </label>
+                    <label className="block space-y-2">
+                      <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Notes <span className="normal-case tracking-normal font-medium text-slate-400">(optional)</span></span>
+                      <textarea rows={3} value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} placeholder="Add any useful details about this item..." className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
+                    </label>
+                  </>
+                )}
                 <div className="flex justify-end gap-3 pt-5 border-t border-slate-100">
                   <button type="button" disabled={submitting} onClick={() => setExtraContentTask(null)} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Cancel</button>
                   <button type="submit" disabled={submitting} className="px-6 py-2.5 text-sm font-bold rounded-xl shadow-md transition flex items-center gap-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
                     {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Submit Extra Content
+                    {extraContentQueue.length === 0 ? 'Start Submissions' : `Submit ${extraContentQueue[extraContentIndex]}`}
                   </button>
                 </div>
               </form>

@@ -59,6 +59,7 @@ export default function ShootWorkspaceDetails() {
   const [selectedTaskDetails, setSelectedTaskDetails] = useState(null);
   const [subtasks, setSubtasks] = useState([]);
   const [isSubtaskLoading, setIsSubtaskLoading] = useState(false);
+  const [activeTaskDetailTab, setActiveTaskDetailTab] = useState("submitted");
 
   // Interface Indicators
   const [isLoading, setIsLoading] = useState(true);
@@ -430,6 +431,7 @@ export default function ShootWorkspaceDetails() {
     try {
       setIsSubtaskLoading(true);
       setShowTaskDetailsModal(true);
+      setActiveTaskDetailTab("submitted");
 
       const [detailsRes, subtasksRes] = await Promise.all([
         API.get(`/api/shoot-workspaces/${shootId}/tasks/${taskId}`),
@@ -1706,7 +1708,86 @@ export default function ShootWorkspaceDetails() {
                       </div>
                     </div>
 
-                    {subtasks.length === 0 ? (
+                    <div className="flex items-center gap-1 p-1 mb-4 bg-slate-50 border border-slate-100 rounded-xl">
+                      {[
+                        ["submitted", "Submitted"],
+                        ["approved", "Approved by Manager"],
+                        ["extra", "Extra Content"],
+                      ].map(([tab, label]) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setActiveTaskDetailTab(tab)}
+                          className={`flex-1 px-3 py-2 text-[11px] font-bold rounded-lg transition ${
+                            activeTaskDetailTab === tab
+                              ? "bg-white text-indigo-700 shadow-sm border border-slate-200"
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {activeTaskDetailTab === "extra" ? (
+                      selectedTaskDetails?.extraContent?.length ? (
+                        <div className="space-y-3">
+                          {selectedTaskDetails.extraContent.map((content) => (
+                            <div key={content.id} className="p-4 bg-emerald-50/40 border border-emerald-100 rounded-xl space-y-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="text-sm font-bold text-slate-800">
+                                      {content.type ? `${content.type === "PIC" ? "Pic" : "Reel"} submission` : "Extra Content"}
+                                    </h5>
+                                    {content.type && (
+                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                                        {content.type}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {content.submittedBy?.name && (
+                                    <p className="text-[11px] text-slate-500 mt-1">Submitted by {content.submittedBy.name}</p>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-400 shrink-0">
+                                  {content.submittedAt ? new Date(content.submittedAt).toLocaleDateString() : ""}
+                                </span>
+                              </div>
+                              {!content.type && (
+                                <p className="text-xs font-semibold text-slate-600">{content.extraPics || 0} pics / {content.extraReels || 0} reels</p>
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                {content.driveLink && (
+                                  <a href={content.driveLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-emerald-200 text-emerald-700 rounded-lg text-[11px] font-bold hover:bg-emerald-50">
+                                    <ExternalLink size={11} /> Open Drive Link
+                                  </a>
+                                )}
+                                {content.referenceLink && (
+                                  <a href={content.referenceLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-50">
+                                    <Link2 size={11} /> Reference Link
+                                  </a>
+                                )}
+                              </div>
+                              {content.notes && <p className="text-xs text-slate-600 bg-white/70 border border-emerald-100 rounded-lg p-2.5">{content.notes}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-slate-50/30">
+                          <FileText className="h-7 w-7 text-slate-300 mx-auto mb-1.5" />
+                          <p className="text-xs text-slate-400 font-medium">No extra content uploaded for this shoot.</p>
+                        </div>
+                      )
+                    ) : (() => {
+                      const visibleSubtasks = subtasks.filter((sub) => {
+                        const hasSubmission = sub.status === "SUBMITTED" || (sub.submissionLinks && sub.submissionLinks.length > 0);
+                        return activeTaskDetailTab === "approved"
+                          ? sub.status === "APPROVED"
+                          : hasSubmission && sub.status !== "APPROVED";
+                      });
+
+                      return visibleSubtasks.length === 0 ? (
                       <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-slate-50/30">
                         <FileText className="h-7 w-7 text-slate-300 mx-auto mb-1.5" />
                         <p className="text-xs text-slate-400 font-medium">
@@ -1714,9 +1795,9 @@ export default function ShootWorkspaceDetails() {
                           pipeline layer framework loop.
                         </p>
                       </div>
-                    ) : (
+                      ) : (
                       <div className="space-y-4">
-                        {subtasks.map((sub) => {
+                        {visibleSubtasks.map((sub) => {
                           const isSubmitted =
                             sub.status === "SUBMITTED" ||
                             (sub.submissionLinks &&
@@ -2022,7 +2103,8 @@ export default function ShootWorkspaceDetails() {
                           );
                         })}
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </>
               )}
