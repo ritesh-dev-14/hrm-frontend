@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
-import { Activity, Camera, CheckCircle2, Clapperboard, Edit3, FolderOpen, ImageIcon, Link2, Loader2, PencilLine, UploadCloud, Video, Wand2, X } from "lucide-react";
+import { Activity, Camera, CheckCircle2, Edit3, FolderOpen, Link2, Loader2, PencilLine, UploadCloud, Video, Wand2, X } from "lucide-react";
 
 const statCardClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
 
@@ -171,8 +171,6 @@ const ShootManagementPage = () => {
   };
 
   const cards = useMemo(() => [
-    { label: "No of Reels", value: formatNumber(displayedSummary.totalReels), icon: Clapperboard, tone: "purple" },
-    { label: "No of Pics", value: formatNumber(displayedSummary.totalPics), icon: ImageIcon, tone: "blue" },
     { label: "Extra Reels", value: formatNumber(displayedSummary.extraReels), icon: Video, tone: "rose" },
     { label: "Extra Pics", value: formatNumber(displayedSummary.extraPics), icon: Camera, tone: "amber" },
     { label: "Reels Approved", value: formatNumber(displayedSummary.reelsApprovedByManager), icon: CheckCircle2, tone: "green" },
