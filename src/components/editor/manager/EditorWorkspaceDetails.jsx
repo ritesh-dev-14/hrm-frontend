@@ -626,8 +626,8 @@ const EditorWorkspaceDetails = () => {
       </div>
 
       {/* PARENT WORKSPACE SUMMARY SPECS SHEET CARD */}
-      <div className="max-w-6xl mx-auto mb-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        <div className="md:col-span-2 space-y-2">
+      <div className="max-w-6xl mx-auto mb-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">
+        <div className="space-y-2">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="px-2.5 py-0.5 text-[9px] font-bold tracking-wider uppercase bg-slate-100 border border-slate-200 text-slate-700 rounded-md">
               {workspace.status || 'Active Config'}
@@ -642,23 +642,6 @@ const EditorWorkspaceDetails = () => {
           <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">{workspace.description || 'No specialized description parameters attached.'}</p>
         </div>
 
-        <div className="bg-slate-50/70 rounded-xl border border-slate-200/60 p-4 space-y-3.5 text-xs font-medium">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Target Horizon</span>
-            <span className="text-slate-800 font-bold">
-              {workspace.endDate ? new Date(workspace.endDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : 'No Target Set'}
-            </span>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 text-[11px]">
-              <span className="inline-flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> Task Completion Engine</span>
-              <span className="text-indigo-600 font-bold">{workspace.progress || 0}%</span>
-            </div>
-            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-indigo-600 h-full transition-all duration-500" style={{ width: `${workspace.progress || 0}%` }}></div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* HIGH QUALITY SUBTASK TABULAR MATRIX VIEW INDEX */}
