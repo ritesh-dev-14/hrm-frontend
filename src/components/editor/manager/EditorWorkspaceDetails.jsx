@@ -32,6 +32,14 @@ const EditorWorkspaceDetails = () => {
   const [workspace, setWorkspace] = useState(null)
   const [subtasks, setSubtasks] = useState([])
   const [shootSubmissionWorkspaces, setShootSubmissionWorkspaces] = useState([])
+  const [calendarProjects, setCalendarProjects] = useState([])
+  const [calendarSheets, setCalendarSheets] = useState([])
+  const [calendarPickerOpen, setCalendarPickerOpen] = useState(false)
+  const [calendarPickerStep, setCalendarPickerStep] = useState('project')
+  const [selectedCalendarProject, setSelectedCalendarProject] = useState(null)
+  const [activeCalendarSheetId, setActiveCalendarSheetId] = useState(null)
+  const [calendarPickerLoading, setCalendarPickerLoading] = useState(false)
+  const [calendarPickerError, setCalendarPickerError] = useState('')
   const [selectedShootSubmissionId, setSelectedShootSubmissionId] = useState('')
   const [employees, setAvailableEmployees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -87,9 +95,11 @@ const EditorWorkspaceDetails = () => {
     priority: 'MEDIUM',
     description: '',
     status: 'DRAFT',
+    mediaType: 'VIDEO',
     referenceLink: '',
     rawDataLink: '',
     shootTaskId: '',
+    monthlySheetDayId: '',
   })
 
   useEffect(() => {
@@ -108,10 +118,12 @@ const EditorWorkspaceDetails = () => {
         ])
 
         if (cancelled) return
-        if (workspaceRes.data?.success) setWorkspace(workspaceRes.data.data?.task || workspaceRes.data.data)
+        const workspaceData = workspaceRes.data?.data?.task || workspaceRes.data?.data
+        if (workspaceRes.data?.success) setWorkspace(workspaceData)
         if (subtasksRes.data?.success) setSubtasks(subtasksRes.data.data?.items || [])
         if (employeesRes.data?.success) setAvailableEmployees(employeesRes.data.data || [])
         if (shootSubmissionsRes.data?.success) setShootSubmissionWorkspaces(shootSubmissionsRes.data.data || [])
+
       } catch (err) {
         if (!cancelled) setError(err.response?.data?.message || err.message || 'Error occurred communicating with core dataset system.')
       } finally {
@@ -154,6 +166,61 @@ const EditorWorkspaceDetails = () => {
     setSubtaskForm(prev => ({ ...prev, [name]: value }))
   }
 
+  const resetCalendarPicker = () => {
+    setCalendarPickerOpen(false)
+    setCalendarPickerStep('project')
+    setCalendarProjects([])
+    setCalendarSheets([])
+    setSelectedCalendarProject(null)
+    setActiveCalendarSheetId(null)
+    setCalendarPickerError('')
+  }
+
+  const handleOpenCalendarPicker = async () => {
+    setCalendarPickerOpen(true)
+    setCalendarPickerStep('project')
+    setSelectedCalendarProject(null)
+    setCalendarSheets([])
+    setActiveCalendarSheetId(null)
+    setCalendarPickerError('')
+    setCalendarPickerLoading(true)
+
+    try {
+      const response = await API.get('/api/projects')
+      if (response.data?.success) {
+        setCalendarProjects(response.data.data || [])
+      } else {
+        setCalendarPickerError('Could not load projects.')
+      }
+    } catch (err) {
+      setCalendarPickerError(err.response?.data?.message || 'Could not load projects.')
+    } finally {
+      setCalendarPickerLoading(false)
+    }
+  }
+
+  const handleSelectCalendarProject = async (project) => {
+    setSelectedCalendarProject(project)
+    setCalendarPickerStep('sheet')
+    setCalendarSheets([])
+    setActiveCalendarSheetId(null)
+    setCalendarPickerError('')
+    setCalendarPickerLoading(true)
+
+    try {
+      const response = await API.get(`/api/projects/${project.id}/monthly-sheets`)
+      if (response.data?.success) {
+        setCalendarSheets(response.data.data || [])
+      } else {
+        setCalendarPickerError('Could not load content calendars for this project.')
+      }
+    } catch (err) {
+      setCalendarPickerError(err.response?.data?.message || 'Could not load content calendars for this project.')
+    } finally {
+      setCalendarPickerLoading(false)
+    }
+  }
+
   const shootSubmissionOptions = shootSubmissionWorkspaces.flatMap((shootWorkspace) =>
     (shootWorkspace.shoots || []).flatMap((shoot) =>
       (shoot.submissions || []).map((submission) => ({
@@ -165,30 +232,51 @@ const EditorWorkspaceDetails = () => {
     )
   )
 
+  const formatDateInputValue = (date) => {
+    const value = String(date || '')
+    return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : ''
+  }
+
   const handleImportShootSubmission = () => {
     const selectedSubmission = shootSubmissionOptions.find(
       (submission) => submission.id === selectedShootSubmissionId
     )
-
     if (!selectedSubmission) return
 
     const submissionType = ['PIC', 'IMAGE', 'PHOTO'].includes(selectedSubmission.type) ? 'PIC' : 'VIDEO'
-    const firstReferenceLink = selectedSubmission.referenceLinks?.find(Boolean) || ''
-    const firstSubmissionLink = selectedSubmission.submissionLinks?.find(Boolean) || ''
-    const shootDate = /^\d{4}-\d{2}-\d{2}$/.test(selectedSubmission.shoot.date || '')
-      ? selectedSubmission.shoot.date
-      : ''
-
     setSubtaskForm((previous) => ({
       ...previous,
       title: selectedSubmission.title || selectedSubmission.shoot.title || '',
-      dueDate: shootDate,
+      dueDate: formatDateInputValue(selectedSubmission.shoot.date),
       mediaType: submissionType,
       description: selectedSubmission.description || selectedSubmission.shoot.description || '',
-      referenceLink: firstReferenceLink,
-      rawDataLink: firstSubmissionLink,
+      referenceLink: selectedSubmission.referenceLinks?.find(Boolean) || '',
+      rawDataLink: selectedSubmission.submissionLinks?.find(Boolean) || '',
       shootTaskId: selectedSubmission.shoot.id,
+      monthlySheetDayId: '',
     }))
+  }
+
+  const handleImportCalendarDay = (selectedDay) => {
+    const mediaType = selectedDay.reelType || selectedDay.videoType ? 'VIDEO' : 'PIC'
+    const firstRawDataLink = [
+      ...(selectedDay.videoUploadLinks || []),
+      ...(selectedDay.contentUploadLinks || []),
+      ...(selectedDay.submissionLinks || []),
+    ].find(Boolean) || ''
+
+    setSubtaskForm((previous) => ({
+      ...previous,
+      title: selectedDay.title || '',
+      dueDate: formatDateInputValue(selectedDay.date),
+      mediaType,
+      description: selectedDay.description || selectedDay.script || '',
+      referenceLink: selectedDay.referenceLinks?.find(Boolean) || '',
+      rawDataLink: firstRawDataLink,
+      shootTaskId: '',
+      monthlySheetDayId: selectedDay.id,
+    }))
+    resetCalendarPicker()
   }
 
   const handleSubtaskSubmission = async (e) => {
@@ -204,7 +292,9 @@ const EditorWorkspaceDetails = () => {
         description: subtaskForm.description.trim(),
         dueDate: subtaskForm.dueDate ? new Date(subtaskForm.dueDate).toISOString() : null,
         referenceLink: subtaskForm.referenceLink.trim() || null,
-        rawDataLink: subtaskForm.rawDataLink.trim() || null
+        rawDataLink: subtaskForm.rawDataLink.trim() || null,
+        shootTaskId: subtaskForm.shootTaskId || null,
+        monthlySheetDayId: subtaskForm.monthlySheetDayId || null,
       }
 
       const res = await API.post(`/api/task-items/${workspaceId}`, payload)
@@ -212,8 +302,9 @@ const EditorWorkspaceDetails = () => {
         setShowAddModal(false)
         setSubtaskForm({
           title: '', employeeId: '', dueDate: '', priority: 'MEDIUM',
-          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: '', shootTaskId: ''
+          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: '', shootTaskId: '', monthlySheetDayId: ''
         })
+        setSelectedShootSubmissionId('')
         await refreshSubtaskIndex()
       }
     } catch (err) {
@@ -681,32 +772,50 @@ const EditorWorkspaceDetails = () => {
               <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700">Import Shoot Submission</p>
-                    <p className="text-[11px] text-indigo-600/80 mt-0.5">Select submitted shoot work to populate this form.</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700">Import Form Data</p>
+                    <p className="text-[11px] text-indigo-600/80 mt-0.5">Populate this form from a shoot submission or content calendar.</p>
                   </div>
                   <Link2 className="w-4 h-4 text-indigo-500 shrink-0" />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    value={selectedShootSubmissionId}
-                    onChange={(e) => setSelectedShootSubmissionId(e.target.value)}
-                    className="min-w-0 flex-1 bg-white border border-indigo-100 focus:border-indigo-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-700"
-                  >
-                    <option value="">Select submitted shoot work...</option>
-                    {shootSubmissionOptions.map((submission) => (
-                      <option key={submission.id} value={submission.id}>
-                        {submission.workspaceName} / {submission.shoot.title} / {submission.title}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleImportShootSubmission}
-                    disabled={!selectedShootSubmissionId}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
-                  >
-                    <Link2 className="w-3.5 h-3.5" /> Import
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={selectedShootSubmissionId}
+                      onChange={(e) => setSelectedShootSubmissionId(e.target.value)}
+                      className="min-w-0 flex-1 bg-white border border-indigo-100 focus:border-indigo-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-700"
+                    >
+                      <option value="">Select submitted shoot work...</option>
+                      {shootSubmissionOptions.map((submission) => (
+                        <option key={submission.id} value={submission.id}>
+                          {submission.workspaceName} / {submission.shoot.title} / {submission.title}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleImportShootSubmission}
+                      disabled={!selectedShootSubmissionId}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
+                    >
+                      <Link2 className="w-3.5 h-3.5" /> Import Shoot
+                    </button>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={handleOpenCalendarPicker}
+                      className="min-w-0 flex-1 text-left bg-white border border-indigo-100 hover:border-emerald-300 focus:border-emerald-500 focus:outline-none rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition"
+                    >
+                      Select project, content calendar, and date...
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenCalendarPicker}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
+                    >
+                      <Calendar className="w-3.5 h-3.5" /> Choose Calendar
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -825,6 +934,115 @@ const EditorWorkspaceDetails = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {calendarPickerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                {calendarPickerStep === 'sheet' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCalendarPickerStep('project')
+                      setSelectedCalendarProject(null)
+                      setCalendarSheets([])
+                      setActiveCalendarSheetId(null)
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-700 transition"
+                    title="Back to project selection"
+                  >
+                    <ArrowLeft size={15} />
+                  </button>
+                )}
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    <Calendar size={16} className="text-emerald-600" />
+                    {calendarPickerStep === 'project' ? 'Choose a Project' : 'Choose a Content Calendar Date'}
+                  </h4>
+                  {selectedCalendarProject && (
+                    <p className="text-[10px] text-slate-400 mt-0.5">{selectedCalendarProject.projectName}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={resetCalendarPicker}
+                className="p-1 text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto flex-1 space-y-3">
+              {calendarPickerError && (
+                <div className="p-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg text-xs flex items-center gap-2">
+                  <AlertCircle size={13} /> {calendarPickerError}
+                </div>
+              )}
+
+              {calendarPickerLoading ? (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <Loader2 className="h-7 w-7 text-emerald-600 animate-spin" />
+                  <p className="text-xs text-slate-400 mt-2 font-medium">Loading...</p>
+                </div>
+              ) : calendarPickerStep === 'project' ? (
+                calendarProjects.length === 0 ? (
+                  <div className="text-center py-10 text-xs text-slate-400">No projects found.</div>
+                ) : (
+                  calendarProjects.map((project) => (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => handleSelectCalendarProject(project)}
+                      className="w-full flex items-center justify-between text-left px-3 py-2.5 border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40 rounded-xl transition"
+                    >
+                      <span className="text-xs font-bold text-slate-800">{project.projectName || 'Untitled Project'}</span>
+                      <ExternalLink size={12} className="text-slate-300" />
+                    </button>
+                  ))
+                )
+              ) : calendarSheets.length === 0 ? (
+                <div className="text-center py-10 text-xs text-slate-400">No content calendars found for this project.</div>
+              ) : (
+                calendarSheets.map((sheet) => (
+                  <div key={sheet.id} className="border border-slate-200 rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCalendarSheetId(activeCalendarSheetId === sheet.id ? null : sheet.id)}
+                      className="w-full flex justify-between items-center px-3 py-2.5 bg-slate-50/60 hover:bg-slate-100 text-xs font-bold text-slate-700 transition"
+                    >
+                      <span>{sheet.month}/{sheet.year} - {sheet.days?.length || 0} day{sheet.days?.length === 1 ? '' : 's'}</span>
+                      <span className="text-slate-400">{activeCalendarSheetId === sheet.id ? '-' : '+'}</span>
+                    </button>
+                    {activeCalendarSheetId === sheet.id && (
+                      <div className="divide-y divide-slate-100">
+                        {(sheet.days || []).length === 0 ? (
+                          <p className="text-[11px] text-slate-400 italic px-3 py-3">No dates recorded on this calendar.</p>
+                        ) : (
+                          sheet.days.map((day) => (
+                            <button
+                              key={day.id}
+                              type="button"
+                              onClick={() => handleImportCalendarDay(day)}
+                              className="w-full text-left px-3 py-2.5 hover:bg-emerald-50/50 transition"
+                            >
+                              <span className="text-xs font-bold text-slate-800 block">{day.title || 'Untitled Day'}</span>
+                              <span className="text-[10px] text-slate-400 mt-0.5 block">
+                                {formatDateInputValue(day.date) || 'No date'}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}
