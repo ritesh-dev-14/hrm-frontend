@@ -57,9 +57,9 @@ const NAV_CONFIG = [
       { id: "web-development-projects", label: "Web Development", icon: Code2, path: "/web-development-projects" },
     ],
   },
-  { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"] },
-  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "EMPLOYEE", "ADMIN", "HR"] },
-  { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"] },
+  { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"], departments: ["Social Media Department", "social media department"] },
+  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "EMPLOYEE", "ADMIN", "HR"], managerDepartments: ["social media"] },
+  { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"], managerDepartments: ["social media"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
   { id: "tasks-cor", label: "My Tasks", icon: BriefcaseBusiness, path: "/tasks", roles: ["COORDINATOR", "EA"] },
@@ -486,13 +486,13 @@ export default function ProfessionalSidebar({ children }) {
   const allowedNav = useMemo(() => {
     const isManager = String(role || "").toUpperCase() === "MANAGER";
 
+    // All department names this user belongs to (lowercased)
+    const allDepts = (user?.departments || []).map((d) => (d?.name || "").toLowerCase());
+    if (allDepts.length === 0 && departmentName) allDepts.push(departmentName.toLowerCase());
+
     // Build a list of all project child IDs this manager should see
     const managerProjectChildIds = (() => {
       if (!isManager) return null;
-      // Use the full departments array if available (multi-dept managers)
-      const allDepts = (user?.departments || []).map((d) => (d?.name || "").toLowerCase());
-      // Fallback to single departmentName
-      if (allDepts.length === 0 && departmentName) allDepts.push(departmentName.toLowerCase());
       if (allDepts.length === 0 || allDepts.every((d) => !d || d === "none" || d === "unknown")) return null;
 
       const ids = [];
@@ -505,12 +505,22 @@ export default function ProfessionalSidebar({ children }) {
       return ids.length > 0 ? [...new Set(ids)] : null;
     })();
 
+    const isInSocialMedia = allDepts.some((d) => d.includes("social"));
+
     return NAV_CONFIG.filter((item) => {
       if (!item.roles.includes(role?.toUpperCase())) return false;
+
+      // Handle items with a departments restriction (used for Employee role too)
       if (item.departments) {
         if (user?.name === "shoot1") return true;
         return item.departments.map((d) => d.toLowerCase()).includes(departmentName?.toLowerCase());
       }
+
+      // Handle items with managerDepartments restriction (only applies to MANAGER role)
+      if (item.managerDepartments && isManager) {
+        return item.managerDepartments.some((d) => isInSocialMedia ? d.includes("social") : allDepts.some((dept) => dept.includes(d)));
+      }
+
       return true;
     }).map((item) => {
       // Filter project children to only show the manager's own departments
