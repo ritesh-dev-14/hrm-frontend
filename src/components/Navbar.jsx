@@ -485,16 +485,24 @@ export default function ProfessionalSidebar({ children }) {
 
   const allowedNav = useMemo(() => {
     const isManager = String(role || "").toUpperCase() === "MANAGER";
-    const dept = (departmentName || "").toLowerCase();
 
-    // Determine which project sub-item to show for this manager
-    const managerProjectChildId = (() => {
-      if (!isManager || !dept || dept === "none" || dept === "unknown") return null;
-      if (dept.includes("social")) return "social-media-projects";
-      if (dept.includes("seo")) return "seo-projects";
-      if (dept.includes("meta") || dept.includes("marketing")) return "marketing-projects";
-      if (dept.includes("web") || dept.includes("development")) return "web-development-projects";
-      return null;
+    // Build a list of all project child IDs this manager should see
+    const managerProjectChildIds = (() => {
+      if (!isManager) return null;
+      // Use the full departments array if available (multi-dept managers)
+      const allDepts = (user?.departments || []).map((d) => (d?.name || "").toLowerCase());
+      // Fallback to single departmentName
+      if (allDepts.length === 0 && departmentName) allDepts.push(departmentName.toLowerCase());
+      if (allDepts.length === 0 || allDepts.every((d) => !d || d === "none" || d === "unknown")) return null;
+
+      const ids = [];
+      allDepts.forEach((dept) => {
+        if (dept.includes("social")) ids.push("social-media-projects");
+        if (dept.includes("seo")) ids.push("seo-projects");
+        if (dept.includes("meta") || dept.includes("marketing")) ids.push("marketing-projects");
+        if (dept.includes("web") || dept.includes("development")) ids.push("web-development-projects");
+      });
+      return ids.length > 0 ? [...new Set(ids)] : null;
     })();
 
     return NAV_CONFIG.filter((item) => {
@@ -505,11 +513,11 @@ export default function ProfessionalSidebar({ children }) {
       }
       return true;
     }).map((item) => {
-      // Filter out other departments' projects if we know this manager's department
-      if (isManager && managerProjectChildId && item.id === "project" && item.children?.length > 0) {
+      // Filter project children to only show the manager's own departments
+      if (isManager && managerProjectChildIds && item.id === "project" && item.children?.length > 0) {
         return {
           ...item,
-          children: item.children.filter((child) => child.id === managerProjectChildId),
+          children: item.children.filter((child) => managerProjectChildIds.includes(child.id)),
         };
       }
       return item;
