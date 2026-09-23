@@ -484,6 +484,19 @@ export default function ProfessionalSidebar({ children }) {
   }, [mobileOpen]);
 
   const allowedNav = useMemo(() => {
+    const isManager = String(role || "").toUpperCase() === "MANAGER";
+    const dept = (departmentName || "").toLowerCase();
+
+    // Determine which project sub-item to show for this manager
+    const managerProjectChildId = (() => {
+      if (!isManager || !dept || dept === "none" || dept === "unknown") return null;
+      if (dept.includes("social")) return "social-media-projects";
+      if (dept.includes("seo")) return "seo-projects";
+      if (dept.includes("meta") || dept.includes("marketing")) return "marketing-projects";
+      if (dept.includes("web") || dept.includes("development")) return "web-development-projects";
+      return null;
+    })();
+
     return NAV_CONFIG.filter((item) => {
       if (!item.roles.includes(role?.toUpperCase())) return false;
       if (item.departments) {
@@ -491,6 +504,15 @@ export default function ProfessionalSidebar({ children }) {
         return item.departments.map((d) => d.toLowerCase()).includes(departmentName?.toLowerCase());
       }
       return true;
+    }).map((item) => {
+      // Filter out other departments' projects if we know this manager's department
+      if (isManager && managerProjectChildId && item.id === "project" && item.children?.length > 0) {
+        return {
+          ...item,
+          children: item.children.filter((child) => child.id === managerProjectChildId),
+        };
+      }
+      return item;
     });
   }, [role, departmentName, user]);
 
