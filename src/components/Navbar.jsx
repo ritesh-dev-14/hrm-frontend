@@ -58,7 +58,7 @@ const NAV_CONFIG = [
     ],
   },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"], departments: ["Social Media Department", "social media department"] },
-  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "EMPLOYEE", "ADMIN", "HR"], managerDepartments: ["social media"] },
+  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "ADMIN", "HR"], managerDepartments: ["social media"] },
   { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"], managerDepartments: ["social media"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
