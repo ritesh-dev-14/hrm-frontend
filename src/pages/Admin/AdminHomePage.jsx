@@ -1,556 +1,519 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
-  Users,
-  Briefcase,
+  FolderOpen,
+  Search,
+  Filter,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  Building2,
+  Calendar,
+  User,
+  Phone,
+  MapPin,
+  Globe,
+  ExternalLink,
+  ShieldAlert,
+  ShieldCheck,
+  Lock,
+  Mail,
+  Camera,
+  FileSpreadsheet,
   FileText,
-  CheckCircle2,
-  Clock3,
-  XCircle,
-  TrendingUp,
+  Clock,
+  Layers,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  BarChart3
+  X,
+  Sparkles,
+  TrendingUp,
+  Briefcase,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import API from "../../services/api";
+import { toast } from "react-toastify";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  show: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
-};
-
-const AdminPage = () => {
-  const navigate = useNavigate();
-  const [overview, setOverview] = useState(null);
-  const [employees, setEmployees] = useState([]);
-  const [monthlySheets, setMonthlySheets] = useState([]);
+import AdminProjectDetailModal from "../../components/admin/AdminProjectDetailModal";
+export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
-  const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
-  const INITIAL_EMP_COUNT = 8;
+  // Filter States
+  const [selectedDept, setSelectedDept] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const visibleEmployees = useMemo(() => {
-    if (isEmployeesExpanded) return employees;
-    return employees.slice(0, INITIAL_EMP_COUNT);
-  }, [employees, isEmployeesExpanded]);
+  // Selected Project for Detail View Modal
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const [overviewRes, employeesRes, sheetsRes, projectsRes] =
-          await Promise.all([
-            API.get("/api/hr/dashboard/admin-overview"),
-            API.get("/api/hr/dashboard/employees"),
-            API.get("/api/hr/dashboard/monthly-sheets"),
-            API.get("/api/hr/dashboard/projects"),
-          ]);
-
-        const overviewData = overviewRes.data || overviewRes;
-        const employeesData = employeesRes.data || employeesRes;
-        const sheetsData = sheetsRes.data || sheetsRes;
-        const projectsData = projectsRes.data || projectsRes;
-
-        if (overviewData.success) setOverview(overviewData.data);
-        if (employeesData.success) setEmployees(employeesData.data);
-        if (sheetsData.success) setMonthlySheets(sheetsData.data);
-        if (projectsData.success) setProjects(projectsData.data);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError("Failed to load dashboard data. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
+    fetchInitialData();
   }, []);
 
-  if (loading) {
-    return <ProfessionalLoader text="Loading. Please wait..." />;
-  }
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-red-100 shadow-2xl max-w-md w-full text-center">
-          <XCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-bold text-slate-800 mb-2">
-            Oops! Something went wrong
-          </h2>
-          <p className="text-slate-500 text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
+      const [projRes, deptRes] = await Promise.allSettled([
+        API.get("/api/projects"),
+        API.get("/api/departments"),
+      ]);
 
-  const counts = overview?.counts || {};
-  const assignmentSummary = overview?.assignmentSummary || {};
+      if (projRes.status === "fulfilled" && projRes.value?.data?.success) {
+        setProjects(projRes.value.data.data || []);
+      } else {
+        setError("Failed to load projects list.");
+      }
+
+      if (deptRes.status === "fulfilled" && deptRes.value?.data?.data) {
+        setDepartments(deptRes.value.data.data || []);
+      }
+    } catch (err) {
+      console.error("Error loading complete details data:", err);
+      setError("An unexpected error occurred while loading projects.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectProject = (proj) => {
+    setSelectedProjectId(proj.id);
+  };
+
+  // Filtered projects
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      // Department Filter
+      if (selectedDept !== "ALL") {
+        const deptName = p.department?.name || "";
+        if (selectedDept === "WEB_DEV") {
+          if (
+            !deptName.toLowerCase().includes("web") &&
+            !deptName.toLowerCase().includes("it")
+          )
+            return false;
+        } else if (selectedDept === "SEO") {
+          if (!deptName.toLowerCase().includes("seo")) return false;
+        } else if (selectedDept === "SMM") {
+          if (
+            !deptName.toLowerCase().includes("social") &&
+            !deptName.toLowerCase().includes("smm")
+          )
+            return false;
+        } else {
+          if (p.department?.id !== selectedDept && deptName !== selectedDept)
+            return false;
+        }
+      }
+
+      // Status Filter
+      if (statusFilter !== "ALL") {
+        if (
+          (p.status || "ONGOING").toUpperCase() !== statusFilter.toUpperCase()
+        )
+          return false;
+      }
+
+      // Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const nameMatch = p.projectName?.toLowerCase().includes(q);
+        const clientMatch = p.clientName?.toLowerCase().includes(q);
+        const deptMatch = p.department?.name?.toLowerCase().includes(q);
+        const managerMatch = p.assignments?.some((a) =>
+          a.manager?.name?.toLowerCase().includes(q),
+        );
+        if (!nameMatch && !clientMatch && !deptMatch && !managerMatch)
+          return false;
+      }
+
+      return true;
+    });
+  }, [projects, selectedDept, statusFilter, searchQuery]);
+
+  // Derived Statistics
+  const stats = useMemo(() => {
+    const total = projects.length;
+    const webDev = projects.filter(
+      (p) =>
+        p.department?.name?.toLowerCase().includes("web") ||
+        p.department?.name?.toLowerCase().includes("it"),
+    ).length;
+    const seo = projects.filter((p) =>
+      p.department?.name?.toLowerCase().includes("seo"),
+    ).length;
+    const smm = projects.filter(
+      (p) =>
+        p.department?.name?.toLowerCase().includes("social") ||
+        p.department?.name?.toLowerCase().includes("smm"),
+    ).length;
+    return { total, webDev, seo, smm };
+  }, [projects]);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    try {
+      return new Date(dateStr).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans relative overflow-hidden">
-      {/* Background ambient glows */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* HEADER SECTION */}
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl pointer-events-none" />
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="max-w-7xl mx-auto space-y-8 relative z-10"
-      >
-        {/* Header */}
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-        >
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              Welcome Admin!
+          <div className="space-y-2 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wider">
+              <ShieldCheck size={14} /> Admin Directory Access
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Complete Details Workspace
             </h1>
-            <p className="text-slate-500 text-sm mt-1 font-medium">
-              Real-time overview of your organization's performance.
+            <p className="text-sm text-slate-500 max-w-2xl">
+              Unified administrative portal for viewing and auditing all
+              projects, department credentials, content calendars, shoot
+              schedules, and performance metrics.
             </p>
           </div>
-          <div className="bg-indigo-50 text-indigo-700 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest border border-indigo-100 shadow-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-            Live Metrics
-          </div>
-        </motion.div>
 
-        {/* SECTION 1: CORE STATS */}
-        <motion.div
-          variants={containerVariants}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <Link to="/hr/team?role=MANAGER">
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4 }}
-              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-purple-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
-                  <Users size={24} />
-                </div>
-              </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
-                Total Managers
-              </p>
-              <h3 className="text-4xl font-black text-slate-900">
-                {counts.totalManagers || 0}
-              </h3>
-            </motion.div>
-          </Link>
-
-          <Link to="/hr/team?role=EMPLOYEE">
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4 }}
-              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
-                  <Users size={24} />
-                </div>
-              </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
-                Total Employees
-              </p>
-              <h3 className="text-4xl font-black text-slate-900">
-                {counts.totalEmployees || 0}
-              </h3>
-            </motion.div>
-          </Link>
-
-          <Link to="/projects">
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4 }}
-              className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all cursor-pointer group relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-3 bg-violet-50 rounded-2xl text-violet-600">
-                  <Briefcase size={24} />
-                </div>
-              </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
-                Active Projects
-              </p>
-              <h3 className="text-4xl font-black text-slate-900">
-                {counts.totalProjects || 0}
-              </h3>
-            </motion.div>
-          </Link>
-
-          <motion.div
-            variants={itemVariants}
-            whileHover={{ y: -4 }}
-            className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all group relative overflow-hidden"
+          <button
+            onClick={fetchInitialData}
+            disabled={loading}
+            className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium transition shadow-sm active:scale-95 disabled:opacity-50"
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
-                <FileText size={24} />
-              </div>
-            </div>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
-              Monthly Sheets
-            </p>
-            <h3 className="text-4xl font-black text-slate-900">
-              {counts.totalMonthlySheets || 0}
-            </h3>
-          </motion.div>
-        </motion.div>
-
-        {/* SECTION 1.5: REPORTS NAVIGATION BANNER */}
-        
-        <motion.div variants={itemVariants}>
-          <Link to="/reports/overview" className="block outline-none">
-            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-[1.5rem] p-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-center justify-between shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 group cursor-pointer">
-              
-              <div className="flex items-center gap-5 w-full sm:w-auto">
-                <div className="p-3.5 bg-slate-50 text-slate-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 shadow-sm border border-slate-100 group-hover:border-indigo-600">
-                  <BarChart3 size={24} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">
-                    Overall Analytics & Progress Reports
-                  </h3>
-                  <p className="text-sm font-medium text-slate-500 mt-1">
-                    Click here to view overall progress, performance metrics, and comprehensive reporting.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="mt-5 sm:mt-0 w-full sm:w-auto flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-600 bg-slate-50 border border-slate-200 px-6 py-3 rounded-xl group-hover:bg-indigo-50 group-hover:text-indigo-700 group-hover:border-indigo-200 transition-all">
-                View Reports <ChevronRight size={16} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-              
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* SECTION 2: CATALOG & CALENDAR */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Projects Catalog */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col h-[500px]"
-          >
-            <div className="p-6 md:p-8 border-b border-slate-100/50 pb-6">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Briefcase size={20} className="text-indigo-500" /> Project
-                Catalog
-              </h2>
-            </div>
-            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-              <div className="space-y-6">
-                {(() => {
-                  const recurringProjects = projects.filter((proj) =>
-                    proj.department?.name
-                      ?.toLowerCase()
-                      .includes("social media"),
-                  );
-                  const otherProjects = projects.filter(
-                    (proj) =>
-                      !proj.department?.name
-                        ?.toLowerCase()
-                        .includes("social media"),
-                  );
-
-                  return (
-                    <>
-                      {recurringProjects.length > 0 && (
-                        <div className="space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-500 pl-2">
-                            Recurring Projects
-                          </h3>
-                          {recurringProjects.map((proj, i) => (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: i * 0.05 }}
-                              key={proj.id}
-                              onClick={() => navigate(`/project/${proj.id}`)}
-                              className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
-                            >
-                              <div>
-                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
-                                  {proj.projectName}
-                                </h4>
-                                <p className="text-xs text-slate-500 mt-1">
-                                  {proj.department?.name || "General"} •{" "}
-                                  {new Date(
-                                    proj.startDate,
-                                  ).toLocaleDateString()}{" "}
-                                  to{" "}
-                                  {new Date(proj.endDate).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <ChevronRight
-                                size={16}
-                                className="text-slate-300 group-hover:text-indigo-500 transition-colors"
-                              />
-                            </motion.div>
-                          ))}
-                        </div>
-                      )}
-
-                      {otherProjects.length > 0 && (
-                        <div className="space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-2">
-                            Other Projects
-                          </h3>
-                          {otherProjects.map((proj, i) => (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: i * 0.05 }}
-                              key={proj.id}
-                              onClick={() => navigate(`/project/${proj.id}`)}
-                              className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all group flex items-center justify-between"
-                            >
-                              <div>
-                                <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
-                                  {proj.projectName}
-                                </h4>
-                                <p className="text-xs text-slate-500 mt-1">
-                                  {proj.department?.name || "General"} •{" "}
-                                  {new Date(
-                                    proj.startDate,
-                                  ).toLocaleDateString()}{" "}
-                                  to{" "}
-                                  {new Date(proj.endDate).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <ChevronRight
-                                size={16}
-                                className="text-slate-300 group-hover:text-indigo-500 transition-colors"
-                              />
-                            </motion.div>
-                          ))}
-                        </div>
-                      )}
-
-                      {projects.length === 0 && (
-                        <div className="text-center py-10 text-slate-400 font-medium">
-                          No projects listed.
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Monthly Sheets */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/60 overflow-hidden flex flex-col h-[500px]"
-          >
-            <div className="p-6 md:p-8 border-b border-slate-100/50 pb-6">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <FileText size={20} className="text-violet-500" /> Content
-                Calendar
-              </h2>
-            </div>
-            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-              <div className="space-y-4">
-                {monthlySheets.map((sheet, i) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    key={sheet.id}
-                    className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">
-                          {sheet.project?.projectName}
-                        </h4>
-                        <p className="text-xs text-slate-400 mt-1">
-                          Period:{" "}
-                          <span className="font-semibold text-slate-600">
-                            {sheet.month}/{sheet.year}
-                          </span>
-                        </p>
-                      </div>
-                      {sheet.moodBoardLink && (
-                        <a
-                          href={sheet.moodBoardLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="bg-violet-50 text-violet-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-violet-100 transition-colors"
-                        >
-                          Moodboard
-                        </a>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-slate-400 mb-1">
-                          Reels TGT
-                        </span>
-                        <span className="text-sm font-black text-slate-700">
-                          {sheet.totalReels}
-                        </span>
-                      </div>
-                      <div className="bg-emerald-50 p-2 rounded-xl border border-emerald-100/50 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-1">
-                          Reels Live
-                        </span>
-                        <span className="text-sm font-black text-emerald-700">
-                          {sheet.totalReelsUploaded}
-                        </span>
-                      </div>
-                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-slate-400 mb-1">
-                          Posts TGT
-                        </span>
-                        <span className="text-sm font-black text-slate-700">
-                          {sheet.totalPosts}
-                        </span>
-                      </div>
-                      <div className="bg-emerald-50 p-2 rounded-xl border border-emerald-100/50 text-center">
-                        <span className="block text-[9px] uppercase font-bold text-emerald-500 mb-1">
-                          Posts Live
-                        </span>
-                        <span className="text-sm font-black text-emerald-700">
-                          {sheet.totalPostsUploaded}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-                {monthlySheets.length === 0 && (
-                  <div className="text-center py-10 text-slate-400 font-medium">
-                    No monthly data metrics logged.
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
+            <RefreshCw
+              size={16}
+              className={loading ? "animate-spin text-indigo-600" : ""}
+            />
+            Refresh Directory
+          </button>
         </div>
 
-        {/* SECTION 3: Employee Roster */}
-        <motion.div
-          variants={itemVariants}
-          className="bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100/60"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <Users className="text-indigo-500" size={20} />
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-              Team Roster & Performance
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {visibleEmployees.map((emp, i) => (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                key={emp.id}
-                className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-slate-800 text-sm truncate pr-2">
-                      {emp.name}
-                    </h3>
-                    <span className="bg-slate-100 text-slate-500 text-[9px] px-2 py-1 rounded-md font-bold tracking-wider uppercase">
-                      {emp.employeeId}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 truncate">{emp.email}</p>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                      Avg Progress
-                    </span>
-                    <span className="text-sm font-black text-indigo-600">
-                      {emp.assignmentStats?.averageProgress || 0}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      whileInView={{
-                        width: `${emp.assignmentStats?.averageProgress || 0}%`,
-                      }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                      viewport={{ once: true }}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-            {employees.length === 0 && (
-              <div className="col-span-full text-center py-8 text-slate-400 font-medium">
-                No employee data found.
-              </div>
-            )}
-          </div>
-
-          {/* EXPAND / COLLAPSE BUTTON */}
-          {employees?.length > INITIAL_EMP_COUNT && (
-            <div className="mt-6 flex justify-center items-center">
-              <button
-                onClick={() => setIsEmployeesExpanded((prev) => !prev)}
-                className="px-6 py-3 rounded-2xl bg-white border border-indigo-100 shadow-sm hover:shadow-md text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/60 text-xs font-extrabold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 group cursor-pointer"
-              >
-                {isEmployeesExpanded ? (
-                  <>
-                    <span>Show Less</span>
-                    <ChevronUp
-                      size={16}
-                      className="group-hover:-translate-y-0.5 transition-transform"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <span>
-                      Expand Team Roster ({employees.length - INITIAL_EMP_COUNT}{" "}
-                      More)
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className="group-hover:translate-y-0.5 transition-transform"
-                    />
-                  </>
-                )}
-              </button>
+        {/* METRICS & QUICK SUMMARY */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.total}
             </div>
-          )}
-        </motion.div>
-      </motion.div>
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Total Projects
+              </p>
+              <p className="text-lg font-bold text-slate-800">
+                All Client Projects
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.webDev}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Web Development
+              </p>
+              <p className="text-lg font-bold text-slate-800">
+                Portals & Sites
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.seo}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                SEO Department
+              </p>
+              <p className="text-lg font-bold text-slate-800">Search Growth</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-violet-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.smm}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Social Media
+              </p>
+              <p className="text-lg font-bold text-slate-800">
+                Content & Shoots
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* FILTERS & SEARCH BAR */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+          {/* Department Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-2">
+              <Filter size={14} /> Department:
+            </span>
+            {[
+              { id: "ALL", label: "All Departments" },
+              { id: "WEB_DEV", label: "Web Development" },
+              { id: "SEO", label: "SEO Department" },
+              { id: "SMM", label: "Social Media" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedDept(tab.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
+                  selectedDept === tab.id
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+
+            {/* Dynamic extra departments if present */}
+            {departments.map((d) => {
+              const dName = d.name || "";
+              if (
+                dName.toLowerCase().includes("web") ||
+                dName.toLowerCase().includes("seo") ||
+                dName.toLowerCase().includes("social")
+              )
+                return null;
+
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedDept(d.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
+                    selectedDept === d.id
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                  }`}
+                >
+                  {dName}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search & Status Controls */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-slate-100">
+            <div className="relative flex-1 w-full">
+              <Search
+                size={16}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                placeholder="Search projects by name, client, manager, or details..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full sm:w-48 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="ONGOING">Ongoing</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="PAUSED">Paused</option>
+            </select>
+          </div>
+        </div>
+
+        {/* PROJECTS GRID LIST */}
+        {loading ? (
+          <ProfessionalLoader text="Loading. Please wait..." />
+        ) : error ? (
+          <div className="bg-rose-50 rounded-3xl p-8 border border-rose-200 text-center space-y-3 text-rose-800">
+            <AlertCircle className="w-10 h-10 mx-auto text-rose-600" />
+            <p className="font-semibold">{error}</p>
+            <button
+              onClick={fetchInitialData}
+              className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="bg-white rounded-3xl p-16 border border-slate-200/80 text-center space-y-3">
+            <FolderOpen className="w-12 h-12 text-slate-300 mx-auto" />
+            <p className="text-slate-800 font-bold text-lg">
+              No matching projects found
+            </p>
+            <p className="text-slate-500 text-sm max-w-md mx-auto">
+              Try adjusting your department filter, status filter, or search
+              query.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredProjects.map((p) => {
+              const deptName = p.department?.name || "General";
+              const isWeb =
+                deptName.toLowerCase().includes("web") ||
+                deptName.toLowerCase().includes("it");
+              const isSeo = deptName.toLowerCase().includes("seo");
+              const isSmm =
+                deptName.toLowerCase().includes("social") ||
+                deptName.toLowerCase().includes("smm");
+
+              return (
+                <div
+                  key={p.id}
+                  className="bg-white rounded-2xl border border-slate-200/80 hover:border-indigo-300 shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between group relative overflow-hidden"
+                >
+                  <div className="space-y-4">
+                    {/* Card Top Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {p.logo ? (
+                          <img
+                            src={p.logo}
+                            alt={p.projectName}
+                            className="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm"
+                          />
+                        ) : (
+                          <div
+                            className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ${
+                              isWeb
+                                ? "bg-blue-600"
+                                : isSeo
+                                  ? "bg-emerald-600"
+                                  : isSmm
+                                    ? "bg-violet-600"
+                                    : "bg-slate-800"
+                            }`}
+                          >
+                            {p.projectName?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition line-clamp-1">
+                            {p.projectName}
+                          </h3>
+                          <span className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200/60 mt-1">
+                            {deptName}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                          p.status === "COMPLETED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : p.status === "PAUSED"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {p.status || "ONGOING"}
+                      </span>
+                    </div>
+
+                    {/* Quick Metadata Snippet */}
+                    <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
+                      {p.clientName && (
+                        <div className="flex items-center gap-2">
+                          <User size={13} className="text-slate-400 shrink-0" />
+                          <span className="font-medium text-slate-700 truncate">
+                            Client: {p.clientName}
+                          </span>
+                        </div>
+                      )}
+
+                      {p.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin
+                            size={13}
+                            className="text-slate-400 shrink-0"
+                          />
+                          <span className="truncate">{p.location}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <Calendar size={13} /> {formatDate(p.startDate)}
+                        </span>
+                        {p.renewalDate && (
+                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60 font-medium">
+                            Renew: {formatDate(p.renewalDate)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Managers assigned */}
+                      {p.assignments && p.assignments.length > 0 && (
+                        <div className="pt-2 flex flex-wrap gap-1 items-center">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                            Managers:
+                          </span>
+                          {p.assignments.map((asg) => (
+                            <span
+                              key={asg.id || asg.manager?.id}
+                              className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-medium"
+                            >
+                              {asg.manager?.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Action Button */}
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-indigo-600 flex items-center gap-1 group-hover:underline">
+                      View Each & Everything <ChevronRight size={14} />
+                    </span>
+                    <button
+                      onClick={() => handleSelectProject(p)}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold transition shadow-sm"
+                    >
+                      Complete Details
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {selectedProjectId && (
+        <AdminProjectDetailModal
+          projectId={selectedProjectId}
+          onClose={() => setSelectedProjectId(null)}
+        />
+      )}
     </div>
   );
-};
-
-export default AdminPage;
+}
