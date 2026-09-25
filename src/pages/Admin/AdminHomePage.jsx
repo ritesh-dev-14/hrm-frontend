@@ -44,6 +44,12 @@ import {
   computeClientSideFallback,
   HEALTH_CONFIG,
 } from "../../utils/clientHealthScore";
+import {
+  TIER_CONFIG,
+  TIER_ORDER,
+  getTierConfig,
+} from "../../utils/clientTier";
+
 export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -59,6 +65,7 @@ export default function AdminHomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [healthFilter, setHealthFilter] = useState("ALL"); // ALL | HEALTHY | ATTENTION | AT_RISK
+  const [tierFilter, setTierFilter] = useState("ALL"); // ALL | STRATEGIC | PREMIUM | GROWTH | STANDARD
 
   // Selected Project for Detail View Modal
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -164,6 +171,11 @@ export default function AdminHomePage() {
         if (h.status !== healthFilter) return false;
       }
 
+      // Tier Filter
+      if (tierFilter !== "ALL") {
+        if ((p.clientTier || "STANDARD") !== tierFilter) return false;
+      }
+
       // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -180,7 +192,7 @@ export default function AdminHomePage() {
       return true;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, selectedDept, statusFilter, healthFilter, searchQuery, healthMap]);
+  }, [projects, selectedDept, statusFilter, healthFilter, tierFilter, searchQuery, healthMap]);
 
   // Derived Statistics
   const stats = useMemo(() => {
@@ -501,6 +513,35 @@ export default function AdminHomePage() {
               <option value="PAUSED">Paused</option>
             </select>
           </div>
+
+          {/* Tier Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-slate-100 scrollbar-none">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-2 shrink-0">
+              <Layers size={14} /> Tier:
+            </span>
+            {[{ id: "ALL", shortLabel: "All Tiers", emoji: "" }, ...["STRATEGIC","PREMIUM","GROWTH","STANDARD"].map((t) => ({ id: t, ...TIER_CONFIG[t] }))].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setTierFilter(tab.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1 ${
+                  tierFilter === tab.id
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                }`}
+              >
+                {tab.emoji && <span>{tab.emoji}</span>}
+                {tab.shortLabel || "All Tiers"}
+              </button>
+            ))}
+            {tierFilter !== "ALL" && (
+              <button
+                onClick={() => setTierFilter("ALL")}
+                className="ml-auto text-[11px] text-slate-400 hover:text-rose-500 flex items-center gap-1 transition shrink-0"
+              >
+                <X size={11} /> Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* PROJECTS GRID LIST */}
@@ -543,6 +584,9 @@ export default function AdminHomePage() {
               // ── Health score for this card ─────────────────────────
               const health = getHealth(p);
               const hCfg = getHealthConfig(health.status);
+
+              // ── Client Tier for this card ──────────────────────────
+              const tierCfg = getTierConfig(p.clientTier);
 
               return (
                 <div
@@ -595,7 +639,7 @@ export default function AdminHomePage() {
                         </div>
                       </div>
 
-                      {/* Status + Health badges stacked */}
+                      {/* Status + Health + Tier badges stacked */}
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
@@ -616,6 +660,20 @@ export default function AdminHomePage() {
                         >
                           {hCfg.emoji} {hCfg.label}
                         </span>
+
+                        {/* ── TIER BADGE ── */}
+                        {tierCfg ? (
+                          <span
+                            title={tierCfg.description}
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ring-1 ${tierCfg.badge}`}
+                          >
+                            {tierCfg.emoji} {tierCfg.label}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border text-slate-400 border-slate-200 bg-slate-50">
+                            📋 Standard
+                          </span>
+                        )}
                       </div>
                     </div>
 

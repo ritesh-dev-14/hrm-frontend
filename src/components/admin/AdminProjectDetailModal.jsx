@@ -8,6 +8,8 @@ import {
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import { getHealthConfig, computeClientSideFallback } from "../../utils/clientHealthScore";
+import { TIER_CONFIG, PRIORITY_CONFIG, getTierConfig, getPriorityConfig } from "../../utils/clientTier";
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -108,8 +110,102 @@ function CredField({ label, value, fieldKey, showPasswords, onToggle, onCopy }) 
   );
 }
 
+
+// ── Client Tier Inline Editor ──────────────────────────────────────────────────
+function ClientTierEditor({ project, onTierUpdate }) {
+  const [saving, setSaving] = useState(false);
+  const [tier, setTierState] = useState(project?.clientTier || "");
+  const [priority, setPriorityState] = useState(project?.clientPriority || "");
+
+  const save = async (newTier, newPriority) => {
+    setSaving(true);
+    try {
+      const res = await API.patch(`/api/projects/${project.id}/tier`, {
+        clientTier: newTier || null,
+        clientPriority: newPriority || null,
+      });
+      if (res?.data?.success) {
+        toast.success("Client tier updated!");
+        onTierUpdate?.(res.data.data);
+      }
+    } catch (err) {
+      toast.error("Failed to update tier.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTierChange = (val) => {
+    setTierState(val);
+    save(val, priority);
+  };
+
+  const handlePriorityChange = (val) => {
+    setPriorityState(val);
+    save(tier, val);
+  };
+
+  const tierCfg = getTierConfig(tier);
+  const priCfg = getPriorityConfig(priority);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+          <span>⭐</span> Client Classification
+        </h4>
+        {saving && <Loader2 size={13} className="animate-spin text-indigo-500" />}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {/* Tier selector */}
+        <div className="space-y-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Client Tier</span>
+          <select
+            value={tier}
+            onChange={(e) => handleTierChange(e.target.value)}
+            disabled={saving}
+            className={`w-full px-3 py-2 rounded-xl border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-400/30 ${
+              tierCfg
+                ? `${tierCfg.badge} border-current`
+                : "border-slate-200 text-slate-500 bg-slate-50"
+            }`}
+          >
+            <option value="">— Not Set —</option>
+            {Object.entries(TIER_CONFIG).map(([key, cfg]) => (
+              <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
+            ))}
+          </select>
+          {tierCfg && (
+            <p className="text-[10px] text-slate-400 leading-snug">{tierCfg.description}</p>
+          )}
+        </div>
+
+        {/* Priority selector */}
+        <div className="space-y-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Priority</span>
+          <select
+            value={priority}
+            onChange={(e) => handlePriorityChange(e.target.value)}
+            disabled={saving}
+            className={`w-full px-3 py-2 rounded-xl border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-400/30 ${
+              priCfg
+                ? `${priCfg.badge} border-current`
+                : "border-slate-200 text-slate-500 bg-slate-50"
+            }`}
+          >
+            <option value="">— Not Set —</option>
+            {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
+              <option key={key} value={key}>{cfg.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TAB: Overview ─────────────────────────────────────────────────────────────
-function OverviewTab({ project, monthlySheets }) {
+function OverviewTab({ project, monthlySheets, onTierUpdate }) {
   const renewal = daysUntil(project?.renewalDate);
   const renewalChip =
     renewal === null ? null :
@@ -127,6 +223,9 @@ function OverviewTab({ project, monthlySheets }) {
           {renewalChip.label} — Renewal: {fmt(project?.renewalDate)} &nbsp;·&nbsp; Frequency: {project?.frequency || "Monthly"}
         </div>
       )}
+
+      {/* Client Tier & Priority Editor */}
+      <ClientTierEditor project={project} onTierUpdate={onTierUpdate} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
@@ -915,7 +1014,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
               </div>
             ) : (
               <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                {activeTab === "overview" && <OverviewTab project={project} monthlySheets={monthlySheets} />}
+                {activeTab === "overview" && <OverviewTab project={project} monthlySheets={monthlySheets} onTierUpdate={(updated) => setProject(updated)} />}
                 {activeTab === "social" && <SocialMediaTab monthlySheets={monthlySheets} shootWorkspaces={shootWorkspaces} />}
                 {activeTab === "ads" && <MetaAdsTab metaAdsTasks={metaAdsTasks} />}
                 {activeTab === "seo" && <SEOTab project={project} seoReports={seoReports} seoTasks={seoTasks} />}

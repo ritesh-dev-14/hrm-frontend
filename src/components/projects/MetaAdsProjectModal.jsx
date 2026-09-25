@@ -4,7 +4,7 @@ import API from "../../services/api";
 
 const OBJECTIVES = ["LEAD", "AWARENESS", "BOTH"];
 const FUND_SOURCES = ["CLIENT", "HARSH"];
-const EMPTY_FORM = { clientName: "", monthlyBudget: "", objective: "", area: "", fundsAddedBy: "", isRunning: false, assignedToId: "", startDate: "", endDate: "" };
+const EMPTY_FORM = { clientName: "", monthlyBudget: "", objective: "", area: "", fundsAddedBy: "", isRunning: false, assignedToId: "", startDate: "", endDate: "", clientTier: "", clientPriority: "" };
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 disabled:bg-slate-100";
 const labelClass = "mb-1.5 block text-[11px] font-black uppercase tracking-widest text-slate-500";
 
@@ -39,7 +39,9 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
         isRunning: projectToEdit.isRunning === true || projectToEdit.isRunning === "true",
         assignedToId,
         startDate,
-        endDate
+        endDate,
+        clientTier: projectToEdit.clientTier || "",
+        clientPriority: projectToEdit.clientPriority || "",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -90,6 +92,8 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
         departmentId,
         startDate: `${form.startDate}T00:00:00.000Z`,
         endDate: `${form.endDate}T00:00:00.000Z`,
+        clientTier: form.clientTier || null,
+        clientPriority: form.clientPriority || null,
       };
       
       let response;
@@ -135,6 +139,29 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
         <label><span className={labelClass}>Running</span><select value={form.isRunning ? "YES" : "NO"} onChange={(event) => updateField("isRunning", event.target.value === "YES")} className={inputClass} disabled={loading || loadingOptions}><option value="YES">Yes</option><option value="NO">No</option></select></label>
         <label><span className={labelClass}>Assign Manager</span><select required value={form.assignedToId} onChange={(event) => updateField("assignedToId", event.target.value)} className={inputClass} disabled={loading || loadingOptions}><option value="">Select manager</option>{managers.map((manager) => { const managerId = manager.id || manager._id || manager.employeeId; return <option key={managerId} value={managerId}>{manager.name || manager.fullName || manager.email || manager.employeeId}</option>; })}</select></label>
         {error && <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">{error}</p>}
+
+        {/* CLIENT TIER & PRIORITY */}
+        <label>
+          <span className={labelClass}>⭐ Client Tier</span>
+          <select value={form.clientTier} onChange={(event) => updateField("clientTier", event.target.value)} className={inputClass} disabled={loading || loadingOptions}>
+            <option value="">— Not Set —</option>
+            <option value="STRATEGIC">⭐ Strategic</option>
+            <option value="PREMIUM">🥇 Premium</option>
+            <option value="GROWTH">🚀 Growth</option>
+            <option value="STANDARD">📋 Standard</option>
+          </select>
+        </label>
+        <label>
+          <span className={labelClass}>Priority</span>
+          <select value={form.clientPriority} onChange={(event) => updateField("clientPriority", event.target.value)} className={inputClass} disabled={loading || loadingOptions}>
+            <option value="">— Not Set —</option>
+            <option value="P1">P1 — Critical</option>
+            <option value="P2">P2 — High</option>
+            <option value="P3">P3 — Medium</option>
+            <option value="P4">P4 — Low</option>
+          </select>
+        </label>
+
         <button type="submit" disabled={loading || loadingOptions} className="inline-flex items-center justify-center gap-2 rounded-xl bg-pink-600 px-4 py-3 text-sm font-black text-white hover:bg-pink-700 disabled:opacity-60 sm:col-span-2">{loading && <Loader2 size={16} className="animate-spin" />}{projectToEdit ? 'Update' : 'Create and Assign'} Project</button>
       </form>}
     </div>
