@@ -31,21 +31,34 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  Heart,
+  Activity,
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
 import AdminProjectDetailModal from "../../components/admin/AdminProjectDetailModal";
+import {
+  buildHealthMap,
+  getHealthConfig,
+  computeClientSideFallback,
+  HEALTH_CONFIG,
+} from "../../utils/clientHealthScore";
 export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Health score state
+  const [healthMap, setHealthMap] = useState({});
+  const [healthLoading, setHealthLoading] = useState(false);
+
   // Filter States
   const [selectedDept, setSelectedDept] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [healthFilter, setHealthFilter] = useState("ALL"); // ALL | HEALTHY | ATTENTION | AT_RISK
 
   // Selected Project for Detail View Modal
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -79,6 +92,32 @@ export default function AdminHomePage() {
     } finally {
       setLoading(false);
     }
+
+    // Fetch health scores separately so main list loads fast
+    fetchHealthScores();
+  };
+
+  const fetchHealthScores = async () => {
+    try {
+      setHealthLoading(true);
+      const res = await API.get("/api/health-scores");
+      if (res?.data?.success) {
+        setHealthMap(buildHealthMap(res.data.data || []));
+      }
+    } catch (err) {
+      // Health scores are non-critical — fail silently
+      console.warn("[HealthScore] Could not fetch health scores:", err?.message);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
+  /** Get health entry for a project — falls back to client-side estimate */
+  const getHealth = (project) => {
+    const fromApi = healthMap[project.id];
+    if (fromApi) return fromApi;
+    // Fallback while API is loading or if project wasn't scored
+    return computeClientSideFallback(project);
   };
 
   const handleSelectProject = (proj) => {
@@ -119,6 +158,12 @@ export default function AdminHomePage() {
           return false;
       }
 
+      // Health Filter
+      if (healthFilter !== "ALL") {
+        const h = getHealth(p);
+        if (h.status !== healthFilter) return false;
+      }
+
       // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -134,7 +179,8 @@ export default function AdminHomePage() {
 
       return true;
     });
-  }, [projects, selectedDept, statusFilter, searchQuery]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects, selectedDept, statusFilter, healthFilter, searchQuery, healthMap]);
 
   // Derived Statistics
   const stats = useMemo(() => {
@@ -152,8 +198,15 @@ export default function AdminHomePage() {
         p.department?.name?.toLowerCase().includes("social") ||
         p.department?.name?.toLowerCase().includes("smm"),
     ).length;
-    return { total, webDev, seo, smm };
-  }, [projects]);
+
+    // Health aggregates
+    const healthy = projects.filter((p) => getHealth(p).status === "HEALTHY").length;
+    const attention = projects.filter((p) => getHealth(p).status === "ATTENTION").length;
+    const atRisk = projects.filter((p) => getHealth(p).status === "AT_RISK").length;
+
+    return { total, webDev, seo, smm, healthy, attention, atRisk };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects, healthMap]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "N/A";
@@ -257,6 +310,108 @@ export default function AdminHomePage() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* ── CLIENT HEALTH SCORE SUMMARY STRIP ───────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity size={15} className="text-indigo-500" />
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Client Health Score
+              </span>
+              {healthLoading && (
+                <Loader2 size={13} className="animate-spin text-slate-400" />
+              )}
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              Auto-computed from task activity, approvals &amp; communications
+            </span>
+          </div>
+          <div className="grid grid-cols-3 divide-x divide-slate-100">
+            {/* Healthy */}
+            <button
+              id="health-filter-healthy"
+              onClick={() => setHealthFilter(healthFilter === "HEALTHY" ? "ALL" : "HEALTHY")}
+              className={`flex items-center gap-3 p-4 transition hover:bg-emerald-50/60 group ${
+                healthFilter === "HEALTHY" ? "bg-emerald-50" : ""
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-xl shrink-0">
+                🟢
+              </div>
+              <div className="text-left">
+                <p className="text-2xl font-black text-emerald-700">
+                  {stats.healthy ?? "—"}
+                </p>
+                <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+                  Healthy
+                </p>
+                <p className="text-[10px] text-slate-400 hidden sm:block">On track</p>
+              </div>
+            </button>
+
+            {/* Attention */}
+            <button
+              id="health-filter-attention"
+              onClick={() => setHealthFilter(healthFilter === "ATTENTION" ? "ALL" : "ATTENTION")}
+              className={`flex items-center gap-3 p-4 transition hover:bg-amber-50/60 group ${
+                healthFilter === "ATTENTION" ? "bg-amber-50" : ""
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0">
+                🟡
+              </div>
+              <div className="text-left">
+                <p className="text-2xl font-black text-amber-700">
+                  {stats.attention ?? "—"}
+                </p>
+                <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">
+                  Attention
+                </p>
+                <p className="text-[10px] text-slate-400 hidden sm:block">Needs review</p>
+              </div>
+            </button>
+
+            {/* At Risk */}
+            <button
+              id="health-filter-at-risk"
+              onClick={() => setHealthFilter(healthFilter === "AT_RISK" ? "ALL" : "AT_RISK")}
+              className={`flex items-center gap-3 p-4 transition hover:bg-rose-50/60 group ${
+                healthFilter === "AT_RISK" ? "bg-rose-50" : ""
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0">
+                🔴
+              </div>
+              <div className="text-left">
+                <p className="text-2xl font-black text-rose-700">
+                  {stats.atRisk ?? "—"}
+                </p>
+                <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+                  At Risk
+                </p>
+                <p className="text-[10px] text-slate-400 hidden sm:block">Urgent attention</p>
+              </div>
+            </button>
+          </div>
+          {healthFilter !== "ALL" && (
+            <div className="px-5 py-2 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+              <span className="text-xs text-slate-500">
+                Filtered by:{" "}
+                <span className="font-bold text-slate-700">
+                  {HEALTH_CONFIG[healthFilter]?.emoji}{" "}
+                  {HEALTH_CONFIG[healthFilter]?.label}
+                </span>
+              </span>
+              <button
+                onClick={() => setHealthFilter("ALL")}
+                className="ml-auto text-[11px] text-slate-400 hover:text-rose-500 flex items-center gap-1 transition"
+              >
+                <X size={11} /> Clear filter
+              </button>
+            </div>
+          )}
         </div>
 
         {/* FILTERS & SEARCH BAR */}
@@ -385,11 +540,26 @@ export default function AdminHomePage() {
                 deptName.toLowerCase().includes("social") ||
                 deptName.toLowerCase().includes("smm");
 
+              // ── Health score for this card ─────────────────────────
+              const health = getHealth(p);
+              const hCfg = getHealthConfig(health.status);
+
               return (
                 <div
                   key={p.id}
-                  className="bg-white rounded-2xl border border-slate-200/80 hover:border-indigo-300 shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between group relative overflow-hidden"
+                  className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between group relative overflow-hidden ${
+                    health.status === "AT_RISK"
+                      ? "border-rose-200/70 hover:border-rose-400"
+                      : health.status === "ATTENTION"
+                      ? "border-amber-200/70 hover:border-amber-400"
+                      : "border-slate-200/80 hover:border-indigo-300"
+                  }`}
                 >
+                  {/* Health colour accent bar at top of card */}
+                  <div
+                    className={`absolute top-0 left-0 right-0 h-0.5 ${hCfg.bar}`}
+                  />
+
                   <div className="space-y-4">
                     {/* Card Top Header */}
                     <div className="flex items-start justify-between gap-3">
@@ -425,17 +595,28 @@ export default function AdminHomePage() {
                         </div>
                       </div>
 
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                          p.status === "COMPLETED"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : p.status === "PAUSED"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {p.status || "ONGOING"}
-                      </span>
+                      {/* Status + Health badges stacked */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                            p.status === "COMPLETED"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : p.status === "PAUSED"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {p.status || "ONGOING"}
+                        </span>
+
+                        {/* ── HEALTH BADGE ── */}
+                        <span
+                          title={hCfg.description}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ring-1 ${hCfg.badge}`}
+                        >
+                          {hCfg.emoji} {hCfg.label}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Quick Metadata Snippet */}
@@ -486,6 +667,45 @@ export default function AdminHomePage() {
                           ))}
                         </div>
                       )}
+
+                      {/* ── HEALTH SCORE BAR ── */}
+                      <div className="pt-2 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${hCfg.textColor}`}>
+                            Health Score
+                          </span>
+                          <span className={`text-[11px] font-black ${hCfg.textColor}`}>
+                            {health.score ?? "—"}/100
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ease-out ${hCfg.bar}`}
+                            style={{ width: `${health.score ?? 0}%` }}
+                          />
+                        </div>
+                        {/* Breakdown chips */}
+                        {health.breakdown && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {health.breakdown.overdueTaskItems > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-semibold border border-rose-100">
+                                {health.breakdown.overdueTaskItems} overdue
+                              </span>
+                            )}
+                            {health.breakdown.pendingOldApprovals > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 text-[10px] font-semibold border border-amber-100">
+                                {health.breakdown.pendingOldApprovals} approvals pending
+                              </span>
+                            )}
+                            {health.breakdown.daysSinceLastComm !== null &&
+                              health.breakdown.daysSinceLastComm > 7 && (
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200">
+                                {health.breakdown.daysSinceLastComm}d no comm
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 

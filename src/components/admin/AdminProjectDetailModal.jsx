@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
+import { getHealthConfig, computeClientSideFallback } from "../../utils/clientHealthScore";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -708,6 +709,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
   const [seoReports, setSeoReports] = useState([]);
   const [seoTasks, setSeoTasks] = useState([]);
   const [metaAdsTasks, setMetaAdsTasks] = useState([]);
+  const [healthScore, setHealthScore] = useState(null);
 
   const fetchAll = useCallback(async () => {
     if (!projectId) return;
@@ -719,12 +721,13 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
       const proj = projRes.data.data;
       setProject(proj);
 
-      const [sheetsRes, seoRepRes, seoTasksRes, shootRes, metaAdsRes] = await Promise.allSettled([
+      const [sheetsRes, seoRepRes, seoTasksRes, shootRes, metaAdsRes, healthRes] = await Promise.allSettled([
         API.get(`/api/projects/${proj.id}/monthly-sheets`),
         API.get(`/api/seo-reports?projectId=${proj.id}`),
         API.get(`/api/seo-tasks?projectId=${proj.id}`),
         API.get("/api/shoot-workspaces"),
         API.get("/api/meta-ads-tasks"),
+        API.get(`/api/health-scores/${proj.id}`),
       ]);
 
       if (sheetsRes.status === "fulfilled" && sheetsRes.value?.data?.success)
@@ -756,6 +759,12 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
             t.projectId === proj.id
         );
         setMetaAdsTasks(filtered);
+      }
+
+      if (healthRes.status === "fulfilled" && healthRes.value?.data?.success) {
+        setHealthScore(healthRes.value.data.data);
+      } else {
+        setHealthScore(computeClientSideFallback(proj));
       }
     } catch (err) {
       console.error("AdminProjectDetailModal error:", err);
@@ -840,6 +849,11 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
                     {renewalBadge && (
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white ${renewalBadge.cls}`}>
                         {renewalBadge.label}
+                      </span>
+                    )}
+                    {healthScore && (
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white border border-white/30 backdrop-blur-sm shadow-sm`}>
+                        {getHealthConfig(healthScore.status).emoji} {getHealthConfig(healthScore.status).label} ({healthScore.score}/100)
                       </span>
                     )}
                   </div>
