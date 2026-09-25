@@ -49,6 +49,7 @@ import {
   TIER_ORDER,
   getTierConfig,
 } from "../../utils/clientTier";
+import AdminControlTower from "../../components/admin/AdminControlTower";
 
 export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
@@ -59,6 +60,10 @@ export default function AdminHomePage() {
   // Health score state
   const [healthMap, setHealthMap] = useState({});
   const [healthLoading, setHealthLoading] = useState(false);
+
+  // Control Tower state
+  const [controlTower, setControlTower] = useState(null);
+  const [controlTowerLoading, setControlTowerLoading] = useState(false);
 
   // Filter States
   const [selectedDept, setSelectedDept] = useState("ALL");
@@ -102,6 +107,21 @@ export default function AdminHomePage() {
 
     // Fetch health scores separately so main list loads fast
     fetchHealthScores();
+    fetchControlTowerStats();
+  };
+
+  const fetchControlTowerStats = async () => {
+    try {
+      setControlTowerLoading(true);
+      const res = await API.get("/api/admin-dashboard/control-tower");
+      if (res?.data?.success) {
+        setControlTower(res.data.data);
+      }
+    } catch (err) {
+      console.warn("[ControlTower] Could not fetch stats:", err?.message);
+    } finally {
+      setControlTowerLoading(false);
+    }
   };
 
   const fetchHealthScores = async () => {
@@ -266,6 +286,9 @@ export default function AdminHomePage() {
             Refresh Directory
           </button>
         </div>
+
+        {/* CEO CONTROL TOWER */}
+        <AdminControlTower data={controlTower} loading={controlTowerLoading} />
 
         {/* METRICS & QUICK SUMMARY */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
