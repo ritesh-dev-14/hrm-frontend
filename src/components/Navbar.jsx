@@ -64,6 +64,7 @@ const NAV_CONFIG = [
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
   { id: "tasks-cor", label: "My Tasks", icon: BriefcaseBusiness, path: "/tasks", roles: ["COORDINATOR", "EA"] },
   { id: "priority-actions", label: "Priority Actions", icon: Zap, path: "/priority-actions", roles: ["COORDINATOR", "EA"], notificationCount: 4 },
+  { id: "sidebar-appeals", label: "Sidebar Appeals", icon: ShieldCheck, path: "/sidebar-appeals", roles: ["EA", "ADMIN", "HR", "COORDINATOR"] },
   { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR"] },
   { id: "attendance", label: "Attendance", icon: CalendarDays, path: "/attendance", roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA"] },
   { id: "employee-attendance", label: "Employee Attendance", icon: CalendarDays, path: "/hr/employees-attendance", roles: ["HR"] },
@@ -131,7 +132,7 @@ export default function ProfessionalSidebar({ children }) {
   };
 
   useEffect(() => {
-    if (!role || ["ADMIN", "HR"].includes(String(role).toUpperCase())) {
+    if (!role || ["ADMIN", "EA", "COORDINATOR"].includes(String(role).toUpperCase())) {
       setIsAttendanceRestricted(false);
       return;
     }
@@ -141,11 +142,13 @@ export default function ProfessionalSidebar({ children }) {
       const savedData = JSON.parse(localStorage.getItem(attendanceKey));
       const today = new Date().toDateString();
       
-      if (savedData && savedData.date === today && (savedData.status === "working" || savedData.status === "break")) {
-        setIsAttendanceRestricted(false);
-      } else {
-        setIsAttendanceRestricted(true);
+      if (savedData && savedData.date === today) {
+        if (savedData.status === "working" || savedData.status === "break" || savedData.sidebarAccessStatus === "APPROVED") {
+          setIsAttendanceRestricted(false);
+          return;
+        }
       }
+      setIsAttendanceRestricted(true);
     };
 
     checkAttendance();

@@ -31,3 +31,19 @@ export const getTodayAttendance = async () => {
 export const getAttendanceHistory = async () => {
   return API.get("/api/attendance/history");
 };
+
+export const appealSidebarAccess = async (reason) => {
+  return API.post("/api/attendance/appeal-sidebar", { reason });
+};
+
+export const getPendingAppeals = async () => {
+  return API.get("/api/attendance/appeals");
+};
+
+export const approveSidebarAppeal = async (attendanceId) => {
+  return API.post(`/api/attendance/appeal-sidebar/${attendanceId}/approve`);
+};
+
+export const rejectSidebarAppeal = async (attendanceId) => {
+  return API.post(`/api/attendance/appeal-sidebar/${attendanceId}/reject`);
+};

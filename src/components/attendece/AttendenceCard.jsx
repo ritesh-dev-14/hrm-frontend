@@ -13,12 +13,14 @@ import {
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "../PendingWorkGuardModal";
+import { appealSidebarAccess } from "../../services/attendanceApi";
 
 export default function AttendanceCard() {
   const [status, setStatus] = useState("idle");
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const [pendingWorkStatus, setPendingWorkStatus] = useState(null);
+  const [sidebarAccessStatus, setSidebarAccessStatus] = useState("NONE");
 
   const today = new Date().toDateString();
 
@@ -79,9 +81,11 @@ export default function AttendanceCard() {
             endTime: new Date(data.endTime).getTime(),
             finalSeconds,
             date: today,
+            sidebarAccessStatus: data.sidebarAccessStatus,
           };
           setAttendanceData(state);
           setStatus("completed");
+          setSidebarAccessStatus(data.sidebarAccessStatus || "NONE");
           setSeconds(Math.max(finalSeconds, 0));
           return;
         }
@@ -108,6 +112,7 @@ export default function AttendanceCard() {
           setStatus(savedData.status || "idle");
           if (savedData.status === "completed") {
             setSeconds(savedData.finalSeconds || 0);
+            setSidebarAccessStatus(savedData.sidebarAccessStatus || "NONE");
           } else if (savedData.startTime) {
             updateTimer(savedData);
           }
@@ -341,6 +346,23 @@ export default function AttendanceCard() {
     }
   };
 
+  const handleAppealAccess = async () => {
+    const reason = window.prompt("Reason for requesting sidebar access:");
+    if (!reason) return;
+    try {
+      setLoading(true);
+      await appealSidebarAccess(reason);
+      setSidebarAccessStatus("PENDING");
+      const existing = getAttendanceData() || {};
+      setAttendanceData({ ...existing, sidebarAccessStatus: "PENDING" });
+      alert("Appeal submitted to EA successfully.");
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to submit appeal");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -536,11 +558,39 @@ export default function AttendanceCard() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="w-full py-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-center"
+              className="w-full flex flex-col gap-3"
             >
-              <p className="text-sm font-semibold text-emerald-700">
-                Workday Completed
-              </p>
+              <div className="w-full py-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+                <p className="text-sm font-semibold text-emerald-700">
+                  Workday Completed
+                </p>
+              </div>
+
+              {sidebarAccessStatus === "NONE" && (
+                <button
+                  disabled={loading}
+                  onClick={handleAppealAccess}
+                  className="px-6 py-3 rounded-2xl text-sm font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                >
+                  Request Sidebar Access
+                </button>
+              )}
+
+              {sidebarAccessStatus === "PENDING" && (
+                <div className="w-full py-3 rounded-2xl bg-amber-50 border border-amber-100 text-center">
+                  <p className="text-sm font-medium text-amber-700">
+                    Sidebar Access Appeal Pending...
+                  </p>
+                </div>
+              )}
+
+              {sidebarAccessStatus === "APPROVED" && (
+                <div className="w-full py-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+                  <p className="text-sm font-medium text-emerald-700">
+                    Sidebar Access Approved
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
