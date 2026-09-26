@@ -331,7 +331,6 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Monthly Calendar</h2>
                   <p className="text-xs text-slate-500">Current month stats for this project</p>
                 </div>
-                <button onClick={() => navigate("/marketing-monthly-reports")} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Open Calendar</button>
               </div>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                 {monthlyStats.map((stat) => (

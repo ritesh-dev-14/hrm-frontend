@@ -63,7 +63,7 @@ const AssignedActionsPage = lazy(() => import("../pages/Employee/AssignedActions
 const CordinatorTasks = lazy(() => import("../pages/CordinatorTasks.jsx"));
 const EmployeeDailyReports = lazy(() => import("../pages/Employee/EmployeeDailyReports.jsx"));
 const MarketingReportsPage = lazy(() => import("../pages/Manager/MarketingReportsPage.jsx"));
-const MarketingMonthlyReportPage = lazy(() => import("../pages/Manager/MarketingMonthlyReportPage.jsx"));
+
 const MarketingReportsApprovalPage = lazy(() => import("../pages/HR/MarketingReportsApprovalPage.jsx"));
 const MarketingProjectsPage = lazy(() => import("../pages/MarketingProjectsPage.jsx"));
 const SocialMediaProjectsPage = lazy(() => import("../pages/SocialMediaProjectsPage.jsx"));
@@ -218,16 +218,7 @@ export const AppRoutes = () => {
             }
           />
 
-          <Route
-            path="/marketing-monthly-reports"
-            element={
-              ["ADMIN", "HR", "MANAGER"].includes(role) ? (
-                <MarketingMonthlyReportPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
+
 
           <Route
             path="/marketing-projects"
