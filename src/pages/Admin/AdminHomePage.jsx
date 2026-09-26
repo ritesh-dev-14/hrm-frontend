@@ -85,7 +85,7 @@ export default function AdminHomePage() {
       setError("");
 
       const [projRes, deptRes] = await Promise.allSettled([
-        API.get("/api/projects"),
+        API.get("/api/projects?limit=1000"),
         API.get("/api/departments"),
       ]);
 
