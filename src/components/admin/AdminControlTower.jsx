@@ -18,6 +18,7 @@ import {
 export default function AdminControlTower({ data, loading }) {
   const [showBudgetModal, setShowBudgetModal] = React.useState(false);
   const [showSpendModal, setShowSpendModal] = React.useState(false);
+  const [showTeamModal, setShowTeamModal] = React.useState(false);
 
   if (loading) {
     return (
@@ -103,12 +104,15 @@ export default function AdminControlTower({ data, loading }) {
             <Users size={16} /> Team Bottlenecks
           </h3>
           <div className="grid grid-cols-1 gap-3">
-            <div className="bg-white/70 rounded-2xl p-4 border border-amber-100/50 flex items-center justify-between shadow-sm">
+            <div 
+              onClick={() => setShowTeamModal(true)}
+              className="bg-white/70 rounded-2xl p-4 border border-amber-100/50 flex items-center justify-between shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+            >
               <div>
-                <p className="text-2xl font-black text-amber-600">{data.people.editorsWithOverdueCount}</p>
+                <p className="text-2xl font-black text-amber-600 group-hover:scale-105 transition origin-left">{data.people.editorsWithOverdueCount}</p>
                 <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Staff with overdue tasks</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-200 transition">
                 <ShieldAlert size={20} />
               </div>
             </div>
@@ -232,6 +236,56 @@ export default function AdminControlTower({ data, loading }) {
                 <IndianRupee size={18} />
                 {data.thisWeek.totalMonthlySpent.toLocaleString('en-IN')}
               </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Team Bottlenecks Modal */}
+      {showTeamModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <ShieldAlert size={18} className="text-amber-600" /> Overdue Tasks by Employee
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">Staff members with missed deadlines</p>
+              </div>
+              <button 
+                onClick={() => setShowTeamModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {data.people.editorsWithOverdue && data.people.editorsWithOverdue.length > 0 ? (
+                <div className="space-y-3">
+                  {data.people.editorsWithOverdue.map((emp, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-100 transition">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
+                          {emp.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{emp.name}</p>
+                          <p className="text-xs text-slate-500">ID: {emp.employeeId || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="bg-rose-50 text-rose-700 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-sm border border-rose-100">
+                        <AlertTriangle size={14} />
+                        {emp.overdueCount} Tasks
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-sm font-medium">
+                  Hooray! No staff members have overdue tasks.
+                </div>
+              )}
             </div>
           </div>
         </div>
