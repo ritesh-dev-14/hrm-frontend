@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 export default function AdminControlTower({ data, loading }) {
+  const [showBudgetModal, setShowBudgetModal] = React.useState(false);
   const [showSpendModal, setShowSpendModal] = React.useState(false);
 
   if (loading) {
@@ -66,7 +67,7 @@ export default function AdminControlTower({ data, loading }) {
           <h3 className="text-xs font-black text-indigo-800 uppercase tracking-widest flex items-center gap-2">
             <Clock size={16} /> This Week's Output
           </h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center">
               <p className="text-xl font-black text-indigo-600">{data.thisWeek.shootsScheduled}</p>
               <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Shoots</p>
@@ -76,13 +77,22 @@ export default function AdminControlTower({ data, loading }) {
               <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Assets</p>
             </div>
             <div 
+              onClick={() => setShowBudgetModal(true)}
+              className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center cursor-pointer hover:bg-white hover:shadow-md transition group"
+            >
+              <p className="text-sm font-black text-indigo-600 flex justify-center items-center group-hover:scale-105 transition">
+                <IndianRupee size={12} />{data.thisWeek.totalMonthlyBudget > 1000 ? (data.thisWeek.totalMonthlyBudget/1000).toFixed(1) + 'k' : data.thisWeek.totalMonthlyBudget}
+              </p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Budget</p>
+            </div>
+            <div 
               onClick={() => setShowSpendModal(true)}
               className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center cursor-pointer hover:bg-white hover:shadow-md transition group"
             >
               <p className="text-sm font-black text-indigo-600 flex justify-center items-center group-hover:scale-105 transition">
-                <IndianRupee size={12} />{data.thisWeek.adSpendPlanned > 1000 ? (data.thisWeek.adSpendPlanned/1000).toFixed(1) + 'k' : data.thisWeek.adSpendPlanned}
+                <IndianRupee size={12} />{data.thisWeek.totalMonthlySpent > 1000 ? (data.thisWeek.totalMonthlySpent/1000).toFixed(1) + 'k' : data.thisWeek.totalMonthlySpent}
               </p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Spend</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Spent(MTD)</p>
             </div>
           </div>
         </div>
@@ -123,19 +133,19 @@ export default function AdminControlTower({ data, loading }) {
         </div>
       </div>
 
-      {/* Spend Breakdown Modal */}
-      {showSpendModal && (
+      {/* Budget Breakdown Modal */}
+      {showBudgetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                  <IndianRupee size={18} className="text-indigo-600" /> Weekly Spend Breakdown
+                  <IndianRupee size={18} className="text-indigo-600" /> Monthly Budget Allocation
                 </h3>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">Estimated based on monthly budgets</p>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">Total budget set for all active projects</p>
               </div>
               <button 
-                onClick={() => setShowSpendModal(false)}
+                onClick={() => setShowBudgetModal(false)}
                 className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
               >
                 <X size={20} />
@@ -143,9 +153,9 @@ export default function AdminControlTower({ data, loading }) {
             </div>
             
             <div className="p-5 overflow-y-auto flex-1">
-              {data.thisWeek.spendBreakdown && data.thisWeek.spendBreakdown.length > 0 ? (
+              {data.thisWeek.budgetBreakdown && data.thisWeek.budgetBreakdown.length > 0 ? (
                 <div className="space-y-3">
-                  {data.thisWeek.spendBreakdown.map((proj, idx) => (
+                  {data.thisWeek.budgetBreakdown.map((proj, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-100 transition">
                       <div>
                         <p className="text-sm font-bold text-slate-800">{proj.projectName}</p>
@@ -153,7 +163,7 @@ export default function AdminControlTower({ data, loading }) {
                       </div>
                       <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold flex items-center shadow-sm">
                         <IndianRupee size={14} />
-                        {proj.weeklySpend.toLocaleString('en-IN')}
+                        {proj.amount.toLocaleString('en-IN')}
                       </div>
                     </div>
                   ))}
@@ -165,10 +175,62 @@ export default function AdminControlTower({ data, loading }) {
               )}
             </div>
             <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-              <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Est. Spend</span>
+              <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Monthly Budget</span>
               <span className="text-lg font-black text-slate-900 flex items-center">
                 <IndianRupee size={18} />
-                {data.thisWeek.adSpendPlanned.toLocaleString('en-IN')}
+                {data.thisWeek.totalMonthlyBudget.toLocaleString('en-IN')}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spend Breakdown Modal */}
+      {showSpendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <IndianRupee size={18} className="text-indigo-600" /> Month-To-Date Spend
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">Actual spend from daily Marketing Reports</p>
+              </div>
+              <button 
+                onClick={() => setShowSpendModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {data.thisWeek.spentBreakdown && data.thisWeek.spentBreakdown.length > 0 ? (
+                <div className="space-y-3">
+                  {data.thisWeek.spentBreakdown.map((proj, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-100 transition">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{proj.projectName}</p>
+                        <p className="text-xs text-slate-500">{proj.clientName}</p>
+                      </div>
+                      <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold flex items-center shadow-sm">
+                        <IndianRupee size={14} />
+                        {proj.amount.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-sm font-medium">
+                  No daily marketing reports found this month.
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+              <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Spent (MTD)</span>
+              <span className="text-lg font-black text-slate-900 flex items-center">
+                <IndianRupee size={18} />
+                {data.thisWeek.totalMonthlySpent.toLocaleString('en-IN')}
               </span>
             </div>
           </div>
