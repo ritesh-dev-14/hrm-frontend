@@ -1,7 +1,7 @@
-﻿import API from "../services/api";
+import API from "../services/api";
 
 export const isEmployeeRole = (role) =>
-  String(role || "").trim().toUpperCase() === "EMPLOYEE";
+  ["EMPLOYEE", "HR"].includes(String(role || "").trim().toUpperCase());
 
 export const refreshEmployeeLogoutStatus = async () => {
   const rawUser = localStorage.getItem("user");
@@ -37,10 +37,23 @@ export const refreshEmployeeLogoutStatus = async () => {
           ? eaResponse.data
           : [];
 
-    // EA task is pending if not yet submitted or completed
-    const pendingEaAssignments = eaList.filter(
-      (t) => !["SUBMITTED", "COMPLETED"].includes(String(t?.status || "").toUpperCase())
-    );
+    // EA task is pending if not yet submitted or completed AND due today
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    const pendingEaAssignments = eaList.filter((t) => {
+      const dueDate = t?.completionDate || t?.dueDate || t?.endDate;
+      if (!dueDate) return false;
+      const due = new Date(dueDate);
+      // Only count as blocking if due TODAY and not yet submitted/completed
+      return (
+        due >= todayStart &&
+        due < todayEnd &&
+        !["SUBMITTED", "COMPLETED"].includes(String(t?.status || "").toUpperCase())
+      );
+    });
 
     const hasEaPending = pendingEaAssignments.length > 0;
     const backendCanLogout = payload.canLogout === true;

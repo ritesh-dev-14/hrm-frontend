@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     const storedUser = JSON.parse(localStorage.getItem("user") || "null");
     const currentRole = role || storedUser?.role;
 
-    if (!enforceEmployeeCheck || String(currentRole || "").trim().toUpperCase() !== "EMPLOYEE") {
+    if (!enforceEmployeeCheck || !["EMPLOYEE", "HR"].includes(String(currentRole || "").trim().toUpperCase())) {
       clearSession();
       return { allowed: true };
     }

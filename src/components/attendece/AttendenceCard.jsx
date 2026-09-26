@@ -233,7 +233,7 @@ export default function AttendanceCard() {
       const role = String(user?.role || "").toUpperCase();
       const refreshStatus = role === "MANAGER"
         ? refreshManagerLogoutStatus
-        : role === "EMPLOYEE"
+        : ["EMPLOYEE", "HR"].includes(role)
           ? refreshEmployeeLogoutStatus
           : null;
 

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 
@@ -25,7 +24,6 @@ const isComplete = (task) =>
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "-";
 
 export default function EmployeePendingPage() {
-  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [logoutStatus, setLogoutStatus] = useState({ canLogout: false });
   const [loading, setLoading] = useState(true);
@@ -62,17 +60,25 @@ export default function EmployeePendingPage() {
         submitted: t.submitted ?? false,
       }));
 
-      const eaTasks = eaRes ? parseList(eaRes).map(t => ({
-        assignmentId: t.id,
-        source: "EA",
-        status: String(t.status || "ASSIGNED").toUpperCase(),
-        title: t.task?.projectName || t.task?.name || t.taskName || t.title || "Untitled task",
-        description: t.task?.description || t.description || "",
-        dueDate: t.endDate || t.completionDate || t.dueDate,
-        assignedByName: t.assignedBy?.name || "-",
-        progress: t.progress ?? 0,
-        submitted: t.submitted ?? false,
-      })) : [];
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
+
+      const eaTasks = eaRes ? parseList(eaRes)
+        .map(t => ({
+          assignmentId: t.id,
+          source: "EA",
+          status: String(t.status || "ASSIGNED").toUpperCase(),
+          title: t.task?.projectName || t.task?.name || t.taskName || t.title || "Untitled task",
+          description: t.task?.description || t.description || "",
+          dueDate: t.endDate || t.completionDate || t.dueDate,
+          assignedByName: t.assignedBy?.name || "-",
+          progress: t.progress ?? 0,
+          submitted: t.submitted ?? false,
+          isDueToday: (() => {
+            const due = new Date(t.endDate || t.completionDate || t.dueDate);
+            return due >= todayStart && due < todayEnd;
+          })(),
+        })) : [];
 
       // DEBUG: log raw responses to browser console so we can verify shape
       console.log("[PendingPage] managerRes:", managerRes?.data);
@@ -115,8 +121,11 @@ export default function EmployeePendingPage() {
   };
 
   const pendingTasks = tasks.filter((task) => !isComplete(task));
-  // Only allow logout when the backend confirms AND our merged task list has no pending items
-  const canLogout = logoutStatus.canLogout === true && pendingTasks.length === 0 && tasks.length > 0;
+  // For logout blocking: only today's EA tasks matter; future tasks are informational only
+  const todayBlockingPending = tasks.filter(
+    (task) => !isComplete(task) && (task.source !== "EA" || task.isDueToday)
+  );
+  const canLogout = logoutStatus.canLogout === true && todayBlockingPending.length === 0 && tasks.length > 0;
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8 lg:px-8">
@@ -160,10 +169,11 @@ export default function EmployeePendingPage() {
           {tasks.map((task) => {
             const done = isComplete(task);
             const isEa = task.source === "EA";
+            const isFuture = isEa && !task.isDueToday;
             return (
               <article
                 key={`${task.source}-${task.assignmentId}`}
-                className={`rounded-2xl border bg-white p-5 shadow-sm transition-opacity ${done ? "border-emerald-100 opacity-70" : "border-amber-200"}`}
+                className={`rounded-2xl border bg-white p-5 shadow-sm transition-opacity ${done ? "border-emerald-100 opacity-70" : isFuture ? "border-slate-200" : "border-amber-200"}`}
               >
                 {/* Top row */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -179,6 +189,9 @@ export default function EmployeePendingPage() {
                       </span>
                       {done && (
                         <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase text-emerald-700">Done</span>
+                      )}
+                      {isFuture && !done && (
+                        <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-bold uppercase text-sky-600">Upcoming</span>
                       )}
                     </div>
                     <h2 className="font-bold text-slate-900">{task.title}</h2>
@@ -238,13 +251,7 @@ export default function EmployeePendingPage() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate("/projects")}
-        className="mt-6 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"
-      >
-        Open Tasks
-      </button>
+
     </div>
   );
 }

@@ -131,7 +131,7 @@ export const AppRoutes = () => {
 
           <Route
             path="/employee-pending"
-            element={role === "EMPLOYEE" ? <EmployeePendingPage /> : <Navigate to="/dashboard" replace />}
+            element={["EMPLOYEE", "HR"].includes(role) ? <EmployeePendingPage /> : <Navigate to="/dashboard" replace />}
           />
 
           <Route path="/project/:id" element={<ProjectDetailsViewWrapper />} />

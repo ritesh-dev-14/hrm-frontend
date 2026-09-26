@@ -41,7 +41,7 @@ import PendingWorkGuardModal from "./PendingWorkGuardModal";
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
-  { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE"] },
+  { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
   { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR"] },
   { id: "reports-emp", label: "Reports", icon: FileText, path: "/reports/employee", roles: ["EMPLOYEE"] },
   {
@@ -166,7 +166,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [isAttendanceRestricted, location.pathname, navigate]);
 
   useEffect(() => {
-    if (String(role || "").toUpperCase() !== "EMPLOYEE") return undefined;
+    if (!["EMPLOYEE", "HR"].includes(String(role || "").toUpperCase())) return undefined;
     let active = true;
     const refresh = async () => {
       const status = await refreshEmployeeLogoutStatus();
@@ -250,8 +250,8 @@ export default function ProfessionalSidebar({ children }) {
       return;
     }
 
-    // EMPLOYEE logout guard
-    if (role !== 'EMPLOYEE') {
+    // EMPLOYEE / HR logout guard
+    if (!["EMPLOYEE", "HR"].includes(String(role || "").toUpperCase())) {
       await logout();
       navigate('/login');
       return;
@@ -269,7 +269,7 @@ export default function ProfessionalSidebar({ children }) {
     if (result?.error) {
       setPendingWorkStatus({
         ...(result.status || {}),
-        role: "EMPLOYEE",
+        role: role || "EMPLOYEE",
         errorMessage: "Logout is disabled until today’s task status is checked successfully.",
       });
       return;
@@ -277,7 +277,7 @@ export default function ProfessionalSidebar({ children }) {
 
     setPendingWorkStatus({
       ...(result?.status || {}),
-      role: "EMPLOYEE",
+      role: role || "EMPLOYEE",
       message: "You cannot logout yet. Please complete all assigned work before logging out.",
     });
   };
@@ -783,7 +783,7 @@ export default function ProfessionalSidebar({ children }) {
         <div className="p-4 border-t border-slate-800/40 relative z-10 bg-[#090C15]">
           <button
             onClick={handleLogoutClick}
-            disabled={role === "EMPLOYEE" && employeeLogoutStatus.loading}
+            disabled={["EMPLOYEE", "HR"].includes(String(role || "").toUpperCase()) && employeeLogoutStatus.loading}
             className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors group outline-none"
           >
             <LogOut size={18} strokeWidth={2} className="group-hover:scale-110 transition-transform" />
