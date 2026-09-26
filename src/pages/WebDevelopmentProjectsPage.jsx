@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Code2, Search } from "lucide-react";
+import { Code2, Search, Globe, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -92,16 +92,45 @@ export default function WebDevelopmentProjectsPage() {
         {loading ? <ProfessionalLoader text="Loading. Please wait..." /> : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <button
-                type="button"
-                key={project.id}
-                onClick={() => navigate(`/project/${project.id}`)}
-                className="rounded-2xl border border-blue-100 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">{project.status}</span>
-                <h2 className="mt-3 text-xl font-black">{project.projectName}</h2>
-                <p className="mt-2 line-clamp-3 text-sm text-slate-500">{project.description || "No description provided."}</p>
-              </button>
+                <button
+                  type="button"
+                  key={project.id}
+                  onClick={() => navigate(`/project/${project.id}`)}
+                  className="group relative overflow-hidden rounded-3xl border border-blue-100 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-300"
+                >
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none transition group-hover:from-blue-100" />
+                  
+                  <div className="flex items-start justify-between mb-4 relative z-10">
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${project.status === 'ONGOING' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                      {project.status}
+                    </span>
+                    {project.clientTier && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                        {project.clientTier.replace("_", " ")}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="relative z-10">
+                    <h2 className="text-xl font-black text-slate-900 group-hover:text-blue-700 transition">{project.projectName}</h2>
+                    {project.clientName && (
+                      <p className="text-sm font-semibold text-slate-500 mt-1">{project.clientName}</p>
+                    )}
+                  </div>
+                  
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 relative z-10">
+                    {project.domainName && (
+                      <div className="flex items-center gap-1.5">
+                        <Globe size={14} className="text-blue-500" />
+                        <span className="truncate max-w-[140px]">{project.domainName}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <Calendar size={14} className="text-slate-400" />
+                      <span>{new Date(project.createdAt || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+                </button>
             ))}
           </div>
         )}
