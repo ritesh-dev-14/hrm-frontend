@@ -131,7 +131,7 @@ export default function ProfessionalSidebar({ children }) {
   };
 
   useEffect(() => {
-    if (!role || String(role).toUpperCase() === "ADMIN") {
+    if (!role || ["ADMIN", "HR"].includes(String(role).toUpperCase())) {
       setIsAttendanceRestricted(false);
       return;
     }
