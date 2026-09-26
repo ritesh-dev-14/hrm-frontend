@@ -97,6 +97,7 @@ const getDepartmentBadgeKey = (data) => {
 export default function ProfessionalSidebar({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar") === "collapsed");
+  const [isAttendanceRestricted, setIsAttendanceRestricted] = useState(false);
 
   const { role, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -128,6 +129,38 @@ export default function ProfessionalSidebar({ children }) {
     const categories = getManagerPendingCategories(status);
     setManagerPendingCount(Object.values(categories).reduce((total, items) => total + items.length, 0));
   };
+
+  useEffect(() => {
+    if (!role || String(role).toUpperCase() === "ADMIN") {
+      setIsAttendanceRestricted(false);
+      return;
+    }
+
+    const checkAttendance = () => {
+      const attendanceKey = `attendanceData_${user?._id || user?.id}`;
+      const savedData = JSON.parse(localStorage.getItem(attendanceKey));
+      const today = new Date().toDateString();
+      
+      if (savedData && savedData.date === today && (savedData.status === "working" || savedData.status === "break")) {
+        setIsAttendanceRestricted(false);
+      } else {
+        setIsAttendanceRestricted(true);
+      }
+    };
+
+    checkAttendance();
+    const interval = setInterval(checkAttendance, 1000);
+    return () => clearInterval(interval);
+  }, [role, user]);
+
+  useEffect(() => {
+    if (isAttendanceRestricted) {
+      setCollapsed(true);
+      if (location.pathname !== "/dashboard") {
+        navigate("/dashboard");
+      }
+    }
+  }, [isAttendanceRestricted, location.pathname, navigate]);
 
   useEffect(() => {
     if (String(role || "").toUpperCase() !== "EMPLOYEE") return undefined;
@@ -614,6 +647,8 @@ export default function ProfessionalSidebar({ children }) {
         {/* NAV LINKS - Hidden native scrollbar but scrollable */}
         <div className="flex-1 overflow-y-auto px-3 space-y-1 relative z-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {allowedNav.map((item) => {
+            if (isAttendanceRestricted && item.id !== "dashboard") return null;
+
             const hasChildren = item.id === "project" && item.children?.length > 0;
             const activeChild = hasChildren && item.children.some((child) => activeId === child.id);
             const active = activeId === item.id || activeChild;
@@ -776,12 +811,14 @@ export default function ProfessionalSidebar({ children }) {
           {renderSidebarContent(false)}
 
           {/* TOGGLE BUTTON */}
-          <button
-            onClick={() => setCollapsed((p) => !p)}
-            className="absolute top-7 -right-3.5 w-7 h-7 bg-white hover:bg-slate-50 text-slate-700 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center border border-slate-200 z-[100] transition-all hover:scale-110 active:scale-95 outline-none"
-          >
-            {collapsed ? <ChevronRight size={14} strokeWidth={3} /> : <ChevronLeft size={14} strokeWidth={3} />}
-          </button>
+          {!isAttendanceRestricted && (
+            <button
+              onClick={() => setCollapsed((p) => !p)}
+              className="absolute top-7 -right-3.5 w-7 h-7 bg-white hover:bg-slate-50 text-slate-700 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center border border-slate-200 z-[100] transition-all hover:scale-110 active:scale-95 outline-none"
+            >
+              {collapsed ? <ChevronRight size={14} strokeWidth={3} /> : <ChevronLeft size={14} strokeWidth={3} />}
+            </button>
+          )}
         </motion.div>
       </aside>
 
@@ -792,8 +829,9 @@ export default function ProfessionalSidebar({ children }) {
           <span className="text-[15px] font-bold tracking-tight text-slate-900">We-Promote</span>
         </div>
         <button
-          onClick={() => setMobileOpen(true)}
-          className="p-2 -mr-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors outline-none"
+          onClick={() => { if (!isAttendanceRestricted) setMobileOpen(true); }}
+          className={`p-2 -mr-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors outline-none ${isAttendanceRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isAttendanceRestricted}
         >
           <Menu size={22} />
         </button>
