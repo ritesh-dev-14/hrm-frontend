@@ -19,14 +19,27 @@ export default function AdminControlTower({ data, loading, healthMap }) {
   const [showBudgetModal, setShowBudgetModal] = React.useState(false);
   const [showSpendModal, setShowSpendModal] = React.useState(false);
   const [showTeamModal, setShowTeamModal] = React.useState(false);
+  
+  const [showUrgentDeliverablesModal, setShowUrgentDeliverablesModal] = React.useState(false);
+  const [showUrgentApprovalsModal, setShowUrgentApprovalsModal] = React.useState(false);
+  const [showClientsAtRiskModal, setShowClientsAtRiskModal] = React.useState(false);
+  const [showClientsIgnoredModal, setShowClientsIgnoredModal] = React.useState(false);
 
   let clientsAtRisk = 0;
   let notContacted7Days = 0;
+  const clientsAtRiskList = [];
+  const clientsIgnoredList = [];
 
   if (healthMap) {
     Object.values(healthMap).forEach(h => {
-      if (h.status === "AT_RISK") clientsAtRisk++;
-      if (h.breakdown?.daysSinceLastComm >= 7) notContacted7Days++;
+      if (h.status === "AT_RISK") {
+        clientsAtRisk++;
+        clientsAtRiskList.push(h);
+      }
+      if (h.breakdown?.daysSinceLastComm >= 7) {
+        notContacted7Days++;
+        clientsIgnoredList.push(h);
+      }
     });
   }
 
@@ -62,12 +75,18 @@ export default function AdminControlTower({ data, loading, healthMap }) {
             <AlertTriangle size={16} /> Urgent Attention
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/70 rounded-2xl p-4 border border-rose-100/50 text-center shadow-sm">
-              <p className="text-3xl font-black text-rose-600">{data.critical.overdueDeliverables}</p>
+            <div 
+              onClick={() => setShowUrgentDeliverablesModal(true)}
+              className="bg-white/70 rounded-2xl p-4 border border-rose-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+            >
+              <p className="text-3xl font-black text-rose-600 group-hover:scale-105 transition">{data.critical.overdueDeliverables}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Deliverables<br/>Overdue</p>
             </div>
-            <div className="bg-white/70 rounded-2xl p-4 border border-rose-100/50 text-center shadow-sm">
-              <p className="text-3xl font-black text-rose-600">{data.critical.oldApprovals}</p>
+            <div 
+              onClick={() => setShowUrgentApprovalsModal(true)}
+              className="bg-white/70 rounded-2xl p-4 border border-rose-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+            >
+              <p className="text-3xl font-black text-rose-600 group-hover:scale-105 transition">{data.critical.oldApprovals}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Approvals<br/>Stuck &gt;3d</p>
             </div>
           </div>
@@ -76,7 +95,7 @@ export default function AdminControlTower({ data, loading, healthMap }) {
         {/* This Week Section */}
         <div className="bg-indigo-50 rounded-3xl p-5 border border-indigo-100 space-y-4">
           <h3 className="text-xs font-black text-indigo-800 uppercase tracking-widest flex items-center gap-2">
-            <Clock size={16} /> This Week's Output
+            <Clock size={16} /> This Month's Output
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center">
@@ -135,12 +154,18 @@ export default function AdminControlTower({ data, loading, healthMap }) {
             <Building2 size={16} /> Client Health
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm">
-              <p className="text-3xl font-black text-rose-500">{clientsAtRisk}</p>
+            <div 
+              onClick={() => setShowClientsAtRiskModal(true)}
+              className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+            >
+              <p className="text-3xl font-black text-rose-500 group-hover:scale-105 transition">{clientsAtRisk}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Clients<br/>At Risk</p>
             </div>
-            <div className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm">
-              <p className="text-3xl font-black text-amber-500">{notContacted7Days}</p>
+            <div 
+              onClick={() => setShowClientsIgnoredModal(true)}
+              className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+            >
+              <p className="text-3xl font-black text-amber-500 group-hover:scale-105 transition">{notContacted7Days}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Ignored<br/>&gt; 7 Days</p>
             </div>
           </div>
@@ -294,6 +319,173 @@ export default function AdminControlTower({ data, loading, healthMap }) {
               ) : (
                 <div className="py-10 text-center text-slate-500 text-sm font-medium">
                   Hooray! No staff members have overdue tasks.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Urgent Deliverables Modal */}
+      {showUrgentDeliverablesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <AlertTriangle size={18} className="text-rose-600" /> Overdue Deliverables
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">Tasks that have passed their deadline</p>
+              </div>
+              <button 
+                onClick={() => setShowUrgentDeliverablesModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {data.critical.overdueDeliverablesList && data.critical.overdueDeliverablesList.length > 0 ? (
+                <div className="space-y-3">
+                  {data.critical.overdueDeliverablesList.map((task, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-100 transition">
+                      <p className="text-sm font-bold text-slate-800">{task.title}</p>
+                      <p className="text-xs text-slate-500">{task.task?.project?.projectName} ({task.task?.project?.clientName})</p>
+                      <div className="mt-2 text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-1 rounded w-max">
+                        Due: {new Date(task.dueDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-sm font-medium">
+                  No overdue deliverables found.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Urgent Approvals Modal */}
+      {showUrgentApprovalsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <AlertTriangle size={18} className="text-rose-600" /> Stuck Approvals
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">Tasks verified but not approved by client (&gt;3 days)</p>
+              </div>
+              <button 
+                onClick={() => setShowUrgentApprovalsModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {data.critical.oldApprovalsList && data.critical.oldApprovalsList.length > 0 ? (
+                <div className="space-y-3">
+                  {data.critical.oldApprovalsList.map((task, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-100 transition">
+                      <p className="text-sm font-bold text-slate-800">{task.title}</p>
+                      <p className="text-xs text-slate-500">{task.task?.project?.projectName} ({task.task?.project?.clientName})</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-sm font-medium">
+                  No stuck approvals found.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clients At Risk Modal */}
+      {showClientsAtRiskModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Building2 size={18} className="text-rose-600" /> Clients At Risk
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">Clients with critical health scores</p>
+              </div>
+              <button 
+                onClick={() => setShowClientsAtRiskModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {clientsAtRiskList.length > 0 ? (
+                <div className="space-y-3">
+                  {clientsAtRiskList.map((client, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-100 transition">
+                      <p className="text-sm font-bold text-slate-800">{client.projectName}</p>
+                      <p className="text-xs text-slate-500 mb-2">Score: {client.score}/100</p>
+                      <div className="text-xs text-rose-600 bg-rose-50 px-2 py-1 rounded">
+                        {client.breakdown?.statusReason || "Poor communication or missed tasks"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-sm font-medium">
+                  No clients currently at risk.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clients Ignored Modal */}
+      {showClientsIgnoredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Building2 size={18} className="text-amber-600" /> Ignored Clients (&gt; 7 Days)
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">No WhatsApp messages in last 7 days</p>
+              </div>
+              <button 
+                onClick={() => setShowClientsIgnoredModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {clientsIgnoredList.length > 0 ? (
+                <div className="space-y-3">
+                  {clientsIgnoredList.map((client, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-100 transition">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{client.projectName}</p>
+                        <p className="text-xs text-slate-500">Last Comm: {client.breakdown?.lastComm ? new Date(client.breakdown.lastComm).toLocaleDateString() : 'Never'}</p>
+                      </div>
+                      <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                        {client.breakdown?.daysSinceLastComm} Days
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-sm font-medium">
+                  All clients have been contacted recently.
                 </div>
               )}
             </div>
