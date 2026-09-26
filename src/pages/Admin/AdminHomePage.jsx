@@ -288,7 +288,7 @@ export default function AdminHomePage() {
         </div>
 
         {/* CEO CONTROL TOWER */}
-        <AdminControlTower data={controlTower} loading={controlTowerLoading} />
+        <AdminControlTower data={controlTower} loading={controlTowerLoading} healthMap={healthMap} />
 
         {/* METRICS & QUICK SUMMARY */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

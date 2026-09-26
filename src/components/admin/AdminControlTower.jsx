@@ -15,10 +15,20 @@ import {
   X,
 } from "lucide-react";
 
-export default function AdminControlTower({ data, loading }) {
+export default function AdminControlTower({ data, loading, healthMap }) {
   const [showBudgetModal, setShowBudgetModal] = React.useState(false);
   const [showSpendModal, setShowSpendModal] = React.useState(false);
   const [showTeamModal, setShowTeamModal] = React.useState(false);
+
+  let clientsAtRisk = 0;
+  let notContacted7Days = 0;
+
+  if (healthMap) {
+    Object.values(healthMap).forEach(h => {
+      if (h.status === "AT_RISK") clientsAtRisk++;
+      if (h.breakdown?.daysSinceLastComm >= 7) notContacted7Days++;
+    });
+  }
 
   if (loading) {
     return (
@@ -126,11 +136,11 @@ export default function AdminControlTower({ data, loading }) {
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm">
-              <p className="text-3xl font-black text-rose-500">{data.clients.atRisk}</p>
+              <p className="text-3xl font-black text-rose-500">{clientsAtRisk}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Clients<br/>At Risk</p>
             </div>
             <div className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm">
-              <p className="text-3xl font-black text-amber-500">{data.clients.notContacted7Days}</p>
+              <p className="text-3xl font-black text-amber-500">{notContacted7Days}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Ignored<br/>&gt; 7 Days</p>
             </div>
           </div>
