@@ -30,6 +30,9 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import AdminProjectDetailModal from "../../admin/AdminProjectDetailModal";
 
 // ──────────────────────────────────────────────
 // Helper: format date string nicely
@@ -128,11 +131,14 @@ const FormInput = ({ label, name, value, onChange, type = "text", placeholder, s
 // MAIN COMPONENT
 // ──────────────────────────────────────────────
 const WebDevManagerView = ({ projectId }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [isEditingCredentials, setIsEditingCredentials] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Tasks state
   const [tasks, setTasks] = useState([]);
@@ -256,6 +262,18 @@ const WebDevManagerView = ({ projectId }) => {
       alert("Failed to update status");
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!window.confirm("Are you sure you want to completely delete this project? This cannot be undone.")) return;
+    try {
+      setLoading(true);
+      await API.delete(`/api/projects/${projectId}`);
+      navigate(-1);
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to delete project");
+      setLoading(false);
     }
   };
 
@@ -485,6 +503,24 @@ const WebDevManagerView = ({ projectId }) => {
               <Plus className="w-4 h-4" />
               Assign Task to Employee
             </button>
+            {["ADMIN", "HR"].includes(user?.role) && (
+              <>
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-bold shadow-sm hover:bg-slate-50 transition-all"
+                  title="Edit Project Details"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleDeleteProject}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-rose-200 text-rose-600 text-sm font-bold shadow-sm hover:bg-rose-50 transition-all"
+                  title="Delete Project"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </motion.div>
 
@@ -990,6 +1026,16 @@ const WebDevManagerView = ({ projectId }) => {
         </motion.div>
 
       </div>
+
+      {showEditModal && (
+        <AdminProjectDetailModal 
+          projectId={projectId} 
+          onClose={() => {
+            setShowEditModal(false);
+            fetchProject();
+          }} 
+        />
+      )}
     </div>
   );
 };
