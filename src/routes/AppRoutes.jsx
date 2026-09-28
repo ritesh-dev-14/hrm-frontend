@@ -63,6 +63,7 @@ const SidebarAppealsPage = lazy(() => import("../pages/EA/SidebarAppealsPage.jsx
 const AssignedActionsPage = lazy(() => import("../pages/Employee/AssignedActionsPage.jsx"));
 const CordinatorTasks = lazy(() => import("../pages/CordinatorTasks.jsx"));
 const EmployeeDailyReports = lazy(() => import("../pages/Employee/EmployeeDailyReports.jsx"));
+const EditorWorkloadPage = lazy(() => import("../pages/EditorWorkloadPage.jsx"));
 const MarketingReportsPage = lazy(() => import("../pages/Manager/MarketingReportsPage.jsx"));
 
 const MarketingReportsApprovalPage = lazy(() => import("../pages/HR/MarketingReportsApprovalPage.jsx"));
@@ -158,6 +159,16 @@ export const AppRoutes = () => {
           />
 
           <Route path="/editor" element={<EditorPage />} />
+          <Route
+            path="/editor-workload"
+            element={
+              ["ADMIN", "HR", "EA", "MANAGER", "COORDINATOR"].includes(role) ? (
+                <EditorWorkloadPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
 
           <Route
             path="/editor/:workspaceId"
