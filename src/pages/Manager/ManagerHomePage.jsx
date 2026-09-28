@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   CheckCircle2,
@@ -8,16 +9,30 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  AlertTriangle,
 } from "lucide-react";
 
 import AttendanceCard from "../../components/attendece/AttendenceCard";
+import ManagerTasksModal from "../../components/dashboard/ManagerTasksModal";
+import UrgentAlertModal from "../../components/dashboard/UrgentAlertModal";
 import API from "../../services/api";
 
 const ManagerHomePage = () => {
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [projectsCount, setProjectsCount] = useState(0);
   const [workingHours, setWorkingHours] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", type: "error" });
+
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: "",
+    icon: null,
+    color: "",
+    bg: "",
+    tasks: [],
+  });
 
   const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
   const INITIAL_EMP_COUNT = 5;
@@ -70,6 +85,30 @@ const ManagerHomePage = () => {
         const totalHours = thisMonthRecords.reduce((sum, r) => sum + (r.totalHours || 0), 0);
         setWorkingHours(parseFloat(totalHours.toFixed(1)));
       }
+      
+      // Toast alerts for deadlines
+      if (dashRes.status === "fulfilled" && dashRes.value?.data?.success) {
+        const dashboardData = dashRes.value.data.data;
+        const totalOverdue = dashboardData.employees?.reduce((sum, emp) => sum + (emp.overdueTasksCount || 0), 0) || 0;
+        const totalDueToday = dashboardData.employees?.reduce((sum, emp) => sum + (emp.dueTodayTasksCount || 0), 0) || 0;
+        
+        if (totalOverdue > 0) {
+          setAlertConfig({
+            isOpen: true,
+            title: "CRITICAL: Team Overdue Tasks",
+            message: `Your team currently has ${totalOverdue} overdue ${totalOverdue === 1 ? 'task' : 'tasks'}. Please review the "Overdue Tasks" widget and follow up immediately.`,
+            type: "error"
+          });
+        } else if (totalDueToday > 0) {
+          setAlertConfig({
+            isOpen: true,
+            title: "Team Deadline Warning",
+            message: `Your team has ${totalDueToday} ${totalDueToday === 1 ? 'task' : 'tasks'} due today. Ensure they are monitored closely.`,
+            type: "warning"
+          });
+        }
+      }
+
     } catch (error) {
       console.log(error);
     } finally {
@@ -82,6 +121,8 @@ const ManagerHomePage = () => {
 
     const totalTasksAssigned = dashboard.employees?.reduce((sum, emp) => sum + (emp.totalTasksAssigned || 0), 0) || 0;
     const completedTasksCount = dashboard.employees?.reduce((sum, emp) => sum + (emp.completedTasksCount || 0), 0) || 0;
+    const totalOverdue = dashboard.employees?.reduce((sum, emp) => sum + (emp.overdueTasksCount || 0), 0) || 0;
+    const totalDueToday = dashboard.employees?.reduce((sum, emp) => sum + (emp.dueTodayTasksCount || 0), 0) || 0;
 
     return [
       {
@@ -112,8 +153,77 @@ const ManagerHomePage = () => {
         color: "text-emerald-600",
         bg: "bg-emerald-100",
       },
+      {
+        title: "Overdue Tasks",
+        value: totalOverdue,
+        icon: AlertTriangle,
+        color: "text-rose-600",
+        bg: "bg-rose-100",
+      },
+      {
+        title: "Due Today",
+        value: totalDueToday,
+        icon: Clock,
+        color: "text-orange-600",
+        bg: "bg-orange-100",
+      },
     ];
   }, [dashboard, projectsCount, workingHours]);
+
+  const handleStatCardClick = (item) => {
+    if (item.title === "Total Projects") {
+      navigate("/projects");
+      return;
+    }
+    if (item.title === "Total Working Hours") {
+      return;
+    }
+
+    let allAssignments = [];
+    if (dashboard?.employees) {
+      dashboard.employees.forEach((emp) => {
+        if (emp.assignments) {
+          allAssignments = [...allAssignments, ...emp.assignments];
+        }
+      });
+    }
+
+    let filtered = [];
+    if (item.title === "Total Tasks Assigned") {
+      filtered = allAssignments;
+    } else if (item.title === "Tasks Completed") {
+      filtered = allAssignments.filter(a => ['COMPLETED', 'VERIFIED'].includes(a.status));
+    } else if (item.title === "Overdue Tasks") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      filtered = allAssignments.filter(a => {
+        if (['COMPLETED', 'VERIFIED'].includes(a.status)) return false;
+        if (!a.taskItem?.dueDate) return false;
+        const due = new Date(a.taskItem.dueDate);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() < today.getTime();
+      });
+    } else if (item.title === "Due Today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      filtered = allAssignments.filter(a => {
+        if (['COMPLETED', 'VERIFIED'].includes(a.status)) return false;
+        if (!a.taskItem?.dueDate) return false;
+        const due = new Date(a.taskItem.dueDate);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() === today.getTime();
+      });
+    }
+
+    setModalState({
+      isOpen: true,
+      title: item.title,
+      icon: item.icon,
+      color: item.color,
+      bg: item.bg,
+      tasks: filtered,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#f6f8fb]">
@@ -178,11 +288,14 @@ const ManagerHomePage = () => {
           <>
             {/* STATS */}
 
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-7">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 mb-7">
               {stats.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-white border border-slate-200 rounded-[28px] p-6 shadow-sm hover:shadow-md transition-all duration-300"
+                  onClick={() => handleStatCardClick(item)}
+                  className={`bg-white border border-slate-200 rounded-[28px] p-6 shadow-sm hover:shadow-md transition-all duration-300 ${
+                    item.title !== "Total Working Hours" ? "cursor-pointer hover:-translate-y-1" : ""
+                  }`}
                 >
                   <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center ${item.color} mb-5`}>
                     <item.icon size={20} />
@@ -339,6 +452,26 @@ const ManagerHomePage = () => {
           </>
         )}
       </div>
+
+      {modalState.isOpen && (
+        <ManagerTasksModal
+          isOpen={modalState.isOpen}
+          onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+          title={modalState.title}
+          icon={modalState.icon}
+          color={modalState.color}
+          bg={modalState.bg}
+          tasks={modalState.tasks}
+        />
+      )}
+
+      <UrgentAlertModal 
+        isOpen={alertConfig.isOpen} 
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))} 
+        title={alertConfig.title} 
+        message={alertConfig.message} 
+        type={alertConfig.type} 
+      />
     </div>
   );
 };

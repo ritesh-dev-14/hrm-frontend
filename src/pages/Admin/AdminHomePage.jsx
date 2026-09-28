@@ -39,6 +39,7 @@ import API from "../../services/api";
 import { toast } from "react-toastify";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
 import AdminProjectDetailModal from "../../components/admin/AdminProjectDetailModal";
+import UrgentAlertModal from "../../components/dashboard/UrgentAlertModal";
 import {
   buildHealthMap,
   getHealthConfig,
@@ -57,6 +58,7 @@ export default function AdminHomePage() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", type: "error" });
 
   // Health score state
   const [healthMap, setHealthMap] = useState({});
@@ -116,7 +118,18 @@ export default function AdminHomePage() {
       setControlTowerLoading(true);
       const res = await API.get("/api/admin-dashboard/control-tower");
       if (res?.data?.success) {
-        setControlTower(res.data.data);
+        const ctData = res.data.data;
+        setControlTower(ctData);
+        
+        const overdueCount = ctData.overdueDeliverables?.length || 0;
+        if (overdueCount > 0) {
+          setAlertConfig({
+            isOpen: true,
+            title: "CRITICAL: Control Tower Alert",
+            message: `There are ${overdueCount} overdue ${overdueCount === 1 ? 'deliverable' : 'deliverables'} company-wide. Please check the Control Tower and follow up.`,
+            type: "error"
+          });
+        }
       }
     } catch (err) {
       console.warn("[ControlTower] Could not fetch stats:", err?.message);
@@ -824,6 +837,14 @@ export default function AdminHomePage() {
           onClose={() => setSelectedProjectId(null)}
         />
       )}
+
+      <UrgentAlertModal 
+        isOpen={alertConfig.isOpen} 
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))} 
+        title={alertConfig.title} 
+        message={alertConfig.message} 
+        type={alertConfig.type} 
+      />
     </div>
   );
 }

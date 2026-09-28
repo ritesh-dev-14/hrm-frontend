@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import API from "../../services/api";
 import { notifyError, notifyInfo, notifySuccess } from "../../utils/toast";
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
+import { getDeadlineStatus } from "../../utils/deadlineEngine";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -324,6 +325,15 @@ const EmployeeTaskPage = () => {
                             <StatusIcon className="w-3.5 h-3.5" />
                             {sc.label}
                           </span>
+                          
+                          {(() => {
+                            const dl = getDeadlineStatus(item.taskItem?.dueDate, item.status);
+                            return (
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${dl.color}`}>
+                                {dl.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                         
                         <div>

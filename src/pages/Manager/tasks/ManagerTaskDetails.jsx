@@ -20,6 +20,7 @@ import {
   Building2,
   Check,
 } from "lucide-react";
+import { getDeadlineStatus } from "../../../utils/deadlineEngine";
 
 import API from "../../../services/api";
 import { assignMainTaskToMe } from "./taskDetails";
@@ -1000,10 +1001,19 @@ const ManagerTaskDetailPage = () => {
 
                       {/* DATE */}
                       <td className="px-6 py-5">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <CalendarDays size={15} className="text-slate-400" />
-
-                          {formatDate(item.dueDate)}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <CalendarDays size={15} className="text-slate-400" />
+                            {formatDate(item.dueDate)}
+                          </div>
+                          {(() => {
+                            const dl = getDeadlineStatus(item.dueDate, item.status);
+                            return (
+                              <span className={`w-max inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest border ${dl.color}`}>
+                                {dl.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
 

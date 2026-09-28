@@ -4,10 +4,12 @@ import { motion } from "framer-motion";
 import {
   ChevronRight, ArrowRight, Activity, Clock, ClipboardList, CheckCircle2, Hourglass
 } from "lucide-react";
+import UrgentAlertModal from "../../components/dashboard/UrgentAlertModal";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
 import API from "../../services/api";
 import { employeeActions } from "../../components/dashboard/dashboardData.js";
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
+import { getDeadlineStatus } from "../../utils/deadlineEngine";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -45,9 +47,12 @@ const EmployeeHomePage = () => {
     totalHours: 0,
     totalTasks: 0,
     completed: 0,
-    pending: 0
+    pending: 0,
+    overdue: 0,
+    dueToday: 0
   });
   const [loading, setLoading] = useState(true);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", type: "error" });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,11 +65,19 @@ const EmployeeHomePage = () => {
         let totalTasks = 0;
         let completed = 0;
         let pending = 0;
+        let overdue = 0;
+        let dueToday = 0;
         if (tasksResult.status === "fulfilled" && tasksResult.value?.data?.success) {
           const tasks = tasksResult.value.data.data || [];
           totalTasks = tasks.length;
           completed = tasks.filter((task) => task.status === "COMPLETED" || task.status === "VERIFIED").length;
           pending = tasks.filter((task) => !["COMPLETED", "VERIFIED"].includes(task.status)).length;
+          
+          tasks.forEach(task => {
+            const dl = getDeadlineStatus(task.taskItem?.dueDate || task.dueDate, task.status);
+            if (dl.label.includes("Overdue")) overdue++;
+            if (dl.label === "Due Today") dueToday++;
+          });
         }
 
         let totalHours = 0;
@@ -82,7 +95,23 @@ const EmployeeHomePage = () => {
           );
         }
 
-        setStats({ totalHours, totalTasks, completed, pending });
+        if (overdue > 0) {
+          setAlertConfig({
+            isOpen: true,
+            title: "CRITICAL: Overdue Tasks",
+            message: `You currently have ${overdue} overdue ${overdue === 1 ? 'task' : 'tasks'}! Please address this immediately to avoid further delays.`,
+            type: "error"
+          });
+        } else if (dueToday > 0) {
+          setAlertConfig({
+            isOpen: true,
+            title: "Deadline Warning",
+            message: `You have ${dueToday} ${dueToday === 1 ? 'task' : 'tasks'} due today. Ensure they are completed and submitted by end of day.`,
+            type: "warning"
+          });
+        }
+
+        setStats({ totalHours, totalTasks, completed, pending, overdue, dueToday });
       } catch (err) {
         console.error("Error fetching stats:", err);
       } finally {
@@ -130,11 +159,13 @@ const EmployeeHomePage = () => {
 
         {/* STATS */}
         {!loading && (
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            <StatCard icon={Clock} label="TOTAL HOURS (THIS MONTH)" value={`${stats.totalHours}h`} color="text-blue-600" bg="bg-blue-100" />
+          <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+            <StatCard icon={Clock} label="TOTAL HOURS" value={`${stats.totalHours}h`} color="text-blue-600" bg="bg-blue-100" />
             <StatCard icon={ClipboardList} label="TOTAL TASKS" value={stats.totalTasks} color="text-indigo-600" bg="bg-indigo-100" />
-            <StatCard icon={CheckCircle2} label="TASKS COMPLETED" value={stats.completed} color="text-emerald-600" bg="bg-emerald-100" />
-            <StatCard icon={Hourglass} label="TASKS PENDING" value={stats.pending} color="text-amber-600" bg="bg-amber-100" />
+            <StatCard icon={Hourglass} label="PENDING" value={stats.pending} color="text-amber-600" bg="bg-amber-100" />
+            <StatCard icon={CheckCircle2} label="COMPLETED" value={stats.completed} color="text-emerald-600" bg="bg-emerald-100" />
+            <StatCard icon={Activity} label="OVERDUE" value={stats.overdue} color="text-rose-600" bg="bg-rose-100" />
+            <StatCard icon={Activity} label="DUE TODAY" value={stats.dueToday} color="text-orange-600" bg="bg-orange-100" />
           </motion.div>
         )}
 
@@ -196,6 +227,14 @@ const EmployeeHomePage = () => {
         </div>
 
       </motion.div>
+
+      <UrgentAlertModal 
+        isOpen={alertConfig.isOpen} 
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))} 
+        title={alertConfig.title} 
+        message={alertConfig.message} 
+        type={alertConfig.type} 
+      />
     </div>
   );
 };
