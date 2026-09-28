@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Building2, User, Phone, MapPin, Calendar, RefreshCw,
   Globe, Lock, Eye, EyeOff, Copy, Camera, TrendingUp, Megaphone, Code2,
-  ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash,
+  ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -796,6 +796,62 @@ function CredentialsTab({ project, showPasswords, onToggle, onCopy }) {
 }
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
+// ── TAB: COMMUNICATIONS ─────────────────────────────────────────────────────────
+function CommunicationsTab({ communications }) {
+  if (!communications || communications.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+        <MessageCircle size={40} className="opacity-20" />
+        <p className="font-semibold text-sm">No communications logged for this project yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b pb-2">
+        <MessageCircle size={15} className="text-indigo-600" /> Communication Timeline
+      </h4>
+      <div className="relative border-l-2 border-slate-200 ml-3 space-y-6 pb-4">
+        {communications.map((msg) => {
+          const isSent = msg.status === 'SENT' || msg.status === 'DELIVERED' || msg.status === 'READ';
+          return (
+            <div key={msg.id} className="relative pl-6">
+              {/* Dot */}
+              <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-white ${isSent ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800">{msg.managerName}</span>
+                    <span className="text-[10px] text-slate-400 ml-2">to {msg.clientPhone}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {new Date(msg.createdAt).toLocaleString('en-IN', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'})}
+                  </span>
+                </div>
+                
+                <p className="text-xs text-slate-600 whitespace-pre-wrap bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono">
+                  {msg.messagePreview}
+                </p>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isSent ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                    {msg.status}
+                  </span>
+                  {msg.sentAt && (
+                    <span className="text-[10px] text-slate-400">Sent: {new Date(msg.sentAt).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'})}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminProjectDetailModal({ projectId, onClose }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -809,6 +865,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
   const [seoTasks, setSeoTasks] = useState([]);
   const [metaAdsTasks, setMetaAdsTasks] = useState([]);
   const [healthScore, setHealthScore] = useState(null);
+  const [communications, setCommunications] = useState([]);
 
   const fetchAll = useCallback(async () => {
     if (!projectId) return;
@@ -820,13 +877,14 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
       const proj = projRes.data.data;
       setProject(proj);
 
-      const [sheetsRes, seoRepRes, seoTasksRes, shootRes, metaAdsRes, healthRes] = await Promise.allSettled([
+      const [sheetsRes, seoRepRes, seoTasksRes, shootRes, metaAdsRes, healthRes, commsRes] = await Promise.allSettled([
         API.get(`/api/projects/${proj.id}/monthly-sheets`),
         API.get(`/api/seo-reports?projectId=${proj.id}`),
         API.get(`/api/seo-tasks?projectId=${proj.id}`),
         API.get("/api/shoot-workspaces"),
         API.get("/api/meta-ads-tasks"),
         API.get(`/api/health-scores/${proj.id}`),
+        API.get(`/api/whatsapp-messages?projectId=${proj.id}`),
       ]);
 
       if (sheetsRes.status === "fulfilled" && sheetsRes.value?.data?.success)
@@ -865,6 +923,10 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
       } else {
         setHealthScore(computeClientSideFallback(proj));
       }
+
+      if (commsRes.status === "fulfilled" && commsRes.value?.data?.success) {
+        setCommunications(commsRes.value.data.data || []);
+      }
     } catch (err) {
       console.error("AdminProjectDetailModal error:", err);
       setError("Failed to load project details. Please try again.");
@@ -899,6 +961,8 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
     baseTabs.push({ id: "seo", label: "SEO", icon: TrendingUp });
   if (deptType === "web")
     baseTabs.push({ id: "web", label: "Web Dev", icon: Code2 });
+  
+  baseTabs.push({ id: "communications", label: "Timeline", icon: MessageCircle });
   baseTabs.push({ id: "credentials", label: "Credentials", icon: Lock });
 
   const uniqueTabs = baseTabs.filter((t, i, arr) => arr.findIndex((x) => x.id === t.id) === i);
@@ -1019,6 +1083,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
                 {activeTab === "ads" && <MetaAdsTab metaAdsTasks={metaAdsTasks} />}
                 {activeTab === "seo" && <SEOTab project={project} seoReports={seoReports} seoTasks={seoTasks} />}
                 {activeTab === "web" && <WebDevTab project={project} />}
+                {activeTab === "communications" && <CommunicationsTab communications={communications} />}
                 {activeTab === "credentials" && (
                   <CredentialsTab project={project} showPasswords={showPasswords} onToggle={togglePassword} onCopy={copyToClipboard} />
                 )}

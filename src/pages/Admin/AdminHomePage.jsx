@@ -33,6 +33,7 @@ import {
   RefreshCw,
   Heart,
   Activity,
+  MessageCircle,
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -730,6 +731,14 @@ export default function AdminHomePage() {
                             Renew: {formatDate(p.renewalDate)}
                           </span>
                         )}
+                        <span className={`px-2 py-0.5 rounded border font-medium ml-2 flex items-center gap-1 ${
+                          p.lastCommunication 
+                            ? "bg-indigo-50 text-indigo-700 border-indigo-200/60" 
+                            : "bg-slate-50 text-slate-400 border-slate-200/60"
+                        }`}>
+                          <MessageCircle size={10} /> 
+                          {p.lastCommunication ? `Msg: ${formatDate(p.lastCommunication)}` : "No Msg Yet"}
+                        </span>
                       </div>
 
                       {/* Managers assigned */}
