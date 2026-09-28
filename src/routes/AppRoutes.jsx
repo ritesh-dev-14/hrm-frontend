@@ -64,6 +64,8 @@ const AssignedActionsPage = lazy(() => import("../pages/Employee/AssignedActions
 const CordinatorTasks = lazy(() => import("../pages/CordinatorTasks.jsx"));
 const EmployeeDailyReports = lazy(() => import("../pages/Employee/EmployeeDailyReports.jsx"));
 const EditorWorkloadPage = lazy(() => import("../pages/EditorWorkloadPage.jsx"));
+const PendingApprovalsPage = lazy(() => import("../pages/PendingApprovalsPage.jsx"));
+
 const MarketingReportsPage = lazy(() => import("../pages/Manager/MarketingReportsPage.jsx"));
 
 const MarketingReportsApprovalPage = lazy(() => import("../pages/HR/MarketingReportsApprovalPage.jsx"));
@@ -164,6 +166,16 @@ export const AppRoutes = () => {
             element={
               ["ADMIN", "HR", "EA", "MANAGER", "COORDINATOR"].includes(role) ? (
                 <EditorWorkloadPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/pending-approvals"
+            element={
+              ["ADMIN", "HR", "MANAGER", "EA", "COORDINATOR"].includes(role) ? (
+                <PendingApprovalsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )
