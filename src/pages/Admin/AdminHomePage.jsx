@@ -121,7 +121,7 @@ export default function AdminHomePage() {
         const ctData = res.data.data;
         setControlTower(ctData);
         
-        const overdueCount = ctData.overdueDeliverables?.length || 0;
+        const overdueCount = ctData.critical?.overdueDeliverables || 0;
         if (overdueCount > 0) {
           setAlertConfig({
             isOpen: true,

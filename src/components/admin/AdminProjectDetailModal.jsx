@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Building2, User, Phone, MapPin, Calendar, RefreshCw,
   Globe, Lock, Eye, EyeOff, Copy, Camera, TrendingUp, Megaphone, Code2,
-  ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle
+  ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle,
+  ArrowUp, ArrowDown, ArrowRight, Image
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -570,7 +571,7 @@ function MetaAdsTab({ metaAdsTasks }) {
 function SEOTab({ project, seoReports, seoTasks }) {
   return (
     <div className="space-y-5">
-      {(project?.seoEmail || project?.seoName) && (
+      {(project?.seoEmail || project?.seoName || project?.gmbStatus) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
           <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b pb-2">
             <TrendingUp size={15} className="text-emerald-600" /> SEO Account Info
@@ -579,6 +580,7 @@ function SEOTab({ project, seoReports, seoTasks }) {
             {project.seoName && <div><span className="text-[10px] text-slate-400 block">Contact</span><span className="font-bold text-slate-800">{project.seoName}</span></div>}
             {project.seoContact && <div><span className="text-[10px] text-slate-400 block">Phone</span><span className="font-bold text-slate-800">{project.seoContact}</span></div>}
             {project.seoEmail && <div><span className="text-[10px] text-slate-400 block">Email</span><span className="font-bold text-slate-800 text-xs truncate">{project.seoEmail}</span></div>}
+            {project.gmbStatus && <div><span className="text-[10px] text-slate-400 block">GMB Status</span><span className="font-bold text-slate-800">{project.gmbStatus}</span></div>}
           </div>
         </div>
       )}
@@ -622,35 +624,78 @@ function SEOTab({ project, seoReports, seoTasks }) {
         </div>
       )}
 
-      {seoReports?.length > 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-            <BarChart3 size={15} className="text-emerald-600" /> Monthly SEO Reports
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {seoReports.map((rep) => (
-              <div key={rep.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900">Report {rep.month}/{rep.year}</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">SEO</span>
+      {/* SEO RANKING HISTORY & REPORTS */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+        <h4 className="text-sm font-bold text-slate-900 flex items-center justify-between border-b pb-3">
+          <span className="flex items-center gap-2"><BarChart3 size={15} className="text-emerald-600" /> SEO Ranking History</span>
+        </h4>
+        
+        {seoReports?.length > 0 ? (
+          <div className="space-y-4">
+            {/* Compare last 2 reports for movement */}
+            {(() => {
+              const sorted = [...seoReports].sort((a, b) => new Date(b.checkDate || b.createdAt) - new Date(a.checkDate || a.createdAt));
+              const current = sorted[0];
+              const previous = sorted.length > 1 ? sorted[1] : null;
+              
+              return (
+                <div className="flex flex-col gap-3">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+                    <h5 className="font-bold text-slate-800 mb-2">Latest Ranking Update</h5>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Keywords</p>
+                        <p className="text-slate-700 font-medium">{current.keywords?.length > 0 ? current.keywords.join(", ") : "N/A"}</p>
+                      </div>
+                      <div className="px-4 py-2 bg-white rounded-lg border border-slate-100 shadow-sm text-center">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Current Rank</p>
+                        <p className="text-xl font-black text-slate-800">#{current.rankingNo || current.rankingNumber || "—"}</p>
+                      </div>
+                      {previous && (current.rankingNo || current.rankingNumber) && (previous.rankingNo || previous.rankingNumber) && (
+                        <div className="px-4 py-2 bg-white rounded-lg border border-slate-100 shadow-sm text-center">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Movement</p>
+                          {(() => {
+                            const curRank = parseInt(current.rankingNo || current.rankingNumber);
+                            const prevRank = parseInt(previous.rankingNo || previous.rankingNumber);
+                            const diff = prevRank - curRank; // Lower is better
+                            
+                            if (diff > 0) return <span className="text-xl font-black text-emerald-600 flex items-center gap-1 justify-center"><ArrowUp size={18} /> {diff}</span>;
+                            if (diff < 0) return <span className="text-xl font-black text-rose-500 flex items-center gap-1 justify-center"><ArrowDown size={18} /> {Math.abs(diff)}</span>;
+                            return <span className="text-xl font-black text-slate-400 flex items-center gap-1 justify-center"><ArrowRight size={18} /></span>;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {sorted.map((rep) => (
+                      <div key={rep.id} className="p-4 rounded-xl bg-white border border-slate-200 space-y-2 text-xs hover:border-emerald-200 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">Rank: #{rep.rankingNo || rep.rankingNumber || "—"}</span>
+                          <span className="text-slate-500">{fmt(rep.checkDate || rep.createdAt)}</span>
+                        </div>
+                        <p className="text-slate-600 line-clamp-2">{rep.keywords?.join(", ") || "No keywords"}</p>
+                        {rep.screenshotUrl && (
+                          <a href={rep.screenshotUrl} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-emerald-600 font-bold hover:underline mt-2">
+                            <Image size={12} /> View Screenshot
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-slate-600">{rep.remarks || "Monthly SEO audit."}</p>
-                {rep.reportFile && (
-                  <a href={rep.reportFile} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-indigo-600 font-bold hover:underline">
-                    <FileText size={12} /> View PDF Report
-                  </a>
-                )}
-              </div>
-            ))}
+              );
+            })()}
           </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
-          <BarChart3 className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-          <p className="font-bold text-slate-500 text-sm">No SEO reports submitted yet</p>
-        </div>
-      )}
+        ) : (
+          <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <BarChart3 className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="font-bold text-slate-500 text-sm">No SEO ranking reports submitted yet</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
