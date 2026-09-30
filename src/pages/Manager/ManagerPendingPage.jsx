@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { BarChart2, CheckCircle2, ClipboardList, Eye, X } from "lucide-react";
+import { BarChart2, CheckCircle2, ClipboardList, Eye, X, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
+import API from "../../services/api";
+import HrUploads from "../HR/HrUploads";
 import {
   getManagerAssignment,
   getManagerPendingCategories,
@@ -28,6 +30,7 @@ const pendingCategories = [
   { id: "seo", label: "Pending SEO", icon: BarChart2, color: "emerald" },
   { id: "socialMedia", label: "Pending Social Media", icon: BarChart2, color: "pink" },
   { id: "webDevelopment", label: "Pending Web Development", icon: BarChart2, color: "sky" },
+  { id: "uploads", label: "Pending Uploads", icon: FolderOpen, color: "purple" },
 ];
 
 const itemDate = (item) => item.workDate || item.date || item.reportDate || item.dueDate;
@@ -60,7 +63,8 @@ export default function ManagerPendingPage() {
     const logoutStatus = await refreshManagerLogoutStatus();
     const pendingEaTasks = logoutStatus?.pendingEaTasks || [];
     setTasks(pendingEaTasks.filter((task) => !finalStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
-    setStatus(logoutStatus || { pendingMarketingReports: [], pendingSeo: [] });
+    
+    setStatus(logoutStatus || { pendingMarketingReports: [], pendingSeo: [], pendingUploadsCount: 0 });
   } catch (requestError) {
     setError(errorMessage(requestError, "Unable to load pending obligations right now."));
   } finally {
@@ -128,7 +132,11 @@ export default function ManagerPendingPage() {
 
   const categories = getManagerPendingCategories({ ...status, pendingEaTasks: tasks });
   const categoryItems = pendingCategories.reduce((result, category) => {
-    result[category.id] = categories[category.id].filter((item) => !finalStatuses.has(itemStatus(item)) && isToday(item));
+    if (category.id === "uploads") {
+      result[category.id] = new Array(status.pendingUploadsCount || 0).fill({});
+    } else {
+      result[category.id] = (categories[category.id] || []).filter((item) => !finalStatuses.has(itemStatus(item)) && isToday(item));
+    }
     return result;
   }, {});
   const activeItems = categoryItems[activeCategory] || [];
@@ -146,8 +154,14 @@ export default function ManagerPendingPage() {
     </div>
 
     <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-      <div className="mb-6 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50"><ActiveIcon size={20} className="text-indigo-600" /></div><div><h2 className="text-lg font-bold text-slate-900">{activeCategoryConfig.label}</h2><p className="text-xs text-slate-500">Today&apos;s actionable work</p></div></div>
-      {activeItems.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">No pending work in this category.</p> : <div className="space-y-3">{activeItems.map((item, index) => { const id = item.assignmentId || item.id || item.projectId || index; const isEaTask = activeCategory === "ea"; const isMetaAds = activeCategory === "metaAds"; return <div key={id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"><div className="min-w-0"><p className="font-semibold text-slate-900">{isEaTask ? taskName(item) : itemTitle(item)}</p><p className="mt-1 text-sm text-slate-600">{isEaTask ? `Assigned by: ${assignedBy(item)}` : `Client: ${item.clientName || "—"}`}</p><p className="mt-1 text-xs text-slate-500">Status: {itemStatus(item)} · Work date: {itemDate(item) ? new Date(itemDate(item)).toLocaleDateString() : "—"}</p></div><div className="flex flex-wrap items-center justify-end gap-2">{isEaTask ? <><button type="button" onClick={() => handleView(id)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><Eye size={14} />View Task</button><button type="button" disabled={submittingId === id} onClick={() => handleSubmit(id)} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{submittingId === id ? "Submitting..." : "Submit to EA"}</button></> : item.projectId && <><button type="button" onClick={() => navigate(`/project/${item.projectId}`)} className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-600"><Eye size={14} />View Project</button>{isMetaAds && <button type="button" onClick={() => { setReasonTarget(item); setUnableReason(""); }} className="rounded-xl border border-orange-300 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50">Unable to submit</button>}</>}</div></div>; })}</div>}
+      {activeCategory === "uploads" ? (
+        <HrUploads embedded={true} />
+      ) : (
+        <>
+          <div className="mb-6 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50"><ActiveIcon size={20} className="text-indigo-600" /></div><div><h2 className="text-lg font-bold text-slate-900">{activeCategoryConfig.label}</h2><p className="text-xs text-slate-500">Today&apos;s actionable work</p></div></div>
+          {activeItems.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">No pending work in this category.</p> : <div className="space-y-3">{activeItems.map((item, index) => { const id = item.assignmentId || item.id || item.projectId || index; const isEaTask = activeCategory === "ea"; const isMetaAds = activeCategory === "metaAds"; return <div key={id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"><div className="min-w-0"><p className="font-semibold text-slate-900">{isEaTask ? taskName(item) : itemTitle(item)}</p><p className="mt-1 text-sm text-slate-600">{isEaTask ? `Assigned by: ${assignedBy(item)}` : `Client: ${item.clientName || "—"}`}</p><p className="mt-1 text-xs text-slate-500">Status: {itemStatus(item)} · Work date: {itemDate(item) ? new Date(itemDate(item)).toLocaleDateString() : "—"}</p></div><div className="flex flex-wrap items-center justify-end gap-2">{isEaTask ? <><button type="button" onClick={() => handleView(id)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><Eye size={14} />View Task</button><button type="button" disabled={submittingId === id} onClick={() => handleSubmit(id)} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{submittingId === id ? "Submitting..." : "Submit to EA"}</button></> : item.projectId && <><button type="button" onClick={() => navigate(`/project/${item.projectId}`)} className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-600"><Eye size={14} />View Project</button>{isMetaAds && <button type="button" onClick={() => { setReasonTarget(item); setUnableReason(""); }} className="rounded-xl border border-orange-300 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50">Unable to submit</button>}</>}</div></div>; })}</div>}
+        </>
+      )}
     </div>
 
     {!totalPending && <div className="mt-6 flex flex-col items-center rounded-3xl border border-emerald-200 bg-emerald-50 p-8 text-center"><CheckCircle2 className="mb-3 text-emerald-600" size={32} /><h2 className="font-bold text-slate-900">All obligations completed. You can logout.</h2></div>}

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, BarChart2, ClipboardList, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart2, ClipboardList, X, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const upper = (value) => String(value || "").toUpperCase();
@@ -24,16 +24,20 @@ const getNavigationPath = (item, isReport, isManager) => {
 
 const normalizeStatus = (status) => {
   const isManager = upper(status?.role) === "MANAGER" ||
-    Array.isArray(status?.pendingEaTasks) || Array.isArray(status?.pendingMarketingReports);
+    Array.isArray(status?.pendingEaTasks) || Array.isArray(status?.pendingMarketingReports) || Array.isArray(status?.pendingUploads);
   const taskItems = isManager
     ? status?.pendingEaTasks || []
     : [...(status?.pendingTasks || []), ...(status?.pendingEaAssignments || [])];
   const reportItems = isManager ? status?.pendingMarketingReports || [] : [];
+  const voiceReportItems = isManager ? status?.pendingWeeklyVoiceReports || [] : [];
+  const uploadItems = isManager ? status?.pendingUploads || [] : [];
 
   return {
     isManager,
     taskItems: Array.isArray(taskItems) ? taskItems : [],
     reportItems: Array.isArray(reportItems) ? reportItems : [],
+    voiceReportItems: Array.isArray(voiceReportItems) ? voiceReportItems : [],
+    uploadItems: Array.isArray(uploadItems) ? uploadItems : [],
   };
 };
 
@@ -41,8 +45,8 @@ export default function PendingWorkGuardModal({ status, onClose, action = "logou
   const navigate = useNavigate();
   if (!status) return null;
 
-  const { isManager, taskItems, reportItems } = normalizeStatus(status);
-  const hasItems = taskItems.length > 0 || reportItems.length > 0;
+  const { isManager, taskItems, reportItems, voiceReportItems, uploadItems } = normalizeStatus(status);
+  const hasItems = taskItems.length > 0 || reportItems.length > 0 || voiceReportItems.length > 0 || uploadItems.length > 0;
   const message = status.message || status.errorMessage ||
     "All assigned work must be completed before you can end work or logout.";
   const openItem = (item, isReport) => {
@@ -119,6 +123,24 @@ export default function PendingWorkGuardModal({ status, onClose, action = "logou
                   <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800">Pending marketing reports</h3>
                 </div>
                 <div className="space-y-2">{reportItems.map((item, index) => renderItem(item, true, index))}</div>
+              </section>
+            )}
+            {voiceReportItems.length > 0 && (
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <BarChart2 size={17} className="text-blue-600" />
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800">Pending weekly voice reports</h3>
+                </div>
+                <div className="space-y-2">{voiceReportItems.map((item, index) => renderItem(item, true, index))}</div>
+              </section>
+            )}
+            {uploadItems.length > 0 && (
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <FolderOpen size={17} className="text-purple-600" />
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800">Pending uploads</h3>
+                </div>
+                <div className="space-y-2">{uploadItems.map((item, index) => renderItem(item, false, index))}</div>
               </section>
             )}
           </div>

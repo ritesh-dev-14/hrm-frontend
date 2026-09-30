@@ -6,6 +6,7 @@ import {
   X,
   CheckCircle2,
   ArrowRight,
+  FolderOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,6 +25,7 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
   const hasPendingTasks = status.pendingEaTasks?.length > 0;
   const hasPendingReports = status.pendingMarketingReports?.length > 0;
   const hasPendingVoiceReports = status.pendingWeeklyVoiceReports?.length > 0;
+  const hasPendingUploads = status.pendingUploads?.length > 0;
 
   const STATUS_COLORS = {
     ASSIGNED: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
@@ -216,6 +218,65 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
                   className="mt-3 w-full flex items-center justify-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-2.5 rounded-xl border border-blue-200 transition-colors"
                 >
                   Go to Voice Reports
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+            )}
+
+            {/* Divider */}
+            {(hasPendingTasks || hasPendingReports || hasPendingVoiceReports) && hasPendingUploads && (
+              <div className="border-t border-slate-100" />
+            )}
+
+            {/* Pending Uploads Section */}
+            {hasPendingUploads && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <FolderOpen size={15} className="text-purple-600" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                    Pending Uploads (Today)
+                  </p>
+                  <span className="ml-auto bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {status.pendingUploads.length} pending
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {status.pendingUploads.map((upload, i) => (
+                    <div
+                      key={upload.id || i}
+                      className="flex items-center justify-between gap-3 p-3 rounded-xl border border-purple-200 bg-purple-50"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-slate-800 truncate">
+                          {upload.projectName || "Unnamed Project"}
+                        </p>
+                        {upload.clientName && (
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Client: {upload.clientName}
+                          </p>
+                        )}
+                        {upload.title && (
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Title: {upload.title}
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-lg bg-purple-100 text-purple-700 border border-purple-200">
+                        Upload Pending
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate("/manager-pending");
+                  }}
+                  className="mt-3 w-full flex items-center justify-center gap-2 text-sm font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-50 py-2.5 rounded-xl border border-purple-200 transition-colors"
+                >
+                  Go to Pending Work
                   <ArrowRight size={15} />
                 </button>
               </div>

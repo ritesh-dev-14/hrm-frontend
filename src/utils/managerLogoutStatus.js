@@ -117,6 +117,8 @@ export const refreshManagerLogoutStatus = async () => {
       pendingEaTasks: payload.pendingEaTasks ?? payload.assignedActions ?? [],
       pendingMarketingReports: payload.pendingMarketingReports ?? payload.metaAdsProjects ?? [],
       pendingWeeklyVoiceReports: payload.pendingWeeklyVoiceReports ?? [],
+      pendingUploads: payload.pendingUploads ?? [],
+      pendingUploadsCount: payload.pendingUploads?.length ?? 0,
       pendingSeo,
       canLogout: payload.canLogout ?? true,
     };
@@ -129,7 +131,8 @@ export const refreshManagerLogoutStatus = async () => {
 
     status.canLogout = status.canLogout
       && Object.values(getManagerPendingCategories(status)).every((items) => items.length === 0)
-      && status.pendingWeeklyVoiceReports.length === 0;
+      && status.pendingWeeklyVoiceReports.length === 0
+      && status.pendingUploads.length === 0;
 
     // Dispatch event so other components can react
     window.dispatchEvent(
@@ -154,6 +157,8 @@ export const refreshManagerLogoutStatus = async () => {
       pendingSeo: [],
       pendingSocialMedia: [],
       pendingWebDevelopment: [],
+      pendingUploads: [],
+      pendingUploadsCount: 0,
     };
     window.dispatchEvent(new CustomEvent("manager-logout-status", { detail: status }));
       return status;

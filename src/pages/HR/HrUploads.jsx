@@ -217,7 +217,7 @@ function UploadCard({ item, user, onUpdateStatus }) {
 // ─────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────
-const HrUploads = () => {
+const HrUploads = ({ embedded = false }) => {
   const { user } = useAuth();
   const [uploads, setUploads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -229,6 +229,11 @@ const HrUploads = () => {
   const [rejectItem, setRejectItem] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Approval Modal State
+  const [approveItem, setApproveItem] = useState(null);
+  const [approveContentLinks, setApproveContentLinks] = useState("");
+  const [approveVideoLinks, setApproveVideoLinks] = useState("");
 
   // ── Fetch from Content Calendar (Monthly Sheets) ─────────
   const fetchUploads = async () => {
@@ -270,21 +275,39 @@ const HrUploads = () => {
   }, []);
 
   // ── Update Status Handler ───────────────────────────────
-  const handleUpdateStatus = async (item, status, reason = "") => {
+  const handleUpdateStatus = async (item, status, reason = "", extraData = {}) => {
     if (status === "REJECTED" && !reason) {
       setRejectItem(item);
       setRejectReason("");
       return;
     }
 
+    if (status === "APPROVED" && !extraData.isModalSubmit) {
+      setApproveItem(item);
+      setApproveContentLinks(item.contentUploadLinks ? item.contentUploadLinks.join(", ") : "");
+      setApproveVideoLinks(item.videoUploadLinks ? item.videoUploadLinks.join(", ") : "");
+      return;
+    }
+
     setIsUpdating(true);
     try {
+      const payload = {
+        uploadStatus: status,
+        uploadRejectReason: reason,
+      };
+      
+      if (status === "APPROVED") {
+        if (extraData.contentUploadLinks !== undefined) {
+           payload.contentUploadLinks = extraData.contentUploadLinks;
+        }
+        if (extraData.videoUploadLinks !== undefined) {
+           payload.videoUploadLinks = extraData.videoUploadLinks;
+        }
+      }
+
       await API.patch(
         `/api/projects/${item.projectId}/monthly-sheets/${item.sheetId}/days/${item.dayId}/upload-status`,
-        {
-          uploadStatus: status,
-          uploadRejectReason: reason,
-        },
+        payload
       );
 
       toast.success(`Upload ${status.toLowerCase()} successfully`);
@@ -293,13 +316,22 @@ const HrUploads = () => {
       setUploads((prev) =>
         prev.map((u) =>
           u.id === item.id
-            ? { ...u, uploadStatus: status, uploadRejectReason: reason }
+            ? { 
+                ...u, 
+                uploadStatus: status, 
+                uploadRejectReason: reason,
+                contentUploadLinks: status === "APPROVED" && extraData.contentUploadLinks ? extraData.contentUploadLinks : u.contentUploadLinks,
+                videoUploadLinks: status === "APPROVED" && extraData.videoUploadLinks ? extraData.videoUploadLinks : u.videoUploadLinks
+              }
             : u,
         ),
       );
 
       setRejectItem(null);
       setRejectReason("");
+      setApproveItem(null);
+      setApproveContentLinks("");
+      setApproveVideoLinks("");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update status");
     } finally {
@@ -313,6 +345,23 @@ const HrUploads = () => {
       return;
     }
     handleUpdateStatus(rejectItem, "REJECTED", rejectReason);
+  };
+
+  const submitApproval = () => {
+    const cLinks = approveContentLinks
+      .split(",")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const vLinks = approveVideoLinks
+      .split(",")
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    handleUpdateStatus(approveItem, "APPROVED", "", {
+      isModalSubmit: true,
+      contentUploadLinks: cLinks,
+      videoUploadLinks: vLinks,
+    });
   };
 
   // ── Filter ────────────────────────────────────────────
@@ -348,20 +397,22 @@ const HrUploads = () => {
 
   // ─────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 p-4 sm:p-8">
+    <div className={embedded ? "" : "min-h-screen bg-slate-50 p-4 sm:p-8"}>
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl flex items-center gap-2">
-            <FolderOpen className="text-indigo-600" size={28} />
-            Content Calendar Uploads
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            View and manage uploads sourced directly from the Content Calendar
-            (Monthly Sheets).
-          </p>
+      {!embedded && (
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl flex items-center gap-2">
+              <FolderOpen className="text-indigo-600" size={28} />
+              Content Calendar Uploads
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              View and manage uploads sourced directly from the Content Calendar
+              (Monthly Sheets).
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -495,6 +546,74 @@ const HrUploads = () => {
                   <Loader2 className="animate-spin" size={16} />
                 ) : null}
                 Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Modal */}
+      {approveItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <CheckCircle className="text-green-500" size={20} /> Approve & Upload Links
+              </h3>
+              <button
+                onClick={() => setApproveItem(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 flex-1 overflow-y-auto space-y-4">
+              <p className="text-sm text-slate-600 mb-4">
+                Provide links for <strong>{approveItem.projectName}</strong> on{" "}
+                {formatDate(approveItem.uploadDate)}.
+              </p>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Content Upload Links (comma separated)
+                </label>
+                <textarea
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 min-h-[80px] resize-none"
+                  placeholder="https://link1.com, https://link2.com"
+                  value={approveContentLinks}
+                  onChange={(e) => setApproveContentLinks(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Video Upload Links (comma separated)
+                </label>
+                <textarea
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 min-h-[80px] resize-none"
+                  placeholder="https://link1.com, https://link2.com"
+                  value={approveVideoLinks}
+                  onChange={(e) => setApproveVideoLinks(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="border-t border-slate-100 bg-slate-50 px-5 py-4 flex justify-end gap-3">
+              <button
+                onClick={() => setApproveItem(null)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition"
+                disabled={isUpdating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitApproval}
+                disabled={isUpdating}
+                className="flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition"
+              >
+                {isUpdating ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : null}
+                Approve
               </button>
             </div>
           </div>
