@@ -11,6 +11,7 @@ export default function EditorWorkloadPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const [timeframe, setTimeframe] = useState("allTime");
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
@@ -71,15 +72,27 @@ export default function EditorWorkloadPage() {
             </p>
           </div>
           
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <input 
-              type="text" 
-              placeholder="Search editor..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
-            />
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <select 
+              value={timeframe} 
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="w-full sm:w-auto px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm text-slate-700 font-bold cursor-pointer"
+            >
+              <option value="daily">Today</option>
+              <option value="weekly">This Week</option>
+              <option value="monthly">This Month</option>
+              <option value="allTime">All Time</option>
+            </select>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input 
+                type="text" 
+                placeholder="Search editor..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+              />
+            </div>
           </div>
         </div>
 
@@ -104,7 +117,7 @@ export default function EditorWorkloadPage() {
                 {/* Editor Row Header */}
                 <div 
                   onClick={() => setExpandedId(expandedId === editor.id ? null : editor.id)}
-                  className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-bold text-lg">
@@ -118,29 +131,44 @@ export default function EditorWorkloadPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 md:gap-10">
+                  <div className="flex items-center gap-4 sm:gap-8 flex-wrap justify-start lg:justify-end">
                     <div className="text-center">
                       <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Active</p>
                       <p className="text-xl font-black text-slate-800">{editor.activeTasks}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Due Today</p>
-                      <p className={`text-xl font-black ${editor.dueToday > 0 ? "text-amber-500" : "text-slate-800"}`}>
-                        {editor.dueToday}
+                      <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Due/Overdue</p>
+                      <p className={`text-xl font-black ${(editor.dueToday > 0 || editor.overdue > 0) ? "text-red-500" : "text-slate-800"}`}>
+                        {editor.dueToday} <span className="text-slate-400 font-normal">/</span> {editor.overdue}
                       </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Overdue</p>
-                      <p className={`text-xl font-black ${editor.overdue > 0 ? "text-red-500" : "text-slate-800"}`}>
-                        {editor.overdue}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Avg TAT</p>
-                      <p className="text-xl font-black text-indigo-600">{editor.avgTatDays} <span className="text-sm">d</span></p>
                     </div>
                     
-                    <div className="text-slate-400">
+                    <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
+
+                    <div className="text-center">
+                      <p className="text-xs text-indigo-500 uppercase font-bold tracking-wider">Videos</p>
+                      <div className="flex items-baseline gap-1 justify-center">
+                        <p className="text-xl font-black text-slate-800">
+                          {editor.stats?.[timeframe]?.videosEdited || 0}
+                        </p>
+                        <p className="text-xs font-medium text-slate-500" title="Average TAT">
+                          ({editor.stats?.[timeframe]?.videoAvgTat || 0}h)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-pink-500 uppercase font-bold tracking-wider">Posts</p>
+                      <div className="flex items-baseline gap-1 justify-center">
+                        <p className="text-xl font-black text-slate-800">
+                          {editor.stats?.[timeframe]?.postsEdited || 0}
+                        </p>
+                        <p className="text-xs font-medium text-slate-500" title="Average TAT">
+                          ({editor.stats?.[timeframe]?.postAvgTat || 0}h)
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="text-slate-400 ml-auto lg:ml-4">
                       {expandedId === editor.id ? <ChevronUp /> : <ChevronDown />}
                     </div>
                   </div>
