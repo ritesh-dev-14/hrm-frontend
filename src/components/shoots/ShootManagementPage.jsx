@@ -32,6 +32,12 @@ const ShootManagementPage = () => {
   });
   const [error, setError] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+  
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
   const [isMetricsEditorOpen, setIsMetricsEditorOpen] = useState(false);
   const [metricsForm, setMetricsForm] = useState({ pendingUploadCount: "0", videosUploadedCount: "0" });
   const [metricsSaving, setMetricsSaving] = useState(false);
@@ -39,10 +45,11 @@ const ShootManagementPage = () => {
   const [uploadFeedLoading, setUploadFeedLoading] = useState(false);
   const [taskAction, setTaskAction] = useState({ id: null, type: null });
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (monthToFetch = selectedMonth) => {
     try {
       setLoading(true);
-      const response = await API.get("/api/shoot-workspaces/management-summary");
+      const query = monthToFetch ? `?month=${monthToFetch}` : "";
+      const response = await API.get(`/api/shoot-workspaces/management-summary${query}`);
       if (response?.data?.success) {
         const nextSummary = response.data.data || summary;
         setSummary(nextSummary);
@@ -63,7 +70,8 @@ const ShootManagementPage = () => {
     const loadSummary = async () => {
       try {
         setLoading(true);
-        const response = await API.get("/api/shoot-workspaces/management-summary");
+        const query = selectedMonth ? `?month=${selectedMonth}` : "";
+        const response = await API.get(`/api/shoot-workspaces/management-summary${query}`);
         if (cancelled) return;
         if (response?.data?.success) {
           const nextSummary = response.data.data || {};
@@ -81,7 +89,7 @@ const ShootManagementPage = () => {
 
     loadSummary();
     return () => { cancelled = true; };
-  }, []);
+  }, [selectedMonth]);
 
   useEffect(() => {
     if (!selectedWorkspaceId) return undefined;
@@ -171,6 +179,7 @@ const ShootManagementPage = () => {
   };
 
   const cards = useMemo(() => [
+    { label: "Total Shoots", value: formatNumber(displayedSummary.shoots?.length || 0), icon: Camera, tone: "indigo" },
     { label: "Extra Reels", value: formatNumber(displayedSummary.extraReels), icon: Video, tone: "rose" },
     { label: "Extra Pics", value: formatNumber(displayedSummary.extraPics), icon: Camera, tone: "amber" },
     { label: "Reels Approved", value: formatNumber(displayedSummary.reelsApprovedByManager), icon: CheckCircle2, tone: "green" },
@@ -211,15 +220,23 @@ const ShootManagementPage = () => {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">Management overview</p>
             <h1 className="mt-2 text-3xl font-black text-slate-900">Shoot Management</h1>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-            <span className="font-semibold text-slate-800">Project link:</span>{" "}
-            {displayedSummary.rawDataLink ? (
-              <a href={displayedSummary.rawDataLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-indigo-600 underline decoration-indigo-300 underline-offset-2">
-                <Link2 className="h-3.5 w-3.5" /> Raw data
-              </a>
-            ) : (
-              <span className="text-slate-500">No raw data link added yet</span>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <span className="font-semibold text-slate-800">Project link:</span>{" "}
+              {displayedSummary.rawDataLink ? (
+                <a href={displayedSummary.rawDataLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-indigo-600 underline decoration-indigo-300 underline-offset-2">
+                  <Link2 className="h-3.5 w-3.5" /> Raw data
+                </a>
+              ) : (
+                <span className="text-slate-500">No raw data link added yet</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -279,11 +296,11 @@ const ShootManagementPage = () => {
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Shoot</th>
-                  <th className="px-4 py-3 font-semibold">Reels</th>
-                  <th className="px-4 py-3 font-semibold">Pics</th>
-                  <th className="px-4 py-3 font-semibold">Extra</th>
-                  <th className="px-4 py-3 font-semibold">Approved</th>
+                  <th className="px-4 py-3 font-semibold">Shoot Name</th>
+                  <th className="px-4 py-3 font-semibold">Videos Provided</th>
+                  <th className="px-4 py-3 font-semibold">Photos Provided</th>
+                  <th className="px-4 py-3 font-semibold">Extra (Vid/Pic)</th>
+                  <th className="px-4 py-3 font-semibold">Approved (Vid/Pic)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
