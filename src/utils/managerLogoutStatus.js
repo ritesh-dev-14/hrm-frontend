@@ -116,6 +116,7 @@ export const refreshManagerLogoutStatus = async () => {
       role: "MANAGER",
       pendingEaTasks: payload.pendingEaTasks ?? payload.assignedActions ?? [],
       pendingMarketingReports: payload.pendingMarketingReports ?? payload.metaAdsProjects ?? [],
+      pendingWeeklyVoiceReports: payload.pendingWeeklyVoiceReports ?? [],
       pendingSeo,
       canLogout: payload.canLogout ?? true,
     };
@@ -127,7 +128,8 @@ export const refreshManagerLogoutStatus = async () => {
     status.pendingWebDevelopment = categories.webDevelopment;
 
     status.canLogout = status.canLogout
-      && Object.values(getManagerPendingCategories(status)).every((items) => items.length === 0);
+      && Object.values(getManagerPendingCategories(status)).every((items) => items.length === 0)
+      && status.pendingWeeklyVoiceReports.length === 0;
 
     // Dispatch event so other components can react
     window.dispatchEvent(

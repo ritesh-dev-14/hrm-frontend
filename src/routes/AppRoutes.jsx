@@ -7,6 +7,7 @@ const Login = lazy(() => import("../auth/login"));
 
 const AdminHomePage = lazy(() => import("../pages/Admin/AdminHomePage"));
 const AdminCompleteDetailsPage = lazy(() => import("../pages/Admin/AdminCompleteDetailsPage"));
+const AdminWeeklyVoiceReports = lazy(() => import("../pages/Admin/AdminWeeklyVoiceReports"));
 
 // Shared Task Detail
 const ProjectDetailsViewWrapper = lazy(() => import("../components/projects/ProjectDetailsViewWrapper"));
@@ -76,7 +77,7 @@ const WebDevelopmentProjectsPage = lazy(() => import("../pages/WebDevelopmentPro
 const DailyDepartmentReportPage = lazy(() => import("../pages/DailyDepartmentReportPage"));
 const DepartmentReportsPage = lazy(() => import("../pages/DepartmentReportsPage"));
 const DataDashboardPage = lazy(() => import("../pages/DataDashboardPage"));
-
+const ManagerWeeklyVoiceReport = lazy(() => import("../pages/Manager/ManagerWeeklyVoiceReport"));
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
   const isAuthenticated = user && token;
@@ -220,6 +221,17 @@ export const AppRoutes = () => {
             }
           />
 
+          <Route
+            path="/manager/weekly-voice-report"
+            element={
+              role === "MANAGER" ? (
+                <ManagerWeeklyVoiceReport />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
           <Route path="/tasks" element={<CordinatorTasks />} />
 
           <Route
@@ -229,6 +241,17 @@ export const AppRoutes = () => {
                 <MarketingReportsApprovalPage />
               ) : role === "MANAGER" ? (
                 <MarketingReportsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/admin/weekly-voice-reports"
+            element={
+              ["ADMIN", "HR", "EA"].includes(role) ? (
+                <AdminWeeklyVoiceReports />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

@@ -23,6 +23,7 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
 
   const hasPendingTasks = status.pendingEaTasks?.length > 0;
   const hasPendingReports = status.pendingMarketingReports?.length > 0;
+  const hasPendingVoiceReports = status.pendingWeeklyVoiceReports?.length > 0;
 
   const STATUS_COLORS = {
     ASSIGNED: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
@@ -168,6 +169,55 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            {(hasPendingTasks || hasPendingReports) && hasPendingVoiceReports && (
+              <div className="border-t border-slate-100" />
+            )}
+
+            {/* Weekly Voice Reports Section (Saturday Only) */}
+            {hasPendingVoiceReports && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <BarChart2 size={15} className="text-blue-600" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                    Missing Voice Reports (Saturday)
+                  </p>
+                  <span className="ml-auto bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {status.pendingWeeklyVoiceReports.length} missing
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {status.pendingWeeklyVoiceReports.map((project, i) => (
+                    <div
+                      key={project.projectId || i}
+                      className="flex items-center justify-between gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-slate-800 truncate">
+                          {project.projectName || "Unnamed Project"}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">
+                        Missing Audio
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate("/manager/weekly-voice-report");
+                  }}
+                  className="mt-3 w-full flex items-center justify-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-2.5 rounded-xl border border-blue-200 transition-colors"
+                >
+                  Go to Voice Reports
+                  <ArrowRight size={15} />
+                </button>
               </div>
             )}
           </div>

@@ -25,7 +25,7 @@ import {
   Megaphone,
   BarChart2,
   Code2,
-  Database, ClipboardList, AlertTriangle,
+  Database, ClipboardList, AlertTriangle, Mic,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -61,6 +61,8 @@ const NAV_CONFIG = [
   { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "ADMIN", "HR"], managerDepartments: ["social media"] },
   { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"], managerDepartments: ["social media"] },
   { id: "editor-workload", label: "Editor Workload", icon: Keyboard, path: "/editor-workload", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
+  { id: "weekly-voice-report", label: "Weekly Voice Report", icon: Mic, path: "/manager/weekly-voice-report", roles: ["MANAGER"] },
+  { id: "admin-weekly-voice-reports", label: "Voice Reports", icon: Mic, path: "/admin/weekly-voice-reports", roles: ["ADMIN", "HR", "EA"] },
   { id: "pending-approvals", label: "Pending Approvals", icon: ClipboardList, path: "/pending-approvals", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
