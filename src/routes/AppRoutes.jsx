@@ -59,6 +59,7 @@ const EditorWorkSpaceDetails = lazy(() => import("../components/editor/manager/E
 /* NEW â€” COORDINATOR */
 const CoordinatorHomePage = lazy(() => import("../pages/Coordinator/CoordinatorHomePage.jsx"));
 const CoordinatorPriorityActions = lazy(() => import("../pages/Coordinator/CoordinatorPriorityActions.jsx"));
+const CoordinatorTaskProgressPage = lazy(() => import("../pages/Coordinator/CoordinatorTaskProgressPage.jsx"));
 const SidebarAppealsPage = lazy(() => import("../pages/EA/SidebarAppealsPage.jsx"));
 
 /* NEW â€” EMPLOYEE ACTIONS */
@@ -203,6 +204,17 @@ export const AppRoutes = () => {
             element={
               role === "COORDINATOR" || role === "EA" ? (
                 <CoordinatorPriorityActions />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/coordinator/task-progress"
+            element={
+              role === "COORDINATOR" || role === "EA" ? (
+                <CoordinatorTaskProgressPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )
