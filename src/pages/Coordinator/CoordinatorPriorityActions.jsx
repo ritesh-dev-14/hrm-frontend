@@ -68,7 +68,7 @@ const CoordinatorPriorityActions = () => {
   const fetchAssignments = useCallback(async () => {
     try {
       setTableLoading(true);
-      const res = await API.get("/api/coordinator-assignments/my-assignments", {
+      const res = await API.get("/api/coordinator-assignments/team-assignments", {
         params: { all: true },
       });
       const list = res?.data?.data?.data || res?.data?.data || res?.data || [];
@@ -277,7 +277,7 @@ const CoordinatorPriorityActions = () => {
           Priority Actions
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          All tasks assigned by you to employees, managers, and HR in one list.
+          All tasks assigned by EAs and coordinators to employees, managers, and HR.
         </p>
       </div>
 
@@ -409,7 +409,7 @@ const CoordinatorPriorityActions = () => {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-semibold text-slate-800">
-                Tasks Assigned by You
+                Tasks Assigned by EAs and Coordinators
               </h3>
               <p className="mt-1 text-xs text-slate-500">
                 Employees, managers, and HR
