@@ -15,13 +15,16 @@ import {
   ThumbsUp,
   ThumbsDown,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const CoordinatorPriorityActions = () => {
   const [employees, setEmployees] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const [formData, setFormData] = useState({
     task: "",
@@ -161,6 +164,27 @@ const CoordinatorPriorityActions = () => {
       console.error("Failed to review submission:", error);
     } finally {
       setReviewLoading(false);
+    }
+  };
+
+  const handleDeleteAssignment = async (assignment) => {
+    const taskName = assignment?.task?.projectName || "this task";
+    if (!window.confirm(`Delete "${taskName}"? This will remove the assignment.`)) return;
+
+    try {
+      setDeletingId(assignment.id);
+      await API.delete(`/api/coordinator-assignments/${assignment.id}`);
+      setAssignments((current) => current.filter((item) => item.id !== assignment.id));
+      if (activeTaskForFollowUp?.id === assignment.id) {
+        setActiveTaskForFollowUp(null);
+        setMessages([]);
+      }
+      toast.success("Task assignment deleted.");
+    } catch (error) {
+      console.error("Failed to delete coordinator assignment:", error);
+      toast.error(error.response?.data?.message || "Failed to delete task assignment.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -605,6 +629,23 @@ const CoordinatorPriorityActions = () => {
                                 : "Follow Ups"}
                             </span>
                           </button>
+
+                          {item.canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAssignment(item)}
+                              disabled={deletingId === item.id}
+                              className="h-8 px-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold transition inline-flex items-center gap-1.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Delete ${item?.task?.projectName || "task assignment"}`}
+                            >
+                              {deletingId === item.id ? (
+                                <Loader2 size={13} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={13} />
+                              )}
+                              Delete
+                            </button>
+                          )}
 
                           {/* Approve / Reject — only for SUBMITTED tasks */}
                           {item?.status === "SUBMITTED" && (
