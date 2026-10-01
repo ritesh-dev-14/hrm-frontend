@@ -4,7 +4,7 @@ import {
   X, Loader2, Building2, User, Phone, MapPin, Calendar, RefreshCw,
   Globe, Lock, Eye, EyeOff, Copy, Camera, TrendingUp, Megaphone, Code2,
   ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle,
-  ArrowUp, ArrowDown, ArrowRight, Image
+  ArrowUp, ArrowDown, ArrowRight, Image, ChevronDown
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -341,6 +341,8 @@ function OverviewTab({ project, monthlySheets, onTierUpdate }) {
 
 // ── TAB: Social Media ─────────────────────────────────────────────────────────
 function SocialMediaTab({ monthlySheets, shootWorkspaces }) {
+  const [expandedSheetId, setExpandedSheetId] = useState(null);
+
   if (!monthlySheets.length && !shootWorkspaces.length) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-2">
@@ -353,11 +355,65 @@ function SocialMediaTab({ monthlySheets, shootWorkspaces }) {
 
   return (
     <div className="space-y-5">
+      {monthlySheets.length > 0 && (
+        <section className="space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">
+            Monthly Content Calendars
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {monthlySheets.map((sheet) => {
+              const monthNumber = Number(sheet.month);
+              const monthName = Number.isInteger(monthNumber) && monthNumber >= 1 && monthNumber <= 12
+                ? new Date(Number(sheet.year) || 2000, monthNumber - 1, 1).toLocaleDateString("en-IN", { month: "long" })
+                : String(sheet.month || "Content Calendar");
+              const label = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)}${sheet.year ? ` ${sheet.year}` : ""}`;
+              const isExpanded = expandedSheetId === sheet.id;
+
+              return (
+                <button
+                  key={sheet.id}
+                  type="button"
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedSheetId(isExpanded ? null : sheet.id)}
+                  className={`flex items-center justify-between gap-3 rounded-xl border p-4 text-left transition ${
+                    isExpanded
+                      ? "border-violet-300 bg-violet-50 text-violet-800 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-violet-200 hover:bg-violet-50/50"
+                  }`}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Calendar size={16} className={isExpanded ? "text-violet-600" : "text-slate-400"} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{label}</span>
+                      <span className="mt-0.5 block text-[10px] font-medium text-slate-400">
+                        {sheet.days?.length || 0} scheduled {sheet.days?.length === 1 ? "day" : "days"}
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 transition-transform ${isExpanded ? "rotate-180 text-violet-600" : "text-slate-400"}`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <AnimatePresence initial={false} mode="wait">
       {monthlySheets.map((sheet) => {
+        if (sheet.id !== expandedSheetId) return null;
         const reelPct = sheet.totalReels ? Math.round((sheet.totalReelsUploaded / sheet.totalReels) * 100) : 0;
         const postPct = sheet.totalPosts ? Math.round((sheet.totalPostsUploaded / sheet.totalPosts) * 100) : 0;
         return (
-          <div key={sheet.id} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+          <motion.div
+            key={sheet.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5"
+          >
             <div className="flex items-center justify-between border-b pb-3">
               <h4 className="text-sm font-bold text-slate-900">Content Calendar — {sheet.month}/{sheet.year}</h4>
               <div className="flex items-center gap-2">
@@ -423,9 +479,10 @@ function SocialMediaTab({ monthlySheets, shootWorkspaces }) {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         );
       })}
+      </AnimatePresence>
 
       {shootWorkspaces.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
