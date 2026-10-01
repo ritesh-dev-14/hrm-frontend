@@ -2,46 +2,26 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import API from "../../services/api";
 import {
   Plus,
-  Search,
   CalendarDays,
   User2,
+  ClipboardList,
   Loader2,
   CheckCircle2,
   Clock3,
   AlertCircle,
-  SlidersHorizontal,
-  X,
   MessageSquarePlus,
   Send,
   History,
   ThumbsUp,
   ThumbsDown,
-  ChevronLeft,
-  ChevronRight,
   RefreshCw,
 } from "lucide-react";
-
-const STATUS_OPTIONS = [
-  { value: "ASSIGNED", label: "Assigned" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "SUBMITTED", label: "Submitted" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "UNABLE_TO_SUBMIT", label: "Unable to Submit" },
-  { value: "REJECTED", label: "Rejected" },
-];
 
 const CoordinatorPriorityActions = () => {
   const [employees, setEmployees] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-
-  // Filter & Pagination States
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [employeeFilter, setEmployeeFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState({
     task: "",
@@ -89,7 +69,7 @@ const CoordinatorPriorityActions = () => {
     try {
       setTableLoading(true);
       const res = await API.get("/api/coordinator-assignments/my-assignments", {
-        params: { take: 1000, limit: 1000, pageSize: 1000, all: true },
+        params: { all: true },
       });
       const list = res?.data?.data?.data || res?.data?.data || res?.data || [];
       setAssignments(Array.isArray(list) ? list : []);
@@ -277,48 +257,6 @@ const CoordinatorPriorityActions = () => {
     return pairs.reverse();
   }, [messages]);
 
-  // Efficient Pipeline Matrix for Filters
-  const filteredAssignments = useMemo(() => {
-    return assignments.filter((item) => {
-      const taskName = item?.task?.projectName?.toLowerCase() || "";
-      const matchesSearch = taskName.includes(search.toLowerCase());
-      const matchesStatus = statusFilter ? item?.status === statusFilter : true;
-      const matchesEmployee = employeeFilter
-        ? item?.assignedTo?.id === employeeFilter
-        : true;
-
-      return matchesSearch && matchesStatus && matchesEmployee;
-    });
-  }, [assignments, search, statusFilter, employeeFilter]);
-
-  // Reset page on filter/limit changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter, employeeFilter, itemsPerPage]);
-
-  const paginatedAssignments = useMemo(() => {
-    if (itemsPerPage === "ALL" || itemsPerPage >= filteredAssignments.length) {
-      return filteredAssignments;
-    }
-    const startIndex = (currentPage - 1) * Number(itemsPerPage);
-    return filteredAssignments.slice(
-      startIndex,
-      startIndex + Number(itemsPerPage),
-    );
-  }, [filteredAssignments, currentPage, itemsPerPage]);
-
-  const totalPages = useMemo(() => {
-    if (itemsPerPage === "ALL" || itemsPerPage <= 0) return 1;
-    return Math.ceil(filteredAssignments.length / Number(itemsPerPage)) || 1;
-  }, [filteredAssignments, itemsPerPage]);
-
-  const clearFilters = () => {
-    setSearch("");
-    setStatusFilter("");
-    setEmployeeFilter("");
-    setCurrentPage(1);
-  };
-
   const getStatusStyle = (status) => {
     const styles = {
       COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-100",
@@ -339,7 +277,7 @@ const CoordinatorPriorityActions = () => {
           Priority Actions
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Create, track, and dispatch follow-ups across active team workflows.
+          All tasks assigned by you to employees, managers, and HR in one list.
         </p>
       </div>
 
@@ -465,28 +403,21 @@ const CoordinatorPriorityActions = () => {
         </form>
       </div>
 
-      {/* Interactive table controller container */}
+      {/* All assignments in one list */}
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
-        {/* Dynamic Filters Bar */}
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-4">
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal size={16} className="text-slate-500" />
+            <div>
               <h3 className="text-sm font-semibold text-slate-800">
-                Filter Management Pipeline
+                Tasks Assigned by You
               </h3>
-              {(search || statusFilter || employeeFilter) && (
-                <button
-                  onClick={clearFilters}
-                  className="ml-2 inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  <X size={12} /> Clear filters
-                </button>
-              )}
+              <p className="mt-1 text-xs text-slate-500">
+                Employees, managers, and HR
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500 font-medium bg-slate-200/60 px-2.5 py-1 rounded-md">
-                Found {filteredAssignments.length} matches
+                {assignments.length} {assignments.length === 1 ? "task" : "tasks"}
               </span>
               <button
                 type="button"
@@ -499,48 +430,6 @@ const CoordinatorPriorityActions = () => {
                 Refresh
               </button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="relative">
-              <Search
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="text"
-                placeholder="Search by project name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-slate-400 placeholder:text-slate-400"
-              />
-            </div>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full h-9 px-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-slate-400"
-            >
-              <option value="">All Operational Statuses</option>
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={employeeFilter}
-              onChange={(e) => setEmployeeFilter(e.target.value)}
-              className="w-full h-9 px-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-slate-400 sm:col-span-2 md:col-span-1"
-            >
-              <option value="">All Assigned Personnel</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
@@ -597,8 +486,8 @@ const CoordinatorPriorityActions = () => {
                     </div>
                   </td>
                 </tr>
-              ) : paginatedAssignments.length > 0 ? (
-                paginatedAssignments.map((item) => (
+              ) : assignments.length > 0 ? (
+                assignments.map((item) => (
                   <React.Fragment key={item.id}>
                     <tr className="hover:bg-slate-50/50 transition duration-150">
                       <td className="p-4 text-sm font-medium text-slate-900">
@@ -964,14 +853,13 @@ const CoordinatorPriorityActions = () => {
                   <td colSpan={11} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                       <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-400 mb-4">
-                        <Search size={20} />
+                        <ClipboardList size={20} />
                       </div>
                       <h4 className="text-sm font-semibold text-slate-900">
-                        No priority actions match criteria
+                        No tasks assigned yet
                       </h4>
                       <p className="text-xs text-slate-400 mt-1">
-                        Adjust search metrics or drop active status filters to
-                        locate historical entries.
+                        Tasks you assign to employees, managers, or HR will appear here.
                       </p>
                     </div>
                   </td>
@@ -981,98 +869,6 @@ const CoordinatorPriorityActions = () => {
           </table>
         </div>
 
-        {/* Table Pagination Controls */}
-        {filteredAssignments.length > 0 && (
-          <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-xs text-slate-500">
-              <span>
-                Showing{" "}
-                <span className="font-semibold text-slate-700">
-                  {itemsPerPage === "ALL" || filteredAssignments.length === 0
-                    ? 1
-                    : (currentPage - 1) * Number(itemsPerPage) + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-semibold text-slate-700">
-                  {itemsPerPage === "ALL"
-                    ? filteredAssignments.length
-                    : Math.min(
-                        currentPage * Number(itemsPerPage),
-                        filteredAssignments.length,
-                      )}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-slate-700">
-                  {filteredAssignments.length}
-                </span>{" "}
-                entries
-              </span>
-
-              <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
-                <span className="text-slate-400">Rows per page:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    const val =
-                      e.target.value === "ALL" ? "ALL" : Number(e.target.value);
-                    setItemsPerPage(val);
-                  }}
-                  className="h-7 text-xs rounded border border-slate-200 bg-white px-2 focus:outline-none focus:border-indigo-500"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                  <option value="ALL">All</option>
-                </select>
-              </div>
-            </div>
-
-            {itemsPerPage !== "ALL" && totalPages > 1 && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition flex items-center gap-1"
-                >
-                  <ChevronLeft size={14} />
-                  <span>Previous</span>
-                </button>
-
-                <div className="flex items-center gap-1 px-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`h-8 w-8 rounded-lg text-xs font-medium transition ${
-                          currentPage === pageNum
-                            ? "bg-slate-900 text-white shadow-sm"
-                            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    ),
-                  )}
-                </div>
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition flex items-center gap-1"
-                >
-                  <span>Next</span>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
