@@ -303,7 +303,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing-projects"
             element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+              ["ADMIN", "HR", "EA", "COORDINATOR", "MANAGER"].includes(role) ? (
                 <MarketingProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -314,7 +314,7 @@ export const AppRoutes = () => {
           <Route
             path="/social-media-projects"
             element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+              ["ADMIN", "HR", "EA", "COORDINATOR", "MANAGER"].includes(role) ? (
                 <SocialMediaProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -325,7 +325,7 @@ export const AppRoutes = () => {
           <Route
             path="/seo-projects"
             element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+              ["ADMIN", "HR", "EA", "COORDINATOR", "MANAGER"].includes(role) ? (
                 <SEOProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -336,7 +336,7 @@ export const AppRoutes = () => {
           <Route
             path="/web-development-projects"
             element={
-              ["ADMIN", "HR", "EA", "MANAGER"].includes(role) ? (
+              ["ADMIN", "HR", "EA", "COORDINATOR", "MANAGER"].includes(role) ? (
                 <WebDevelopmentProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
