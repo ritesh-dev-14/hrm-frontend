@@ -21,11 +21,11 @@ const errorMessage = (error, fallback) => {
 
 const taskName = (task) => task.projectName || task.task?.projectName || task.task?.name || task.task?.title || "Untitled Task";
 const assignedBy = (task) => task.assignedBy?.name || task.createdBy?.name || task.task?.createdBy?.name || "EA";
-const finalStatuses = new Set(["SUBMITTED", "VERIFIED"]);
+const finalStatuses = new Set(["SUBMITTED", "VERIFIED", "COMPLETED"]);
 const today = new Date().toISOString().slice(0, 10);
 
 const pendingCategories = [
-  { id: "ea", label: "Pending Tasks by EA", icon: ClipboardList, color: "indigo" },
+  { id: "ea", label: "Pending Tasks by EA/Coordinator", icon: ClipboardList, color: "indigo" },
   { id: "metaAds", label: "Pending Meta Ads", icon: BarChart2, color: "orange" },
   { id: "seo", label: "Pending SEO", icon: BarChart2, color: "emerald" },
   { id: "socialMedia", label: "Pending Social Media", icon: BarChart2, color: "pink" },
