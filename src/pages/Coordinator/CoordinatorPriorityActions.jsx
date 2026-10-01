@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import API from "../../services/api";
 import {
   Plus,
@@ -18,6 +18,7 @@ import {
   ThumbsDown,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -72,7 +73,7 @@ const CoordinatorPriorityActions = () => {
     return employees.find((emp) => emp.id === formData.assignedToId) || null;
   }, [formData.assignedToId, employees]);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       const res = await API.get("/api/coordinator-assignments/users/list", {
         params: { take: 1000, limit: 1000, pageSize: 1000, all: true },
@@ -82,9 +83,9 @@ const CoordinatorPriorityActions = () => {
     } catch (error) {
       console.error("Failed to fetch employees:", error);
     }
-  };
+  }, []);
 
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     try {
       setTableLoading(true);
       const res = await API.get("/api/coordinator-assignments/my-assignments", {
@@ -97,12 +98,16 @@ const CoordinatorPriorityActions = () => {
     } finally {
       setTableLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchEmployees();
     fetchAssignments();
-  }, []);
+    window.addEventListener("focus", fetchAssignments);
+    return () => {
+      window.removeEventListener("focus", fetchAssignments);
+    };
+  }, [fetchAssignments, fetchEmployees]);
 
   // Message Auto-Scroll Execution
   useEffect(() => {
@@ -479,9 +484,21 @@ const CoordinatorPriorityActions = () => {
                 </button>
               )}
             </div>
-            <span className="text-xs text-slate-500 font-medium bg-slate-200/60 px-2.5 py-1 rounded-md">
-              Found {filteredAssignments.length} matches
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-medium bg-slate-200/60 px-2.5 py-1 rounded-md">
+                Found {filteredAssignments.length} matches
+              </span>
+              <button
+                type="button"
+                onClick={fetchAssignments}
+                disabled={tableLoading}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Refresh priority actions"
+              >
+                <RefreshCw size={13} className={tableLoading ? "animate-spin" : ""} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
