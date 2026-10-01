@@ -518,7 +518,12 @@ export default function ProfessionalSidebar({ children }) {
   }, [collapsed]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "auto";
+    if (!mobileOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [mobileOpen]);
 
   const allowedNav = useMemo(() => {
@@ -590,6 +595,9 @@ export default function ProfessionalSidebar({ children }) {
   }, [location.pathname, allowedNav]);
 
   const handleNavClick = (item) => {
+    if (["marketing-projects", "social-media-projects", "seo-projects", "web-development-projects"].includes(item.id)) {
+      setProjectsOpen(true);
+    }
     navigate(item.path);
     setMobileOpen(false);
 
@@ -806,7 +814,7 @@ export default function ProfessionalSidebar({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans">
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:block h-screen sticky top-0 shrink-0 z-40">
         <motion.div
@@ -871,7 +879,7 @@ export default function ProfessionalSidebar({ children }) {
       </AnimatePresence>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 pt-16 lg:pt-0 relative w-full overflow-hidden">
+      <main className="relative min-w-0 flex-1 overflow-hidden pt-16 lg:pt-0">
         {children}
       </main>
 
@@ -882,8 +890,6 @@ export default function ProfessionalSidebar({ children }) {
   );
 
 }
-
-
 
 
 

@@ -8,32 +8,33 @@ export default function App() {
   const location = useLocation();
 
   const hideSidebar = location.pathname === "/login";
+  const toastContainer = (
+    <ToastContainer
+      position="bottom-right"
+      autoClose={2500}
+      theme="light"
+      toastClassName="!bg-white !text-slate-900 !rounded-2xl !shadow-xl !border !border-slate-200"
+      bodyClassName="text-sm font-medium"
+    />
+  );
+
+  if (hideSidebar) {
+    return (
+      <div className="h-screen w-full overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <AppRoutes />
+        {toastContainer}
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen w-full bg-[#FDFDFD] overflow-hidden">
-      {!hideSidebar && <Sidebar />}
-
-      <div className="flex-1 overflow-y-auto pt-18 lg:pt-0 overflow-x-hidden custom-scrollbar">
+    <Sidebar>
+      <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar">
         <div className="max-w-350 p-0 mx-auto ">
           <AppRoutes />
-          {/* <ToastContainer
-            position="top-right"
-            autoClose={2500}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            pauseOnHover
-            theme="light"
-          /> */}
-          <ToastContainer
-            position="bottom-right"
-            autoClose={2500}
-            theme="light"
-            toastClassName="!bg-white !text-slate-900 !rounded-2xl !shadow-xl !border !border-slate-200"
-            bodyClassName="text-sm font-medium"
-          />
+          {toastContainer}
         </div>
       </div>
-    </div>
+    </Sidebar>
   );
 }
