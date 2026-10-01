@@ -335,7 +335,7 @@ export const AppRoutes = () => {
           <Route
             path="/assigned-actions"
             element={
-              ["EMPLOYEE", "MANAGER", "HR"].includes(role) ? (
+              ["EMPLOYEE", "MANAGER", "HR", "ADMIN"].includes(role) ? (
                 <AssignedActionsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -519,4 +519,3 @@ export const AppRoutes = () => {
 };
 
 export default AppRoutes;
-

@@ -50,7 +50,8 @@ const STATUS_CONFIG = {
 };
 
 export default function AssignedActionsPage() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "ADMIN";
 
   const [loading, setLoading] = useState(true);
   const [actions, setActions] = useState([]);
@@ -123,10 +124,10 @@ export default function AssignedActionsPage() {
   }, [user, viewMode]);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !isAdmin) {
       fetchCoordinators();
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Thread Stream Auto-Scrolling Context Execution
   useEffect(() => {
@@ -334,7 +335,7 @@ export default function AssignedActionsPage() {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Assigned Actions
             </h1>
-            <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs font-semibold">
+            {!isAdmin && <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs font-semibold">
               <button
                 onClick={() => {
                   setActiveTab("ALL");
@@ -353,7 +354,7 @@ export default function AssignedActionsPage() {
               >
                 Delegated Tasks
               </button>
-            </div>
+            </div>}
           </div>
           <p className="text-sm text-slate-500 mt-0.5">
             {viewMode === "PERSONAL"
@@ -398,13 +399,13 @@ export default function AssignedActionsPage() {
             )}
           </div>
 
-          <button
+          {!isAdmin && <button
             onClick={() => setIsAssignModalOpen(true)}
             className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
             <Plus size={15} />
             <span>Assign Coordinator</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -855,7 +856,7 @@ export default function AssignedActionsPage() {
       </div>
 
       {/* DESIGN COMPONENT MODAL: ASSIGN COORDINATOR REQUIREMENT */}
-      {isAssignModalOpen && (
+      {isAssignModalOpen && !isAdmin && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl border border-slate-200 w-full max-w-md overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">

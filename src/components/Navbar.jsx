@@ -69,7 +69,7 @@ const NAV_CONFIG = [
   { id: "tasks-cor", label: "My Tasks", icon: BriefcaseBusiness, path: "/tasks", roles: ["COORDINATOR", "EA"] },
   { id: "priority-actions", label: "Priority Actions", icon: Zap, path: "/priority-actions", roles: ["COORDINATOR", "EA"], notificationCount: 4 },
   { id: "sidebar-appeals", label: "Sidebar Appeals", icon: ShieldCheck, path: "/sidebar-appeals", roles: ["EA", "ADMIN", "HR", "COORDINATOR"] },
-  { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR"] },
+  { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },
   { id: "attendance", label: "Attendance", icon: CalendarDays, path: "/attendance", roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA"] },
   { id: "employee-attendance", label: "Employee Attendance", icon: CalendarDays, path: "/hr/employees-attendance", roles: ["HR"] },
   { id: "employee-leaves", label: "Employee Leaves", icon: FileText, path: "/hr/employees-leaves", roles: ["HR"] },
@@ -453,7 +453,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [role, user]);
 
   useEffect(() => {
-    if (role !== "EMPLOYEE" && role !== "MANAGER" && role !== "HR") return;
+    if (!["EMPLOYEE", "MANAGER", "HR", "ADMIN"].includes(role)) return;
     if (!user?.id) return;
 
     const fetchAssignedActionsCount = async () => {
@@ -890,7 +890,6 @@ export default function ProfessionalSidebar({ children }) {
   );
 
 }
-
 
 
 
