@@ -630,22 +630,20 @@ const CoordinatorPriorityActions = () => {
                             </span>
                           </button>
 
-                          {item.canDelete && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteAssignment(item)}
-                              disabled={deletingId === item.id}
-                              className="h-8 px-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold transition inline-flex items-center gap-1.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Delete ${item?.task?.projectName || "task assignment"}`}
-                            >
-                              {deletingId === item.id ? (
-                                <Loader2 size={13} className="animate-spin" />
-                              ) : (
-                                <Trash2 size={13} />
-                              )}
-                              Delete
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAssignment(item)}
+                            disabled={deletingId === item.id}
+                            className="h-8 px-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold transition inline-flex items-center gap-1.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Delete ${item?.task?.projectName || "task assignment"}`}
+                          >
+                            {deletingId === item.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={13} />
+                            )}
+                            Delete
+                          </button>
 
                           {/* Approve / Reject — only for SUBMITTED tasks */}
                           {item?.status === "SUBMITTED" && (
