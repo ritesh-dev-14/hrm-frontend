@@ -125,6 +125,7 @@ const CoordinatorPriorityActions = () => {
 
       const payload = {
         ...formData,
+        completionDate: new Date(formData.completionDate).toISOString(),
         employeeNumber: selectedEmployeeDetails?.employeeId || "",
         employeeEmail: selectedEmployeeDetails?.email || "",
       };
@@ -140,6 +141,7 @@ const CoordinatorPriorityActions = () => {
       fetchAssignments();
     } catch (error) {
       console.error("Error creating task:", error);
+      toast.error(error.response?.data?.message || "Failed to create task.");
     } finally {
       setLoading(false);
     }
