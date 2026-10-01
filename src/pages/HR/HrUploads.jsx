@@ -34,6 +34,15 @@ const formatDate = (d) =>
       })
     : "—";
 
+const getSafeExternalUrl = (value) => {
+  try {
+      const url = new URL(value);
+      return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+      return null;
+  }
+};
+
 // ─────────────────────────────────────────────────────────
 // Single Upload Card
 // ─────────────────────────────────────────────────────────
@@ -84,7 +93,20 @@ function UploadCard({ item, user, onUpdateStatus }) {
 
       <div className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={expanded}
+            onClick={() => setExpanded((previous) => !previous)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setExpanded((previous) => !previous);
+              }
+            }}
+            className="flex-1 min-w-0 cursor-pointer rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            title={hasLinks ? "Click to view uploaded links" : "No upload links added yet"}
+          >
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="rounded-full bg-indigo-50 border border-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
                 {item.projectName}
@@ -129,6 +151,11 @@ function UploadCard({ item, user, onUpdateStatus }) {
                 <strong>Reason:</strong> {item.uploadRejectReason}
               </div>
             )}
+            <span className="mt-1 inline-block text-xs font-semibold text-indigo-600">
+              {hasLinks
+                ? `${contentLinks.length + videoLinks.length} link${contentLinks.length + videoLinks.length === 1 ? "" : "s"} · Click to view`
+                : "Click to view upload details"}
+            </span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -164,8 +191,13 @@ function UploadCard({ item, user, onUpdateStatus }) {
         </div>
 
         {/* Links List */}
-        {expanded && hasLinks && (
+        {expanded && (
           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+            {!hasLinks && (
+              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                No upload links have been added yet.
+              </p>
+            )}
             {contentLinks.length > 0 && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -173,15 +205,25 @@ function UploadCard({ item, user, onUpdateStatus }) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {contentLinks.map((link, index) => (
-                    <a
-                      key={index}
-                      href={link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 transition"
-                    >
-                      <ExternalLink size={14} /> Link {index + 1}
-                    </a>
+                    getSafeExternalUrl(link) ? (
+                      <a
+                        key={index}
+                        href={getSafeExternalUrl(link)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 transition"
+                      >
+                        <ExternalLink size={14} />
+                        <span className="break-all">{link}</span>
+                      </a>
+                    ) : (
+                      <span
+                        key={index}
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+                      >
+                        <span className="break-all">{link}</span>
+                      </span>
+                    )
                   ))}
                 </div>
               </div>
@@ -194,15 +236,25 @@ function UploadCard({ item, user, onUpdateStatus }) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {videoLinks.map((link, index) => (
-                    <a
-                      key={index}
-                      href={link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 transition"
-                    >
-                      <ExternalLink size={14} /> Link {index + 1}
-                    </a>
+                    getSafeExternalUrl(link) ? (
+                      <a
+                        key={index}
+                        href={getSafeExternalUrl(link)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 transition"
+                      >
+                        <ExternalLink size={14} />
+                        <span className="break-all">{link}</span>
+                      </a>
+                    ) : (
+                      <span
+                        key={index}
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+                      >
+                        <span className="break-all">{link}</span>
+                      </span>
+                    )
                   ))}
                 </div>
               </div>

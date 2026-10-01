@@ -133,7 +133,7 @@ export default function CoordinatorTaskProgressPage() {
             <div>
               <h2 className="font-bold text-slate-900">Progress by employee</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Includes employees, managers, HR, and Admins assigned tasks by your account.
+                Includes employees, managers, HR, EAs/coordinators, and Admins assigned tasks by your account.
               </p>
             </div>
             {!loading && (
