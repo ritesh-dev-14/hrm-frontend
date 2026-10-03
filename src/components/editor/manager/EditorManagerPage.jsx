@@ -84,6 +84,8 @@ const EditorManagerPage = () => {
   // Lazy resolution handler for fetching assigned projects options
   const handleOpenCreateModal = async () => {
     setIsModalOpen(true)
+    setSelectedProjectId('')
+    setFormData({ projectName: '', description: '', startDate: '', endDate: '' })
     try {
       setLoadingProjects(true)
       const response = await API.get('/api/projects/assigned')
@@ -96,6 +98,12 @@ const EditorManagerPage = () => {
       setLoadingProjects(false)
     }
   }
+
+  const isProjectAlreadyPlanned = (project) =>
+    tasks.some((task) =>
+      task.projectId === project.id ||
+      (!task.projectId && (task.projectName || '').trim().toLowerCase() === (project.projectName || '').trim().toLowerCase())
+    )
 
   // Dynamic project selection handler parsing payloads straight from the drop-down menu
   const handleProjectSelectChange = (e) => {
@@ -123,6 +131,11 @@ const EditorManagerPage = () => {
     e.preventDefault()
     if (!selectedProjectId) {
       alert('Please select a valid assigned project option from the dropdown sequence.')
+      return
+    }
+    const selectedProject = assignedProjects.find((project) => project.id === selectedProjectId)
+    if (!selectedProject || isProjectAlreadyPlanned(selectedProject)) {
+      alert('A production workspace already exists for this project.')
       return
     }
 
@@ -520,14 +533,23 @@ const EditorManagerPage = () => {
                           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center', backgroundSize: '16px' }}
                         >
                           <option value="">-- Choose Assigned Project Blueprint --</option>
-                          {assignedProjects.map((project) => (
-                            <option key={project.id} value={project.id}>
-                              {project.projectName} {project.department?.name ? `(${project.department.name})` : ''}
-                            </option>
-                          ))}
+                          {assignedProjects.map((project) => {
+                            const alreadyPlanned = isProjectAlreadyPlanned(project)
+                            return (
+                              <option key={project.id} value={project.id} disabled={alreadyPlanned}>
+                                {project.projectName} {project.department?.name ? `(${project.department.name})` : ''}
+                                {alreadyPlanned ? ' (Workspace already created)' : ''}
+                              </option>
+                            )
+                          })}
                         </select>
                       )}
                     </div>
+                    {assignedProjects.length > 0 && assignedProjects.every(isProjectAlreadyPlanned) && (
+                      <p className="text-xs font-medium text-amber-700">
+                        All your assigned projects already have a production workspace.
+                      </p>
+                    )}
                   </div>
 
                   {/* Immutable Context Review Blocks */}
@@ -589,7 +611,7 @@ const EditorManagerPage = () => {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting || !selectedProjectId}
+                      disabled={submitting || !selectedProjectId || assignedProjects.some((project) => project.id === selectedProjectId && isProjectAlreadyPlanned(project))}
                       className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-lg shadow-fuchsia-600/20 transition-all flex items-center gap-2"
                     >
                       {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
