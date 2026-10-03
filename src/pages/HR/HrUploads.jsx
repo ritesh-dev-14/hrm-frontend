@@ -34,6 +34,12 @@ const formatDate = (d) =>
       })
     : "—";
 
+const parseLinks = (value) =>
+  value
+    .split(",")
+    .map((link) => link.trim())
+    .filter(Boolean);
+
 const getSafeExternalUrl = (value) => {
   try {
       const url = new URL(value);
@@ -286,6 +292,10 @@ const HrUploads = ({ embedded = false }) => {
   const [approveItem, setApproveItem] = useState(null);
   const [approveContentLinks, setApproveContentLinks] = useState("");
   const [approveVideoLinks, setApproveVideoLinks] = useState("");
+  const approveContentLinkList = parseLinks(approveContentLinks);
+  const approveVideoLinkList = parseLinks(approveVideoLinks);
+  const hasApproveLinks =
+    approveContentLinkList.length > 0 || approveVideoLinkList.length > 0;
 
   // ── Fetch from Content Calendar (Monthly Sheets) ─────────
   const fetchUploads = async () => {
@@ -400,19 +410,15 @@ const HrUploads = ({ embedded = false }) => {
   };
 
   const submitApproval = () => {
-    const cLinks = approveContentLinks
-      .split(",")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const vLinks = approveVideoLinks
-      .split(",")
-      .map((l) => l.trim())
-      .filter(Boolean);
+    if (!hasApproveLinks) {
+      toast.error("Please provide at least one content or video upload link");
+      return;
+    }
 
     handleUpdateStatus(approveItem, "APPROVED", "", {
       isModalSubmit: true,
-      contentUploadLinks: cLinks,
-      videoUploadLinks: vLinks,
+      contentUploadLinks: approveContentLinkList,
+      videoUploadLinks: approveVideoLinkList,
     });
   };
 
@@ -624,6 +630,9 @@ const HrUploads = ({ embedded = false }) => {
                 Provide links for <strong>{approveItem.projectName}</strong> on{" "}
                 {formatDate(approveItem.uploadDate)}.
               </p>
+              <p className="text-xs text-slate-500">
+                At least one content or video upload link is required.
+              </p>
               
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -659,7 +668,7 @@ const HrUploads = ({ embedded = false }) => {
               </button>
               <button
                 onClick={submitApproval}
-                disabled={isUpdating}
+                disabled={isUpdating || !hasApproveLinks}
                 className="flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition"
               >
                 {isUpdating ? (
