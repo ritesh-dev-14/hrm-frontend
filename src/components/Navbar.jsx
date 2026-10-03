@@ -531,8 +531,15 @@ export default function ProfessionalSidebar({ children }) {
     const isManager = String(role || "").toUpperCase() === "MANAGER";
 
     // All department names this user belongs to (lowercased)
-    const allDepts = (user?.departments || []).map((d) => (d?.name || "").toLowerCase());
-    if (allDepts.length === 0 && departmentName) allDepts.push(departmentName.toLowerCase());
+    const userDepartments = Array.isArray(user?.departments) ? user.departments : [];
+    const allDepts = [
+      ...userDepartments.map((department) => department?.name || department),
+      user?.department?.name || user?.department,
+      user?.departmentName,
+      departmentName,
+    ]
+      .map((department) => String(department || "").trim().toLowerCase())
+      .filter(Boolean);
 
     // Build a list of all project child IDs this manager should see
     const managerProjectChildIds = (() => {
@@ -556,8 +563,17 @@ export default function ProfessionalSidebar({ children }) {
 
       // Handle items with a departments restriction (used for Employee role too)
       if (item.departments) {
-        if (user?.name === "shoot1") return true;
-        return item.departments.map((d) => d.toLowerCase()).includes(departmentName?.toLowerCase());
+        if (item.id === "shoots" && role?.toUpperCase() === "EMPLOYEE") {
+          if (user?.name === "shoot1") return true;
+          return allDepts.some((department) =>
+            department.includes("social media") ||
+            department.includes("video production") ||
+            department.includes("shoot"),
+          );
+        }
+        return item.departments.some((allowedDepartment) =>
+          allDepts.includes(allowedDepartment.toLowerCase()),
+        );
       }
 
       // Handle items with managerDepartments restriction (only applies to MANAGER role)
@@ -891,5 +907,4 @@ export default function ProfessionalSidebar({ children }) {
   );
 
 }
-
 
