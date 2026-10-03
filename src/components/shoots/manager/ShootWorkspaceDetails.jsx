@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import API from "../../../services/api";
 import ProfessionalLoader from "../../../components/ProfessionalLoader";
@@ -50,10 +50,12 @@ export default function ShootWorkspaceDetails() {
   const [workspace, setWorkspace] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [employeesLoaded, setEmployeesLoaded] = useState(false);
   const [assignmentTask, setAssignmentTask] = useState(null);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [assignmentSaving, setAssignmentSaving] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
+  const employeeRequestRef = useRef(null);
 
   // New Task Details & Subtasks State
   const [selectedTaskDetails, setSelectedTaskDetails] = useState(null);
@@ -103,7 +105,6 @@ export default function ShootWorkspaceDetails() {
   // Forms Binding Vectors
   const [editForm, setEditForm] = useState({ name: "", description: "" });
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
-  const [initialEmployeeIds, setInitialEmployeeIds] = useState([]);
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
@@ -124,6 +125,26 @@ export default function ShootWorkspaceDetails() {
     referenceLinksRaw: "",
     monthlySheetDayId: null,
   });
+
+  const fetchAvailableEmployees = () => {
+    if (employeesLoaded) return Promise.resolve(availableEmployees);
+    if (!employeeRequestRef.current) {
+      employeeRequestRef.current = API.get("/api/manager/my-employees")
+        .then((res) => {
+          if (!res.data?.success) {
+            throw new Error("No employee list was returned.");
+          }
+          const employees = res.data.data || [];
+          setAvailableEmployees(employees);
+          setEmployeesLoaded(true);
+          return employees;
+        })
+        .finally(() => {
+          employeeRequestRef.current = null;
+        });
+    }
+    return employeeRequestRef.current;
+  };
 
   // Core Context Aggregation Hook
   useEffect(() => {
@@ -168,6 +189,12 @@ export default function ShootWorkspaceDetails() {
     initialFetch();
   }, [shootId]);
 
+  useEffect(() => {
+    fetchAvailableEmployees().catch((error) => {
+      console.error("Failed to preload shoot employees:", error);
+    });
+  }, []);
+
   const getEmployeeId = (employee) => employee?.employeeId || employee?.id;
 
   const getAssignedEmployeeIds = (task) =>
@@ -190,18 +217,14 @@ export default function ShootWorkspaceDetails() {
     setAssignmentTask(task);
     setAssignmentError("");
     setSelectedEmployeeIds(assignedEmployeeIds);
-    setInitialEmployeeIds(assignedEmployeeIds);
+    if (employeesLoaded) return;
+
     setAssignmentLoading(true);
     try {
-      const res = await API.get("/api/manager/my-employees");
-      if (res.data?.success) {
-        setAvailableEmployees(res.data.data || []);
-      } else {
-        setAssignmentError("No employee list was returned.");
-      }
+      await fetchAvailableEmployees();
     } catch (err) {
       setAssignmentError(
-        err.response?.data?.message || "Failed to load employees.",
+        err.response?.data?.message || err.message || "Failed to load employees.",
       );
     } finally {
       setAssignmentLoading(false);
@@ -212,18 +235,13 @@ export default function ShootWorkspaceDetails() {
     if (assignmentSaving) return;
     setAssignmentTask(null);
     setAssignmentError("");
-    setAvailableEmployees([]);
     setSelectedEmployeeIds([]);
-    setInitialEmployeeIds([]);
   };
 
   const handleAssignmentSubmit = async (event) => {
     event.preventDefault();
     if (!assignmentTask) return;
 
-    const removedEmployeeIds = initialEmployeeIds.filter(
-      (employeeId) => !selectedEmployeeIds.includes(employeeId),
-    );
     const selectedEmployees = availableEmployees.filter((employee) =>
       selectedEmployeeIds.includes(getEmployeeId(employee)),
     );
@@ -232,22 +250,13 @@ export default function ShootWorkspaceDetails() {
       setAssignmentSaving(true);
       setAssignmentError("");
 
-      for (const employeeId of removedEmployeeIds) {
-        await API.delete(
-          `/api/shoot-workspaces/${shootId}/tasks/${assignmentTask.id}/assignees/${employeeId}`,
-        );
-      }
-
-      const res = selectedEmployeeIds.length
-        ? await API.post(
-            `/api/shoot-workspaces/${shootId}/tasks/${assignmentTask.id}/assignees`,
-            { employeeIds: selectedEmployeeIds },
-          )
-        : null;
-      const responseTask = res?.data?.data?.task || res?.data?.data;
+      const res = await API.post(
+        `/api/shoot-workspaces/${shootId}/tasks/${assignmentTask.id}/assignees`,
+        { employeeIds: selectedEmployeeIds },
+      );
       updateTaskAssignments(
         assignmentTask.id,
-        responseTask?.assignedEmployees || selectedEmployees,
+        res.data?.data?.assignedEmployees || selectedEmployees,
       );
       notifySuccess("Shoot employees updated successfully.");
       closeAssignmentModal();
@@ -267,17 +276,18 @@ export default function ShootWorkspaceDetails() {
     if (!assignmentTask) return;
     try {
       setAssignmentSaving(true);
-      await API.delete(
-        `/api/shoot-workspaces/${shootId}/tasks/${assignmentTask.id}/assignees/${employeeId}`,
-      );
       const nextIds = selectedEmployeeIds.filter((id) => id !== employeeId);
       const nextEmployees = (assignmentTask.assignedEmployees || []).filter(
         (employee) => getEmployeeId(employee) !== employeeId,
       );
+      const res = await API.post(
+        `/api/shoot-workspaces/${shootId}/tasks/${assignmentTask.id}/assignees`,
+        { employeeIds: nextIds },
+      );
+      const updatedEmployees = res.data?.data?.assignedEmployees || nextEmployees;
       setSelectedEmployeeIds(nextIds);
-      setInitialEmployeeIds((prev) => prev.filter((id) => id !== employeeId));
-      setAssignmentTask((prev) => ({ ...prev, assignedEmployees: nextEmployees }));
-      updateTaskAssignments(assignmentTask.id, nextEmployees);
+      setAssignmentTask((prev) => ({ ...prev, assignedEmployees: updatedEmployees }));
+      updateTaskAssignments(assignmentTask.id, updatedEmployees);
       notifySuccess("Employee removed from this shoot.");
     } catch (err) {
       setAssignmentError(
