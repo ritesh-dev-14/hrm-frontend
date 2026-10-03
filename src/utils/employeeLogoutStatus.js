@@ -37,7 +37,7 @@ export const refreshEmployeeLogoutStatus = async () => {
           ? eaResponse.data
           : [];
 
-    // EA task is pending if not yet submitted or completed AND due today
+    // EA tasks remain pending until approved, even after the employee submits them.
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date(todayStart);
@@ -47,11 +47,11 @@ export const refreshEmployeeLogoutStatus = async () => {
       const dueDate = t?.completionDate || t?.dueDate || t?.endDate;
       if (!dueDate) return false;
       const due = new Date(dueDate);
-      // Only count as blocking if due TODAY and not yet submitted/completed
+      // Only count as blocking if due TODAY and not yet approved
       return (
         due >= todayStart &&
         due < todayEnd &&
-        !["SUBMITTED", "COMPLETED"].includes(String(t?.status || "").toUpperCase())
+        String(t?.status || "").toUpperCase() !== "COMPLETED"
       );
     });
 

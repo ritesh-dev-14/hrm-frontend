@@ -22,6 +22,7 @@ const errorMessage = (error, fallback) => {
 const taskName = (task) => task.projectName || task.task?.projectName || task.task?.name || task.task?.title || "Untitled Task";
 const assignedBy = (task) => task.assignedBy?.name || task.createdBy?.name || task.task?.createdBy?.name || "EA";
 const finalStatuses = new Set(["SUBMITTED", "VERIFIED", "COMPLETED"]);
+const finalEaTaskStatuses = new Set(["VERIFIED", "COMPLETED"]);
 const today = new Date().toISOString().slice(0, 10);
 
 const pendingCategories = [
@@ -62,7 +63,7 @@ export default function ManagerPendingPage() {
   try {
     const logoutStatus = await refreshManagerLogoutStatus();
     const pendingEaTasks = logoutStatus?.pendingEaTasks || [];
-    setTasks(pendingEaTasks.filter((task) => !finalStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
+    setTasks(pendingEaTasks.filter((task) => !finalEaTaskStatuses.has(String(task.status || "").toUpperCase()) && isToday(task)));
     
     setStatus(logoutStatus || { pendingMarketingReports: [], pendingSeo: [], pendingUploadsCount: 0 });
   } catch (requestError) {
@@ -135,7 +136,8 @@ export default function ManagerPendingPage() {
     if (category.id === "uploads") {
       result[category.id] = new Array(status.pendingUploadsCount || 0).fill({});
     } else {
-      result[category.id] = (categories[category.id] || []).filter((item) => !finalStatuses.has(itemStatus(item)) && isToday(item));
+      const completedStatuses = category.id === "ea" ? finalEaTaskStatuses : finalStatuses;
+      result[category.id] = (categories[category.id] || []).filter((item) => !completedStatuses.has(itemStatus(item)) && isToday(item));
     }
     return result;
   }, {});
@@ -159,7 +161,7 @@ export default function ManagerPendingPage() {
       ) : (
         <>
           <div className="mb-6 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50"><ActiveIcon size={20} className="text-indigo-600" /></div><div><h2 className="text-lg font-bold text-slate-900">{activeCategoryConfig.label}</h2><p className="text-xs text-slate-500">Today&apos;s actionable work</p></div></div>
-          {activeItems.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">No pending work in this category.</p> : <div className="space-y-3">{activeItems.map((item, index) => { const id = item.assignmentId || item.id || item.projectId || index; const isEaTask = activeCategory === "ea"; const isMetaAds = activeCategory === "metaAds"; return <div key={id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"><div className="min-w-0"><p className="font-semibold text-slate-900">{isEaTask ? taskName(item) : itemTitle(item)}</p><p className="mt-1 text-sm text-slate-600">{isEaTask ? `Assigned by: ${assignedBy(item)}` : `Client: ${item.clientName || "—"}`}</p><p className="mt-1 text-xs text-slate-500">Status: {itemStatus(item)} · Work date: {itemDate(item) ? new Date(itemDate(item)).toLocaleDateString() : "—"}</p></div><div className="flex flex-wrap items-center justify-end gap-2">{isEaTask ? <><button type="button" onClick={() => handleView(id)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><Eye size={14} />View Task</button><button type="button" disabled={submittingId === id} onClick={() => handleSubmit(id)} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{submittingId === id ? "Submitting..." : "Submit to EA"}</button></> : item.projectId && <><button type="button" onClick={() => navigate(`/project/${item.projectId}`)} className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-600"><Eye size={14} />View Project</button>{isMetaAds && <button type="button" onClick={() => { setReasonTarget(item); setUnableReason(""); }} className="rounded-xl border border-orange-300 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50">Unable to submit</button>}</>}</div></div>; })}</div>}
+          {activeItems.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">No pending work in this category.</p> : <div className="space-y-3">{activeItems.map((item, index) => { const id = item.assignmentId || item.id || item.projectId || index; const isEaTask = activeCategory === "ea"; const isMetaAds = activeCategory === "metaAds"; const submitted = itemStatus(item) === "SUBMITTED"; return <div key={id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"><div className="min-w-0"><p className="font-semibold text-slate-900">{isEaTask ? taskName(item) : itemTitle(item)}</p><p className="mt-1 text-sm text-slate-600">{isEaTask ? `Assigned by: ${assignedBy(item)}` : `Client: ${item.clientName || "—"}`}</p><p className="mt-1 text-xs text-slate-500">Status: {itemStatus(item)} · Work date: {itemDate(item) ? new Date(itemDate(item)).toLocaleDateString() : "—"}</p></div><div className="flex flex-wrap items-center justify-end gap-2">{isEaTask ? <><button type="button" onClick={() => handleView(id)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><Eye size={14} />View Task</button>{submitted ? <span className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700">Awaiting EA approval</span> : <button type="button" disabled={submittingId === id} onClick={() => handleSubmit(id)} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{submittingId === id ? "Submitting..." : "Submit to EA"}</button>}</> : item.projectId && <><button type="button" onClick={() => navigate(`/project/${item.projectId}`)} className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-600"><Eye size={14} />View Project</button>{isMetaAds && <button type="button" onClick={() => { setReasonTarget(item); setUnableReason(""); }} className="rounded-xl border border-orange-300 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50">Unable to submit</button>}</>}</div></div>; })}</div>}
         </>
       )}
     </div>

@@ -20,7 +20,7 @@ const getStatus = (task) => String(task?.status || "ASSIGNED").toUpperCase();
 const isComplete = (task) =>
   task.source === "MANAGER"
     ? getStatus(task) === "VERIFIED"
-    : ["SUBMITTED", "COMPLETED"].includes(getStatus(task));
+    : getStatus(task) === "COMPLETED";
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "-";
 
 export default function EmployeePendingPage() {
@@ -214,7 +214,11 @@ export default function EmployeePendingPage() {
                 </div>
 
                 {/* Actions */}
-                {!done && (
+                {!done && task.status === "SUBMITTED" ? (
+                  <p className="mt-4 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700">
+                    Submitted to EA — waiting for approval.
+                  </p>
+                ) : !done && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
