@@ -1710,6 +1710,7 @@ export default function ShootWorkspaceDetails() {
 
                     <div className="flex items-center gap-1 p-1 mb-4 bg-slate-50 border border-slate-100 rounded-xl">
                       {[
+                        ["assigned", "Assigned by Manager"],
                         ["submitted", "Submitted"],
                         ["approved", "Approved by Manager"],
                         ["extra", "Extra Content"],
@@ -1782,9 +1783,9 @@ export default function ShootWorkspaceDetails() {
                     ) : (() => {
                       const visibleSubtasks = subtasks.filter((sub) => {
                         const hasSubmission = sub.status === "SUBMITTED" || (sub.submissionLinks && sub.submissionLinks.length > 0);
-                        return activeTaskDetailTab === "approved"
-                          ? sub.status === "APPROVED"
-                          : hasSubmission && sub.status !== "APPROVED";
+                        if (activeTaskDetailTab === "approved") return sub.status === "APPROVED";
+                        if (activeTaskDetailTab === "assigned") return !hasSubmission && sub.status !== "APPROVED";
+                        return hasSubmission && sub.status !== "APPROVED";
                       });
 
                       return visibleSubtasks.length === 0 ? (
