@@ -28,6 +28,7 @@ const ShootManagerPage = () => {
 
   // Create Workspace Form State
   const [formData, setFormData] = useState({
+    projectId: "",
     brandName: "",
     description: "",
   });
@@ -68,13 +69,14 @@ const ShootManagerPage = () => {
   const handleProjectSelect = (e) => {
     const selectedId = e.target.value;
     if (!selectedId) {
-      setFormData({ brandName: "", description: "" });
+      setFormData({ projectId: "", brandName: "", description: "" });
       return;
     }
 
     const selectedProject = assignedProjects.find((p) => p.id === selectedId);
     if (selectedProject) {
       setFormData({
+        projectId: selectedProject.id,
         brandName: selectedProject.projectName || "",
         description: selectedProject.description || "",
       });
@@ -85,21 +87,26 @@ const ShootManagerPage = () => {
   const handleCreateWorkspace = async (e) => {
     e.preventDefault();
     if (!formData.brandName.trim()) return;
+    if (!formData.projectId) {
+      setErrorMessage("Please select a project.");
+      return;
+    }
 
     try {
       setIsSubmitLoading(true);
       setErrorMessage("");
       
       const res = await API.post("/api/shoot-workspaces", {
+        projectId: formData.projectId,
         brandName: formData.brandName.trim(),
         description: formData.description.trim(),
       });
 
       if (res.data?.success) {
         // Reset state, close modal, and update list
-        setFormData({ brandName: "", description: "" });
+        setFormData({ projectId: "", brandName: "", description: "" });
         setIsModalOpen(false);
-        fetchWorkspaces();
+        await fetchWorkspaces();
       } else {
         setErrorMessage(res.data?.message || "Failed to create shoot workspace.");
       }
@@ -131,6 +138,11 @@ const ShootManagerPage = () => {
     (ws.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (ws.description || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const isProjectAlreadyPlanned = (project) =>
+    workspaces.some((shoot) =>
+      shoot.project?.id === project.id ||
+      (!shoot.project?.id && (shoot.name || "").trim().toLowerCase() === (project.projectName || "").trim().toLowerCase())
+    );
 
   return (
     <div className="relative min-h-screen bg-slate-50 overflow-hidden font-sans">
@@ -305,7 +317,7 @@ const ShootManagerPage = () => {
                     onClick={() => {
                       setIsModalOpen(false);
                       setErrorMessage("");
-                      setFormData({ brandName: "", description: "" });
+                      setFormData({ projectId: "", brandName: "", description: "" });
                     }}
                     className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
                   >
@@ -334,12 +346,20 @@ const ShootManagerPage = () => {
                         className="w-full px-4 py-3 border border-slate-200 bg-slate-50 hover:bg-white rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm font-medium text-slate-800 transition-all cursor-pointer"
                       >
                         <option value="">-- Select Linked Project --</option>
-                        {assignedProjects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.projectName}
-                          </option>
-                        ))}
+                        {assignedProjects.map((project) => {
+                          const alreadyPlanned = isProjectAlreadyPlanned(project);
+                          return (
+                            <option key={project.id} value={project.id} disabled={alreadyPlanned}>
+                              {project.projectName}{alreadyPlanned ? " (Shoot already planned)" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
+                      {assignedProjects.length > 0 && assignedProjects.every(isProjectAlreadyPlanned) && (
+                        <p className="mt-2 text-xs font-medium text-amber-700">
+                          All your assigned projects already have a shoot workspace.
+                        </p>
+                      )}
                     </div>
 
                     <AnimatePresence>
@@ -373,7 +393,7 @@ const ShootManagerPage = () => {
                       onClick={() => {
                         setIsModalOpen(false);
                         setErrorMessage("");
-                        setFormData({ brandName: "", description: "" });
+                        setFormData({ projectId: "", brandName: "", description: "" });
                       }}
                       className="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
                     >
@@ -381,7 +401,7 @@ const ShootManagerPage = () => {
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmitLoading || !formData.brandName.trim()}
+                      disabled={isSubmitLoading || !formData.brandName.trim() || !formData.projectId || isProjectAlreadyPlanned({ id: formData.projectId, projectName: formData.brandName })}
                       className="flex items-center gap-2 px-6 py-3 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
                     >
                       {isSubmitLoading ? (
