@@ -192,7 +192,24 @@ const EditorWorkspaceDetails = () => {
     try {
       const response = await API.get('/api/projects')
       if (response.data?.success) {
-        setCalendarProjects(response.data.data || [])
+        const projects = response.data.data || []
+        setCalendarProjects(projects)
+        const normalizeProjectName = (name) => String(name || '').trim().toLowerCase().replace(/\s+/g, ' ')
+        const linkedProject = projects.find((project) => project.id === workspace?.projectId)
+          || projects.find((project) =>
+            normalizeProjectName(project.projectName) === normalizeProjectName(workspace?.projectName)
+          )
+
+        if (linkedProject) {
+          setSelectedCalendarProject(linkedProject)
+          setCalendarPickerStep('sheet')
+          const sheetsResponse = await API.get(`/api/projects/${linkedProject.id}/monthly-sheets`)
+          if (sheetsResponse.data?.success) {
+            setCalendarSheets(sheetsResponse.data.data || [])
+          } else {
+            setCalendarPickerError('Could not load content calendars for this project.')
+          }
+        }
       } else {
         setCalendarPickerError('Could not load projects.')
       }
