@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Building2, User, Phone, MapPin, Calendar, RefreshCw,
   Globe, Lock, Eye, EyeOff, Copy, Camera, TrendingUp, Megaphone, Code2,
-  ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle,
+  ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle, Video,
   ArrowUp, ArrowDown, ArrowRight, Image, ChevronDown
 } from "lucide-react";
 import API from "../../services/api";
@@ -340,10 +340,10 @@ function OverviewTab({ project, monthlySheets, onTierUpdate }) {
 }
 
 // ── TAB: Social Media ─────────────────────────────────────────────────────────
-function SocialMediaTab({ monthlySheets, shootWorkspaces }) {
+function SocialMediaTab({ project, monthlySheets, shootWorkspaces }) {
   const [expandedSheetId, setExpandedSheetId] = useState(null);
 
-  if (!monthlySheets.length && !shootWorkspaces.length) {
+  if (!project?.logo && !project?.endScreenVideoUrl && !monthlySheets.length && !shootWorkspaces.length) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-2">
         <Camera className="w-10 h-10 text-slate-200 mx-auto" />
@@ -355,6 +355,38 @@ function SocialMediaTab({ monthlySheets, shootWorkspaces }) {
 
   return (
     <div className="space-y-5">
+      {(project?.logo || project?.endScreenVideoUrl) && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
+          <h4 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
+            <Video size={16} className="text-violet-600" /> Project Brand Assets
+          </h4>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {project.logo && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Project Logo</p>
+                <a href={project.logo} target="_blank" rel="noopener noreferrer" className="flex min-h-36 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <img src={project.logo} alt={`${project.projectName || "Project"} logo`} className="max-h-40 max-w-full object-contain" />
+                </a>
+              </div>
+            )}
+            {project.endScreenVideoUrl && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Video End Screen</p>
+                <video
+                  src={project.endScreenVideoUrl}
+                  controls
+                  preload="metadata"
+                  className="max-h-64 min-h-36 w-full rounded-xl border border-slate-200 bg-slate-950 object-contain"
+                  aria-label={`${project.projectName || "Project"} end-screen video`}
+                />
+                <a href={project.endScreenVideoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline">
+                  <ExternalLink size={13} /> Open video
+                </a>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
       {monthlySheets.length > 0 && (
         <section className="space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">
@@ -1181,7 +1213,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
             ) : (
               <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                 {activeTab === "overview" && <OverviewTab project={project} monthlySheets={monthlySheets} onTierUpdate={(updated) => setProject(updated)} />}
-                {activeTab === "social" && <SocialMediaTab monthlySheets={monthlySheets} shootWorkspaces={shootWorkspaces} />}
+                {activeTab === "social" && <SocialMediaTab project={project} monthlySheets={monthlySheets} shootWorkspaces={shootWorkspaces} />}
                 {activeTab === "ads" && <MetaAdsTab metaAdsTasks={metaAdsTasks} />}
                 {activeTab === "seo" && <SEOTab project={project} seoReports={seoReports} seoTasks={seoTasks} />}
                 {activeTab === "web" && <WebDevTab project={project} />}

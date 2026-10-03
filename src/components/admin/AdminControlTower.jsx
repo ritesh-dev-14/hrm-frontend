@@ -13,9 +13,22 @@ import {
   Building2,
   IndianRupee,
   X,
+  User,
+  FolderOpen,
+  ChevronRight,
 } from "lucide-react";
 
-export default function AdminControlTower({ data, loading, healthMap }) {
+export default function AdminControlTower({
+  data,
+  loading,
+  healthMap,
+  managers = [],
+  projects = [],
+  managerDirectoryError = "",
+  onSelectProject,
+}) {
+  const [selectedManagerId, setSelectedManagerId] = React.useState("");
+  const [selectedManagerDepartment, setSelectedManagerDepartment] = React.useState("");
   const [showBudgetModal, setShowBudgetModal] = React.useState(false);
   const [showSpendModal, setShowSpendModal] = React.useState(false);
   const [showTeamModal, setShowTeamModal] = React.useState(false);
@@ -42,6 +55,29 @@ export default function AdminControlTower({ data, loading, healthMap }) {
       }
     });
   }
+
+  const managerProjects = projects.filter((project) =>
+    project.assignments?.some(
+      (assignment) => assignment.manager?.id === selectedManagerId,
+    ),
+  );
+  const managerProjectGroups = [...managerProjects.reduce((groups, project) => {
+    const departmentName = project.department?.name || "Other";
+    const group = groups.get(departmentName) || [];
+    group.push(project);
+    groups.set(departmentName, group);
+    return groups;
+  }, new Map()).entries()];
+
+  const handleManagerSelect = (managerId) => {
+    setSelectedManagerId(managerId);
+    const firstGroup = projects.find((project) =>
+      project.assignments?.some(
+        (assignment) => assignment.manager?.id === managerId,
+      ),
+    )?.department?.name;
+    setSelectedManagerDepartment(firstGroup || "");
+  };
 
   if (loading) {
     return (
@@ -171,6 +207,101 @@ export default function AdminControlTower({ data, loading, healthMap }) {
           </div>
         </div>
       </div>
+
+      <section className="mt-6 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/50">
+        <div className="flex flex-col gap-4 border-b border-indigo-100 bg-white/70 p-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+              <User size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Manager Projects</h3>
+              <p className="text-xs font-medium text-slate-500">Choose a manager, department, and project to inspect full details.</p>
+            </div>
+          </div>
+          <label className="w-full md:max-w-sm">
+            <span className="sr-only">Select a manager</span>
+            <select
+              value={selectedManagerId}
+              onChange={(event) => handleManagerSelect(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="">Select a manager</option>
+              {managers.map((manager) => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.name}{manager.employeeId ? ` (${manager.employeeId})` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {managerDirectoryError && (
+          <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700">
+            {managerDirectoryError}
+          </p>
+        )}
+
+        {!selectedManagerId ? (
+          <p className="p-5 text-center text-sm font-medium text-slate-500">
+            Select a manager to view their departments and projects.
+          </p>
+        ) : managerProjectGroups.length === 0 ? (
+          <p className="p-5 text-center text-sm font-medium text-slate-500">
+            No projects are assigned to this manager.
+          </p>
+        ) : (
+          <div className="space-y-4 p-5">
+            <div className="flex flex-wrap gap-2">
+              {managerProjectGroups.map(([departmentName, groupProjects]) => (
+                <button
+                  key={departmentName}
+                  type="button"
+                  onClick={() => setSelectedManagerDepartment(departmentName)}
+                  className={`rounded-xl border px-3.5 py-2 text-xs font-bold transition ${
+                    selectedManagerDepartment === departmentName
+                      ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50"
+                  }`}
+                >
+                  {departmentName}
+                  <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] ${
+                    selectedManagerDepartment === departmentName ? "bg-white/20" : "bg-slate-100"
+                  }`}>
+                    {groupProjects.length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(managerProjectGroups.find(
+                ([departmentName]) => departmentName === selectedManagerDepartment,
+              )?.[1] || []).map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => onSelectProject?.(project)}
+                  className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-indigo-300 hover:shadow-md"
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-indigo-500">
+                    {project.logo ? (
+                      <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
+                    ) : (
+                      <FolderOpen size={18} />
+                    )}
+                  </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-slate-900">{project.projectName}</span>
+                    <span className="mt-1 block truncate text-xs text-slate-500">{project.clientName || project.department?.name || "Project"}</span>
+                  </span>
+                  <ChevronRight size={15} className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Budget Breakdown Modal */}
       {showBudgetModal && (

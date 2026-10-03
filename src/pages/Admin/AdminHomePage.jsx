@@ -55,6 +55,8 @@ import AdminControlTower from "../../components/admin/AdminControlTower";
 
 export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
+  const [managers, setManagers] = useState([]);
+  const [managerDirectoryError, setManagerDirectoryError] = useState("");
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -87,19 +89,42 @@ export default function AdminHomePage() {
       setLoading(true);
       setError("");
 
-      const [projRes, deptRes] = await Promise.allSettled([
-        API.get("/api/projects?limit=1000"),
+      const [projRes, deptRes, managerRes] = await Promise.allSettled([
+        API.get("/api/projects?limit=100&page=1"),
         API.get("/api/departments"),
+        API.get("/api/hr/managers"),
       ]);
 
       if (projRes.status === "fulfilled" && projRes.value?.data?.success) {
-        setProjects(projRes.value.data.data || []);
+        const firstPageProjects = projRes.value.data.data || [];
+        const totalPages = Number(projRes.value.data.pagination?.totalPages) || 1;
+        const remainingPages = await Promise.all(
+          Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+            API.get(`/api/projects?limit=100&page=${index + 2}`),
+          ),
+        );
+        setProjects([
+          ...firstPageProjects,
+          ...remainingPages.flatMap((response) =>
+            response.data?.success ? response.data.data || [] : [],
+          ),
+        ]);
       } else {
         setError("Failed to load projects list.");
       }
 
       if (deptRes.status === "fulfilled" && deptRes.value?.data?.data) {
         setDepartments(deptRes.value.data.data || []);
+      }
+      if (managerRes.status === "fulfilled" && managerRes.value?.data?.success) {
+        setManagers(managerRes.value.data.data || []);
+        setManagerDirectoryError("");
+      } else {
+        setManagerDirectoryError(
+          managerRes.status === "rejected"
+            ? managerRes.reason?.response?.data?.message || "Failed to load managers."
+            : "Failed to load managers.",
+        );
       }
     } catch (err) {
       console.error("Error loading complete details data:", err);
@@ -302,7 +327,15 @@ export default function AdminHomePage() {
         </div>
 
         {/* CEO CONTROL TOWER */}
-        <AdminControlTower data={controlTower} loading={controlTowerLoading} healthMap={healthMap} />
+        <AdminControlTower
+          data={controlTower}
+          loading={controlTowerLoading}
+          healthMap={healthMap}
+          managers={managers}
+          projects={projects}
+          managerDirectoryError={managerDirectoryError}
+          onSelectProject={handleSelectProject}
+        />
 
         {/* METRICS & QUICK SUMMARY */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
