@@ -165,9 +165,6 @@ export default function MarketingReportsPage() {
     if (!["true", "false"].includes(form.isAdRunning)) return showToast("error", "Please select whether the ad is running.");
     if (form.typeOfAds !== "Lead" && form.decidedDailyBudget !== "" && Number(form.decidedDailyBudget) < 0) return showToast("error", "Decided daily budget cannot be negative.");
     if (form.typeOfAds === "Lead" && !["true", "false"].includes(form.leadSentToClient)) return showToast("error", "Please select whether the lead was sent to the client.");
-    const reportDate = String(form.date || "").split("T")[0];
-    const duplicateReport = reports.some((report) => String(report.date || "").split("T")[0] === reportDate && String(report.id) !== String(editTarget?.id));
-    if (duplicateReport) return showToast("error", "A report already exists for this date.");
     submitInFlight.current = true;
     setSubmitting(true);
     try {
