@@ -55,6 +55,8 @@ import AdminControlTower from "../../components/admin/AdminControlTower";
 
 export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
+  const [uploadCalendarSheets, setUploadCalendarSheets] = useState([]);
+  const [uploadCalendarError, setUploadCalendarError] = useState("");
   const [managers, setManagers] = useState([]);
   const [managerDirectoryError, setManagerDirectoryError] = useState("");
   const [departments, setDepartments] = useState([]);
@@ -89,10 +91,11 @@ export default function AdminHomePage() {
       setLoading(true);
       setError("");
 
-      const [projRes, deptRes, managerRes] = await Promise.allSettled([
+      const [projRes, deptRes, managerRes, uploadCalendarRes] = await Promise.allSettled([
         API.get("/api/projects?limit=100&page=1"),
         API.get("/api/departments"),
         API.get("/api/hr/managers"),
+        API.get("/api/monthly-sheets/uploads"),
       ]);
 
       if (projRes.status === "fulfilled" && projRes.value?.data?.success) {
@@ -124,6 +127,16 @@ export default function AdminHomePage() {
           managerRes.status === "rejected"
             ? managerRes.reason?.response?.data?.message || "Failed to load managers."
             : "Failed to load managers.",
+        );
+      }
+      if (uploadCalendarRes.status === "fulfilled" && uploadCalendarRes.value?.data?.success) {
+        setUploadCalendarSheets(uploadCalendarRes.value.data.data || []);
+        setUploadCalendarError("");
+      } else {
+        setUploadCalendarError(
+          uploadCalendarRes.status === "rejected"
+            ? uploadCalendarRes.reason?.response?.data?.message || "Failed to load content calendar uploads."
+            : "Failed to load content calendar uploads.",
         );
       }
     } catch (err) {
@@ -335,6 +348,8 @@ export default function AdminHomePage() {
           projects={projects}
           managerDirectoryError={managerDirectoryError}
           onSelectProject={handleSelectProject}
+          uploadCalendarSheets={uploadCalendarSheets}
+          uploadCalendarError={uploadCalendarError}
         />
 
         {/* METRICS & QUICK SUMMARY */}
