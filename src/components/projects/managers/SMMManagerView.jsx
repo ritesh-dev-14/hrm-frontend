@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
-import { Copy, Loader2, Trash2, X } from "lucide-react";
+import { Copy, Loader2, Trash2, Upload, Video, X } from "lucide-react";
 import { notifyError, notifySuccess } from "../../../utils/toast";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
@@ -180,6 +180,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   const [isSubmittingSheet, setIsSubmittingSheet] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef(null);
+  const [isUploadingEndScreen, setIsUploadingEndScreen] = useState(false);
+  const endScreenInputRef = useRef(null);
 
   // Historical Monthly Calendars State
   const [monthlySheets, setMonthlySheets] = useState([]);
@@ -618,6 +620,42 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     }
   };
 
+  const handleEndScreenFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      alert("Please choose a video file for the end screen.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setIsUploadingEndScreen(true);
+      const uploadForm = new FormData();
+      uploadForm.append("endScreenVideo", file);
+      const response = await API.patch(
+        `/api/projects/${projectId}/end-screen`,
+        uploadForm,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const resData = response.data ? response.data : response;
+      if (resData?.success) {
+        await fetchProjectDetails();
+      } else {
+        alert(resData?.message || "End-screen upload failed.");
+      }
+    } catch (err) {
+      alert(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to upload the end-screen video.",
+      );
+    } finally {
+      setIsUploadingEndScreen(false);
+      if (endScreenInputRef.current) endScreenInputRef.current.value = "";
+    }
+  };
+
   // API Call: POST Dynamic Monthly Planning Sheet Data
   const handlePostMonthlySheet = async (e) => {
     e.preventDefault();
@@ -983,6 +1021,13 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
           onChange={handleLogoFileSelected}
           style={{ display: "none" }}
         />
+        <input
+          type="file"
+          accept="video/*"
+          ref={endScreenInputRef}
+          onChange={handleEndScreenFileSelected}
+          style={{ display: "none" }}
+        />
 
         {/* HEADER */}
         <motion.div
@@ -1115,6 +1160,46 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                   </p>
                 </div>
               </div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-6 md:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-black text-slate-900">
+                    <Video className="h-5 w-5 text-indigo-600" />
+                    Video End Screen
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Upload the 1-2 second clip editors should add to the end of project videos.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => endScreenInputRef.current?.click()}
+                  disabled={isUploadingEndScreen}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isUploadingEndScreen ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {isUploadingEndScreen
+                    ? "Uploading..."
+                    : project?.endScreenVideoUrl
+                      ? "Replace End Screen"
+                      : "Upload End Screen"}
+                </button>
+              </div>
+              {project?.endScreenVideoUrl && (
+                <video
+                  key={project.endScreenVideoUrl}
+                  src={project.endScreenVideoUrl}
+                  controls
+                  preload="metadata"
+                  className="mt-5 max-h-64 w-full rounded-xl bg-slate-950 object-contain"
+                  aria-label={`${project.projectName || "Project"} end-screen video`}
+                />
+              )}
             </div>
           </div>
 
