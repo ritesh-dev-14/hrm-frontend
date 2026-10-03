@@ -329,13 +329,13 @@ const CoordinatorPriorityActions = () => {
             <label className="text-xs font-medium text-slate-700">
               Task Title
             </label>
-            <input
-              type="text"
+            <textarea
               required
+              rows={1}
               value={formData.task}
               onChange={(e) => handleInputChange("task", e.target.value)}
               placeholder="Enter task title"
-              className="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full min-h-10 px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition resize-y"
             />
           </div>
 
