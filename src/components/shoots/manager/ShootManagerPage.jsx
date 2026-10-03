@@ -51,7 +51,9 @@ const ShootManagerPage = () => {
   // Fetch Assigned Projects for Dropdown selection
   const fetchAssignedProjects = async () => {
     try {
-      const res = await API.get("/api/projects/assigned");
+      const res = await API.get("/api/projects/assigned", {
+        params: { limit: 100 },
+      });
       if (res.data?.success) {
         setAssignedProjects(res.data.data || []);
       }
