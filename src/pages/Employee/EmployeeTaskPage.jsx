@@ -28,6 +28,7 @@ import {
   EyeOff,
   Calendar,
   ClipboardList,
+  Download,
 } from "lucide-react";
 
 // Web Development department name matchers
@@ -67,6 +68,7 @@ const EmployeeTaskPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [resubmitting, setResubmitting] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
+  const [downloadingLogo, setDownloadingLogo] = useState(false);
 
   const loadTasks = async () => {
     try {
@@ -164,6 +166,45 @@ const EmployeeTaskPage = () => {
       notifyError("Failed to log roadblock");
     } finally {
       setReportingIssue(false);
+    }
+  };
+
+  const handleDownloadProjectLogo = async () => {
+    const project = selectedTask?.taskItem?.task?.project;
+    if (!project?.logo) return;
+
+    setDownloadingLogo(true);
+    try {
+      const response = await fetch(project.logo);
+      if (!response.ok) {
+        throw new Error("The project logo could not be downloaded.");
+      }
+
+      const logoBlob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(logoBlob);
+      const projectName = selectedTask.taskItem.task.projectName || "project";
+      const safeProjectName = projectName
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+        .trim() || "project";
+      const extensionByType = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/svg+xml": ".svg",
+        "image/webp": ".webp",
+      };
+      const extension = extensionByType[logoBlob.type] || ".png";
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `${safeProjectName}-logo${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+    } catch (error) {
+      console.error("Project logo download failed:", error);
+      notifyError(error.message || "The project logo could not be downloaded.");
+    } finally {
+      setDownloadingLogo(false);
     }
   };
 
@@ -442,6 +483,36 @@ const EmployeeTaskPage = () => {
                         {selectedTask.taskItem?.description || "No specific instructions provided for this task."}
                       </p>
                     </div>
+
+                    {selectedTask.taskItem?.task?.project?.logo && (
+                      <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 block mb-3">
+                              Project Logo
+                            </span>
+                            <img
+                              src={selectedTask.taskItem.task.project.logo}
+                              alt={`${selectedTask.taskItem.task.projectName || "Project"} logo`}
+                              className="max-h-28 max-w-48 rounded-lg border border-slate-100 object-contain"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleDownloadProjectLogo}
+                            disabled={downloadingLogo}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {downloadingLogo ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                            {downloadingLogo ? "Downloading..." : "Download Logo"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Web Development Project Credentials Panel */}
                     {selectedTask.taskItem?.task?.project &&
