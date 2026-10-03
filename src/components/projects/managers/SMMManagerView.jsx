@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
-import { Copy, X } from "lucide-react";
+import { Copy, Loader2, Trash2, X } from "lucide-react";
+import { notifyError, notifySuccess } from "../../../utils/toast";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
 const arrayToString = (arr) => (Array.isArray(arr) ? arr.join(", ") : "");
@@ -183,6 +184,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   // Historical Monthly Calendars State
   const [monthlySheets, setMonthlySheets] = useState([]);
   const [sheetsLoading, setSheetsLoading] = useState(false);
+  const [deletingSheetId, setDeletingSheetId] = useState(null);
   const [selectedCalendar, setSelectedCalendar] = useState(null);
   const [isPatchingDay, setIsPatchingDay] = useState(false);
   const [calendarToCopy, setCalendarToCopy] = useState(null);
@@ -326,6 +328,36 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       );
     } finally {
       setLoadingCalendarId(null);
+    }
+  };
+
+  const handleDeleteMonthlySheet = async (sheet) => {
+    const monthName = new Date(0, sheet.month - 1).toLocaleString(undefined, {
+      month: "long",
+    });
+    const confirmed = window.confirm(
+      `Delete the ${monthName} ${sheet.year} content calendar? Its calendar days will be removed. Related shoot/editor tasks will remain but will no longer be linked to those days. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingSheetId(sheet.id);
+      await API.delete(
+        `/api/projects/${projectId}/monthly-sheets/${sheet.id}`,
+      );
+      setMonthlySheets((current) =>
+        current.filter((currentSheet) => currentSheet.id !== sheet.id),
+      );
+      if (selectedCalendar?.id === sheet.id) {
+        setSelectedCalendar(null);
+      }
+      notifySuccess("Content calendar deleted.");
+    } catch (err) {
+      notifyError(
+        err.response?.data?.message || "Failed to delete the content calendar.",
+      );
+    } finally {
+      setDeletingSheetId(null);
     }
   };
 
@@ -1844,6 +1876,20 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                   : selectedCalendar?.id === sheet.id
                                     ? "Viewing Layout"
                                     : "Open Calendar"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMonthlySheet(sheet)}
+                                disabled={deletingSheetId === sheet.id}
+                                title="Delete content calendar"
+                                aria-label={`Delete ${new Date(0, sheet.month - 1).toLocaleString(undefined, { month: "long" })} ${sheet.year} content calendar`}
+                                className="p-2 rounded-xl text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-300 transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingSheetId === sheet.id ? (
+                                  <Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={16} />
+                                )}
                               </button>
                             </div>
                           </td>
