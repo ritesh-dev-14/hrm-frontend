@@ -11,6 +11,7 @@ const defaultAuthContext = {
   isLoading: true,
 };
 
+
 const AuthContext = createContext(defaultAuthContext);
 
 export const AuthProvider = ({ children }) => {
