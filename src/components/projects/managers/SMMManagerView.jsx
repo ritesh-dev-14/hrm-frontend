@@ -187,6 +187,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   const [monthlySheets, setMonthlySheets] = useState([]);
   const [sheetsLoading, setSheetsLoading] = useState(false);
   const [deletingSheetId, setDeletingSheetId] = useState(null);
+  const [pendingDeleteSheet, setPendingDeleteSheet] = useState(null);
   const [selectedCalendar, setSelectedCalendar] = useState(null);
   const [isPatchingDay, setIsPatchingDay] = useState(false);
   const [calendarToCopy, setCalendarToCopy] = useState(null);
@@ -338,14 +339,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   };
 
   const handleDeleteMonthlySheet = async (sheet) => {
-    const monthName = new Date(0, sheet.month - 1).toLocaleString(undefined, {
-      month: "long",
-    });
-    const confirmed = window.confirm(
-      `Delete the ${monthName} ${sheet.year} content calendar? Its calendar days will be removed. Related shoot/editor tasks will remain but will no longer be linked to those days. This cannot be undone.`,
-    );
-    if (!confirmed) return;
-
     try {
       setDeletingSheetId(sheet.id);
       await API.delete(
@@ -357,6 +350,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       if (selectedCalendar?.id === sheet.id) {
         setSelectedCalendar(null);
       }
+      setPendingDeleteSheet(null);
       notifySuccess("Content calendar deleted.");
     } catch (err) {
       notifyError(
@@ -1969,7 +1963,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteMonthlySheet(sheet)}
+                                onClick={() => setPendingDeleteSheet(sheet)}
                                 disabled={deletingSheetId === sheet.id}
                                 title="Delete content calendar"
                                 aria-label={`Delete ${new Date(0, sheet.month - 1).toLocaleString(undefined, { month: "long" })} ${sheet.year} content calendar`}
@@ -4136,6 +4130,76 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                 </div>
               )}
             </AnimatePresence>,
+            document.body,
+          )}
+
+        {pendingDeleteSheet &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-[100001] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !deletingSheetId) {
+                  setPendingDeleteSheet(null);
+                }
+              }}
+            >
+              <div
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="delete-calendar-title"
+                aria-describedby="delete-calendar-description"
+                className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+              >
+                <div className="flex items-start gap-4 p-6">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                    <Trash2 size={20} />
+                  </div>
+                  <div>
+                    <h2
+                      id="delete-calendar-title"
+                      className="text-lg font-black text-slate-900"
+                    >
+                      Remove content calendar?
+                    </h2>
+                    <p
+                      id="delete-calendar-description"
+                      className="mt-2 text-sm leading-6 text-slate-600"
+                    >
+                      Are you sure you want to remove the{" "}
+                      {new Date(
+                        0,
+                        pendingDeleteSheet.month - 1,
+                      ).toLocaleString(undefined, { month: "long" })}{" "}
+                      {pendingDeleteSheet.year} calendar? Its calendar days will
+                      be deleted. Related shoot/editor tasks will remain but
+                      will no longer be linked. This cannot be undone.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteSheet(null)}
+                    disabled={deletingSheetId === pendingDeleteSheet.id}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    No, keep it
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMonthlySheet(pendingDeleteSheet)}
+                    disabled={deletingSheetId === pendingDeleteSheet.id}
+                    className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deletingSheetId === pendingDeleteSheet.id && (
+                      <Loader2 size={15} className="animate-spin" />
+                    )}
+                    Yes, remove it
+                  </button>
+                </div>
+              </div>
+            </div>,
             document.body,
           )}
       </div>
