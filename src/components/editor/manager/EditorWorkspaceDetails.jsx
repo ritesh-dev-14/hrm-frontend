@@ -195,15 +195,37 @@ const EditorWorkspaceDetails = () => {
         const projects = response.data.data || []
         setCalendarProjects(projects)
         const normalizeProjectName = (name) => String(name || '').trim().toLowerCase().replace(/\s+/g, ' ')
-        const linkedProject = projects.find((project) => project.id === workspace?.projectId)
-          || projects.find((project) =>
-            normalizeProjectName(project.projectName) === normalizeProjectName(workspace?.projectName)
-          )
+        const workspaceProjectIds = [
+          workspace?.projectId,
+          workspace?.project?.id,
+          workspace?.project?._id,
+          workspace?.linkedProjectId,
+        ]
+          .filter(Boolean)
+          .map(String)
+        const linkedById = projects.find((project) =>
+          workspaceProjectIds.includes(String(project.id || project._id || ''))
+        )
+        const workspaceProjectNames = [
+          workspace?.projectName,
+          workspace?.project?.projectName,
+          workspace?.clientName,
+        ]
+          .map(normalizeProjectName)
+          .filter(Boolean)
+        const matchingProjects = projects.filter((project) =>
+          [project.projectName, project.clientName]
+            .map(normalizeProjectName)
+            .some((name) => workspaceProjectNames.includes(name))
+        )
+        const linkedProject = linkedById
+          || (matchingProjects.length === 1 ? matchingProjects[0] : null)
 
         if (linkedProject) {
           setSelectedCalendarProject(linkedProject)
           setCalendarPickerStep('sheet')
-          const sheetsResponse = await API.get(`/api/projects/${linkedProject.id}/monthly-sheets`)
+          const linkedProjectId = linkedProject.id || linkedProject._id
+          const sheetsResponse = await API.get(`/api/projects/${linkedProjectId}/monthly-sheets`)
           if (sheetsResponse.data?.success) {
             setCalendarSheets(sheetsResponse.data.data || [])
           } else {
@@ -229,7 +251,8 @@ const EditorWorkspaceDetails = () => {
     setCalendarPickerLoading(true)
 
     try {
-      const response = await API.get(`/api/projects/${project.id}/monthly-sheets`)
+      const projectId = project.id || project._id
+      const response = await API.get(`/api/projects/${projectId}/monthly-sheets`)
       if (response.data?.success) {
         setCalendarSheets(response.data.data || [])
       } else {
@@ -1071,7 +1094,7 @@ const EditorWorkspaceDetails = () => {
                 ) : (
                   calendarProjects.map((project) => (
                     <button
-                      key={project.id}
+                      key={project.id || project._id}
                       type="button"
                       onClick={() => handleSelectCalendarProject(project)}
                       className="w-full flex items-center justify-between text-left px-3 py-2.5 border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40 rounded-xl transition"
