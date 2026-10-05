@@ -250,6 +250,10 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   // NEW: State for Add Row modal in the drawer
   const [isAddDayModalOpen, setIsAddDayModalOpen] = useState(false);
   const [isEditAddDayModalOpen, setIsEditAddDayModalOpen] = useState(false);
+  const [isDateBatchModalOpen, setIsDateBatchModalOpen] = useState(false);
+  const [batchContentKind, setBatchContentKind] = useState("reel");
+  const [batchContentType, setBatchContentType] = useState("SHOOT_REQUIRED");
+  const [selectedBatchDates, setSelectedBatchDates] = useState([]);
   const [newDayForm, setNewDayForm] = useState({
     date: "",
     ...EMPTY_DAY_SHAPE,
@@ -440,12 +444,37 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   const handleMetaChange = (e) => {
     const { name, value } = e.target;
     setSheetMeta((prev) => ({ ...prev, [name]: value }));
+    if (name === "month" || name === "year") {
+      setSelectedBatchDates([]);
+    }
   };
 
   const handleDayFieldChange = (index, fieldName, value) => {
     const updatedDays = [...sheetDays];
     updatedDays[index] = { ...updatedDays[index], [fieldName]: value };
     setSheetDays(updatedDays);
+  };
+
+  const handleCreateRowsFromSelectedDates = () => {
+    if (selectedBatchDates.length === 0) {
+      alert("Select at least one date.");
+      return;
+    }
+
+    const typeField = batchContentKind === "reel" ? "reelType" : "postType";
+    const newRows = selectedBatchDates.map((date) => ({
+      ...EMPTY_DAY_SHAPE,
+      date: new Date(`${date}T00:00:00.000Z`).toISOString(),
+      [typeField]: batchContentType,
+    }));
+
+    setSheetDays((previous) =>
+      [...previous, ...newRows].sort((left, right) =>
+        calendarDateKey(left.date).localeCompare(calendarDateKey(right.date)),
+      ),
+    );
+    setSelectedBatchDates([]);
+    setIsDateBatchModalOpen(false);
   };
 
   const handleSelectedDayChange = (dayIndex, fieldName, value) => {
@@ -458,30 +487,12 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   const handleDayDateChange = (index, value) => {
     if (!value) return;
     const nextDate = new Date(`${value}T00:00:00Z`).toISOString();
-    if (
-      sheetDays.some(
-        (day, dayIndex) =>
-          dayIndex !== index && calendarDateKey(day.date) === calendarDateKey(nextDate),
-      )
-    ) {
-      alert("A row for this date already exists.");
-      return;
-    }
     handleDayFieldChange(index, "date", nextDate);
   };
 
   const handleSelectedDayDateChange = (index, value) => {
     if (!selectedCalendar || !value) return;
     const nextDate = new Date(`${value}T00:00:00Z`).toISOString();
-    if (
-      selectedCalendar.days.some(
-        (day, dayIndex) =>
-          dayIndex !== index && calendarDateKey(day.date) === calendarDateKey(nextDate),
-      )
-    ) {
-      alert("A row for this date already exists.");
-      return;
-    }
     handleSelectedDayChange(index, "date", nextDate);
   };
 
@@ -674,12 +685,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       alert(
         "Validation Error: Please configure details for at least one day inside the Tactical Matrix before archiving.",
       );
-      return;
-    }
-
-    const dateKeys = activeDaysPayload.map((day) => calendarDateKey(day.date));
-    if (new Set(dateKeys).size !== dateKeys.length) {
-      alert("Each tactical row must use a different date.");
       return;
     }
 
@@ -3060,17 +3065,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                   alert("Invalid date selected.");
                                   return;
                                 }
-                                if (
-                                  selectedCalendar.days.some(
-                                    (day) =>
-                                      calendarDateKey(day.date) ===
-                                      calendarDateKey(parsedDate),
-                                  )
-                                ) {
-                                  alert("A row for this date already exists.");
-                                  return;
-                                }
-
                                 setSelectedCalendar((prev) => ({
                                   ...prev,
                                   days: [
@@ -3342,12 +3336,14 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                           <button
                             type="button"
                             onClick={() => {
-                              setNewDayForm({ date: "", ...EMPTY_DAY_SHAPE });
-                              setIsAddDayModalOpen(true);
+                              setBatchContentKind("reel");
+                              setBatchContentType("SHOOT_REQUIRED");
+                              setSelectedBatchDates([]);
+                              setIsDateBatchModalOpen(true);
                             }}
                             className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors shadow-sm"
                           >
-                            + Add Row
+                            + Add Dates
                           </button>
                         </div>
                         <div className="overflow-hidden border border-slate-200/90 rounded-2xl bg-white shadow-sm flex-1">
@@ -3647,6 +3643,213 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                       </div>
                     </form>
 
+                    {isDateBatchModalOpen && (
+                      <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div
+                          role="dialog"
+                          aria-modal="true"
+                          aria-labelledby="batch-date-picker-title"
+                          className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-200"
+                        >
+                          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <div>
+                              <h3
+                                id="batch-date-picker-title"
+                                className="text-lg font-black text-slate-900"
+                              >
+                                Add content dates
+                              </h3>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Choose a content type, then select one or more dates.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsDateBatchModalOpen(false)}
+                              aria-label="Close date picker"
+                              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 bg-slate-200/80 hover:bg-slate-300 transition-colors"
+                            >
+                              <X size={17} />
+                            </button>
+                          </div>
+
+                          <div className="p-6 space-y-5">
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                                Content type
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                {[
+                                  { value: "reel", label: "Reel" },
+                                  { value: "post", label: "Post" },
+                                ].map((kind) => (
+                                  <button
+                                    key={kind.value}
+                                    type="button"
+                                    aria-pressed={batchContentKind === kind.value}
+                                    onClick={() => setBatchContentKind(kind.value)}
+                                    className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${
+                                      batchContentKind === kind.value
+                                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    {kind.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="batch-content-type"
+                                className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2"
+                              >
+                                {batchContentKind === "reel" ? "Reel type" : "Post type"}
+                              </label>
+                              <select
+                                id="batch-content-type"
+                                value={batchContentType}
+                                onChange={(event) =>
+                                  setBatchContentType(event.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                              >
+                                <option value="SHOOT_REQUIRED">Shoot required</option>
+                                <option value="AI_REQUIRED">AI required</option>
+                                <option value="DATA_AVAILABLE">Data available</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm font-bold text-slate-800">
+                                  {new Date(
+                                    Number(sheetMeta.year),
+                                    Number(sheetMeta.month) - 1,
+                                  ).toLocaleString(undefined, {
+                                    month: "long",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                                <span className="text-xs font-semibold text-slate-500">
+                                  {selectedBatchDates.length} selected
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-7 gap-1.5">
+                                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(
+                                  (weekday) => (
+                                    <span
+                                      key={weekday}
+                                      className="py-1 text-center text-[10px] font-bold uppercase text-slate-400"
+                                    >
+                                      {weekday}
+                                    </span>
+                                  ),
+                                )}
+                                {Array.from(
+                                  {
+                                    length: new Date(
+                                      Number(sheetMeta.year),
+                                      Number(sheetMeta.month) - 1,
+                                      1,
+                                    ).getDay(),
+                                  },
+                                  (_, index) => (
+                                    <span key={`empty-${index}`} aria-hidden="true" />
+                                  ),
+                                )}
+                                {Array.from(
+                                  {
+                                    length: new Date(
+                                      Number(sheetMeta.year),
+                                      Number(sheetMeta.month),
+                                      0,
+                                    ).getDate(),
+                                  },
+                                  (_, index) => {
+                                    const dayNumber = index + 1;
+                                    const dateKey = `${sheetMeta.year}-${String(
+                                      sheetMeta.month,
+                                    ).padStart(2, "0")}-${String(dayNumber).padStart(
+                                      2,
+                                      "0",
+                                    )}`;
+                                    const selected =
+                                      selectedBatchDates.includes(dateKey);
+
+                                    return (
+                                      <button
+                                        key={dateKey}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        aria-label={
+                                          `${dayNumber}${selected ? ", selected" : ""}`
+                                        }
+                                        title="Select date"
+                                        onClick={() =>
+                                          setSelectedBatchDates((previous) =>
+                                            selected
+                                              ? previous.filter(
+                                                  (date) => date !== dateKey,
+                                                )
+                                              : [...previous, dateKey],
+                                          )
+                                        }
+                                        className={`aspect-square rounded-xl text-sm font-bold transition-colors ${
+                                          selected
+                                            ? "bg-indigo-600 text-white shadow-sm"
+                                            : "text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                                        }`}
+                                      >
+                                        {dayNumber}
+                                      </button>
+                                    );
+                                  },
+                                )}
+                              </div>
+                              <p className="mt-3 text-[11px] text-slate-500">
+                                Dates that already have a row are disabled. You can
+                                fill in the remaining details in the table later.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="px-6 py-4 border-t border-slate-100 flex flex-wrap justify-between gap-3 bg-slate-50">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsDateBatchModalOpen(false);
+                                setNewDayForm({ date: "", ...EMPTY_DAY_SHAPE });
+                                setIsAddDayModalOpen(true);
+                              }}
+                              className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-200 transition-colors"
+                            >
+                              Add one detailed row instead
+                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setIsDateBatchModalOpen(false)}
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                disabled={selectedBatchDates.length === 0}
+                                onClick={handleCreateRowsFromSelectedDates}
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white shadow-sm transition-colors"
+                              >
+                                Create {selectedBatchDates.length || ""}{" "}
+                                {selectedBatchDates.length === 1 ? "row" : "rows"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* ADD DAY MODAL PORTAL (INSIDE DRAWER) */}
                     {isAddDayModalOpen && (
                       <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -3912,17 +4115,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                   alert("Invalid date selected.");
                                   return;
                                 }
-                                if (
-                                  sheetDays.some(
-                                    (day) =>
-                                      calendarDateKey(day.date) ===
-                                      calendarDateKey(parsedDate),
-                                  )
-                                ) {
-                                  alert("A row for this date already exists.");
-                                  return;
-                                }
-
                                 setSheetDays((prev) => [
                                   ...prev,
                                   {
