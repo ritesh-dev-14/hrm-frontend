@@ -50,15 +50,21 @@ const INITIAL_FORM = {
 };
 
 /* ─── component ───────────────────────────────────────────────────────────── */
-export default function PerformanceMarketingManagerView({ projectId, initialProject = null }) {
+export default function PerformanceMarketingManagerView({
+  projectId,
+  campaignId = null,
+  initialProject = null,
+}) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [project, setProject] = useState(initialProject);
   const [reports, setReports] = useState([]);
-  const [monthlyCalendar, setMonthlyCalendar] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(!initialProject);
   const [submitting, setSubmitting] = useState(false);
+  const [campaignCount, setCampaignCount] = useState("1");
+  const [creatingCampaigns, setCreatingCampaigns] = useState(false);
   const submitInFlight = useRef(false);
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -89,27 +95,23 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
     if (!projectId) return;
     if (!initialProject) setLoading(true);
     try {
-      const today = new Date();
-      const [reportsResult, monthlyResult] = await Promise.all([
-        API.get(`/api/marketing-reports?projectId=${projectId}`),
-        API.get(
-          `/api/marketing-monthly-reports?month=${today.getMonth() + 1}&year=${today.getFullYear()}`,
-        ),
+      const [reportsResult, campaignsResult] = await Promise.all([
+        campaignId
+          ? API.get(`/api/campaigns/${campaignId}/reports`)
+          : API.get(`/api/marketing-reports?projectId=${projectId}`),
+        API.get(`/api/projects/${projectId}/campaigns`),
       ]);
       const reportData = Array.isArray(reportsResult.data)
         ? reportsResult.data
         : reportsResult.data?.data || [];
-      const monthlyData = monthlyResult?.data && Object.prototype.hasOwnProperty.call(monthlyResult.data, "data")
-        ? monthlyResult.data.data
-        : monthlyResult?.data;
       setReports(reportData);
-      setMonthlyCalendar(monthlyData || null);
+      setCampaigns(campaignsResult.data?.data || []);
     } catch {
       showToast("error", "Failed to load marketing details.");
     } finally {
       setLoading(false);
     }
-  }, [initialProject, projectId]);
+  }, [campaignId, initialProject, projectId]);
 
   useEffect(() => {
     loadData();
@@ -117,12 +119,62 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
 
   /* ─── form helpers ─────────────────────────────────────────────────────── */
   const openCreate = () => {
+    if (!campaignId) {
+      showToast("error", "Open a campaign before adding a report.");
+      return;
+    }
     setEditTarget(null);
     setForm({
       ...INITIAL_FORM,
       date: new Date().toISOString().split("T")[0],
     });
     setShowForm(true);
+  };
+
+  const createCampaigns = async (event) => {
+    event.preventDefault();
+    const count = Number(campaignCount);
+    if (!Number.isInteger(count) || count < 1 || count > 50) {
+      showToast("error", "Choose a number of campaigns from 1 to 50.");
+      return;
+    }
+
+    const existingNames = new Set(
+      campaigns.map((campaign) => campaign.name.trim().toLowerCase()),
+    );
+    const namesToCreate = [];
+    let nextNumber = 1;
+    while (namesToCreate.length < count) {
+      const name = `Campaign ${nextNumber}`;
+      nextNumber += 1;
+      if (existingNames.has(name.toLowerCase())) continue;
+      existingNames.add(name.toLowerCase());
+      namesToCreate.push(name);
+    }
+
+    setCreatingCampaigns(true);
+    let createdCount = 0;
+    try {
+      for (const name of namesToCreate) {
+        await API.post(`/api/projects/${projectId}/campaigns`, { name });
+        createdCount += 1;
+      }
+      showToast(
+        "success",
+        `${createdCount} campaign${createdCount === 1 ? "" : "s"} created successfully.`,
+      );
+      await loadData();
+    } catch (err) {
+      await loadData();
+      showToast(
+        "error",
+        createdCount
+          ? `Created ${createdCount} of ${count} campaigns. ${err.response?.data?.message || "The remaining campaigns could not be created."}`
+          : err.response?.data?.message || "Failed to create campaigns.",
+      );
+    } finally {
+      setCreatingCampaigns(false);
+    }
   };
 
   const openEdit = (report) => {
@@ -186,11 +238,11 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
         await API.patch(`/api/marketing-reports/${editTarget.id}`, payload);
         showToast("success", "Report updated successfully!");
       } else {
-        await API.post("/api/marketing-reports", payload);
+        await API.post(`/api/campaigns/${campaignId}/reports`, payload);
         showToast("success", "Report submitted successfully!");
       }
       setShowForm(false);
-      loadData();
+      await loadData();
     } catch (err) {
       showToast("error", err?.response?.data?.message || "Failed to save report.");
     } finally {
@@ -214,16 +266,9 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
   const totalSpend = reports.reduce((s, r) => s + (r.todayAmountSpend || 0), 0);
   const totalReach = reports.reduce((s, r) => s + (r.todayReachObtained || 0), 0);
   const totalLeads = reports.reduce((s, r) => s + (r.leadObtained || 0), 0);
-  const monthlyRows = (monthlyCalendar?.rows || []).filter(
-    (row) => String(row.projectId || row.project?.id) === String(projectId),
+  const activeCampaign = campaigns.find(
+    (campaign) => String(campaign.id) === String(campaignId),
   );
-  const monthlyStats = [
-    { icon: BarChart3, label: "Monthly Campaigns", value: monthlyRows.length, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { icon: CheckCircle2, label: "Currently Running", value: monthlyRows.filter((row) => row.currentlyRunning === true || row.currentlyRunning === "yes").length, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { icon: Users, label: "Required Leads", value: fmt(monthlyRows.reduce((total, row) => total + Number(row.requiredLeads || 0), 0)), color: "text-blue-600", bg: "bg-blue-50" },
-    { icon: DollarSign, label: "Ad Funds", value: fmtCur(monthlyRows.reduce((total, row) => total + Number(row.awarenessFunds || 0) + Number(row.leadsFund || 0), 0)), color: "text-orange-600", bg: "bg-orange-50" },
-    { icon: Calendar, label: "Monthly Budget", value: fmtCur(monthlyRows.reduce((total, row) => total + Number(row.monthlyBudget || 0), 0)), color: "text-violet-600", bg: "bg-violet-50" },
-  ];
 
   const inputCls =
     "w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3.5 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all";
@@ -272,13 +317,15 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
             </button>
           )}
 
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition shadow-sm"
-          >
-            <Plus size={16} />
-            Add Marketing Report
-          </button>
+          {campaignId && user?.role === "MANAGER" && (
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition shadow-sm"
+            >
+              <Plus size={16} />
+              Add Marketing Report
+            </button>
+          )}
         </div>
       </div>
 
@@ -288,6 +335,107 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
 
       {!loading && (
         <>
+          {campaignId ? (
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-5 py-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+                  Campaign report workspace
+                </p>
+                <h2 className="mt-1 text-lg font-black text-slate-900">
+                  {activeCampaign?.name || "Campaign"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate(`/project/${projectId}`)}
+                className="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
+              >
+                Back to campaigns
+              </button>
+            </div>
+          ) : (
+            <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900">Campaigns</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Create campaigns for this project, then open one to enter its reports.
+                  </p>
+                </div>
+                <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">
+                  {campaigns.length} {campaigns.length === 1 ? "campaign" : "campaigns"}
+                </span>
+              </div>
+
+              {user?.role === "MANAGER" && (
+                <form
+                  onSubmit={createCampaigns}
+                  className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl bg-slate-50 p-4"
+                >
+                  <label className="w-full max-w-[220px]">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Number of campaigns to create
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      step="1"
+                      value={campaignCount}
+                      onChange={(event) => setCampaignCount(event.target.value)}
+                      className={inputCls}
+                      disabled={creatingCampaigns}
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={creatingCampaigns}
+                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {creatingCampaigns ? (
+                      <RefreshCw size={15} className="animate-spin" />
+                    ) : (
+                      <Plus size={16} />
+                    )}
+                    {creatingCampaigns ? "Creating..." : "Create campaigns"}
+                  </button>
+                </form>
+              )}
+
+              {campaigns.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {campaigns.map((campaign) => (
+                    <button
+                      key={campaign.id}
+                      type="button"
+                      onClick={() =>
+                        navigate(`/project/${projectId}/campaign/${campaign.id}`)
+                      }
+                      className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-indigo-300 hover:shadow-md"
+                    >
+                      <span>
+                        <span className="block font-bold text-slate-900 group-hover:text-indigo-700">
+                          {campaign.name}
+                        </span>
+                        <span className="mt-1 block text-xs font-medium text-slate-500">
+                          {campaign.reports?.length || 0} reports
+                        </span>
+                      </span>
+                      <TrendingUp
+                        size={18}
+                        className="text-slate-300 transition group-hover:text-indigo-500"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm font-medium text-slate-500">
+                  No campaigns yet. Choose how many to create above.
+                </p>
+              )}
+            </section>
+          )}
+
           {/* HEADER */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 mb-8">
             <div className="flex items-center gap-4 mb-4">
@@ -301,6 +449,11 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
                 <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                   {project?.projectName || "Marketing Project"}
                 </h1>
+                {campaignId && (
+                  <p className="mt-1 text-sm font-semibold text-indigo-600">
+                    {activeCampaign?.name || "Campaign"}
+                  </p>
+                )}
               </div>
             </div>
             
@@ -322,23 +475,6 @@ export default function PerformanceMarketingManagerView({ projectId, initialProj
               ))}
             </div>
 
-            <div className="mt-8 border-t border-slate-100 pt-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Monthly Calendar</h2>
-                  <p className="text-xs text-slate-500">Current month stats for this project</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                {monthlyStats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${stat.bg}`}><stat.icon size={17} className={stat.color} /></div>
-                    <p className="text-lg font-black text-slate-900">{stat.value}</p>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Search + refresh */}
