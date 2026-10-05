@@ -190,53 +190,29 @@ const EditorWorkspaceDetails = () => {
     setCalendarPickerLoading(true)
 
     try {
-      const response = await API.get('/api/projects')
+      const response = await API.get('/api/projects?limit=100&page=1')
       if (response.data?.success) {
         const projects = response.data.data || []
-        setCalendarProjects(projects)
-        const normalizeProjectName = (name) => String(name || '').trim().toLowerCase().replace(/\s+/g, ' ')
-        const workspaceProjectIds = [
-          workspace?.projectId,
-          workspace?.project?.id,
-          workspace?.project?._id,
-          workspace?.linkedProjectId,
-        ]
-          .filter(Boolean)
-          .map(String)
-        const linkedById = projects.find((project) =>
-          workspaceProjectIds.includes(String(project.id || project._id || ''))
+        const totalPages = Number(response.data.pagination?.totalPages) || 1
+        const remainingResponses = await Promise.all(
+          Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+            API.get(`/api/projects?limit=100&page=${index + 2}`),
+          ),
         )
-        const workspaceProjectNames = [
-          workspace?.projectName,
-          workspace?.project?.projectName,
-          workspace?.clientName,
-        ]
-          .map(normalizeProjectName)
-          .filter(Boolean)
-        const matchingProjects = projects.filter((project) =>
-          [project.projectName, project.clientName]
-            .map(normalizeProjectName)
-            .some((name) => workspaceProjectNames.includes(name))
-        )
-        const linkedProject = linkedById
-          || (matchingProjects.length === 1 ? matchingProjects[0] : null)
 
-        if (linkedProject) {
-          setSelectedCalendarProject(linkedProject)
-          setCalendarPickerStep('sheet')
-          const linkedProjectId = linkedProject.id || linkedProject._id
-          const sheetsResponse = await API.get(`/api/projects/${linkedProjectId}/monthly-sheets`)
-          if (sheetsResponse.data?.success) {
-            setCalendarSheets(sheetsResponse.data.data || [])
-          } else {
-            setCalendarPickerError('Could not load content calendars for this project.')
-          }
+        if (remainingResponses.some((pageResponse) => !pageResponse.data?.success)) {
+          throw new Error('Could not load all projects.')
         }
+
+        setCalendarProjects([
+          ...projects,
+          ...remainingResponses.flatMap((pageResponse) => pageResponse.data.data || []),
+        ])
       } else {
         setCalendarPickerError('Could not load projects.')
       }
     } catch (err) {
-      setCalendarPickerError(err.response?.data?.message || 'Could not load projects.')
+      setCalendarPickerError(err.response?.data?.message || err.message || 'Could not load projects.')
     } finally {
       setCalendarPickerLoading(false)
     }
