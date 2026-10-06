@@ -21,6 +21,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
   const [form, setForm] = useState({
     name: "",
     email: "",
+    role: "EMPLOYEE",
     department: [], // Array of department names (strings)
     position: "",
     managerIds: [], // Array of manager IDs (UUID strings)
@@ -85,6 +86,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
       setForm({
         name: employeeData.name || "",
         email: employeeData.email || "",
+        role: employeeData.role || "EMPLOYEE",
         department: initialDepts,
         position: employeeData.position || "",
         managerIds: initialMgrIds,
@@ -164,6 +166,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           name: form.name.trim(),
           email: form.email.trim(),
           department: form.department,
+          position: form.position.trim(),
           probationPeriod: form.probationPeriod,
           ...(form.password && { password: form.password }),
         };
@@ -172,9 +175,10 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
         payload = {
           name: form.name.trim(),
           email: form.email.trim(),
+          role: form.role,
           department: form.department,
           position: form.position.trim(),
-          managerIds: form.managerIds, // Array of manager UUID strings
+          ...(form.role === "EMPLOYEE" && { managerIds: form.managerIds }),
           probationPeriod: form.probationPeriod,
           ...(form.password && { password: form.password }),
         };
@@ -252,6 +256,21 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
             />
           </div>
 
+          {employeeData.role === "EMPLOYEE" && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-700">Role</label>
+              <select
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5"
+              >
+                <option value="EMPLOYEE">Employee</option>
+                <option value="MANAGER">Manager</option>
+              </select>
+            </div>
+          )}
+
           {/* DEPARTMENTS SELECTION ELEMENT */}
           <div className="space-y-1 relative multiselect-interactive-container">
             <label className="text-xs font-medium text-slate-700">Departments</label>
@@ -317,20 +336,20 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
             </div>
           </div>
 
-          {employeeData.role !== "MANAGER" && (
-            <>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">Job Title / Position</label>
-                <input
-                  type="text"
-                  name="position"
-                  required
-                  value={form.position}
-                  onChange={handleChange}
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5"
-                />
-              </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-700">Job Title / Position</label>
+            <input
+              type="text"
+              name="position"
+              required={form.role !== "MANAGER"}
+              value={form.position}
+              onChange={handleChange}
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5"
+            />
+          </div>
 
+          {form.role === "EMPLOYEE" && (
+            <>
               {/* REPORTING MANAGERS MULTI-SELECT FOR EMPLOYEES */}
               <div className="space-y-1 relative multiselect-interactive-container">
                 <label className="text-xs font-medium text-slate-700">Assign Reporting Managers</label>
