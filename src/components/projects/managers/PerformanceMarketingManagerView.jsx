@@ -64,6 +64,7 @@ export default function PerformanceMarketingManagerView({
   const [loading, setLoading] = useState(!initialProject);
   const [submitting, setSubmitting] = useState(false);
   const [campaignCount, setCampaignCount] = useState("1");
+  const [campaignNames, setCampaignNames] = useState([""]);
   const [creatingCampaigns, setCreatingCampaigns] = useState(false);
   const submitInFlight = useRef(false);
   const [showForm, setShowForm] = useState(false);
@@ -139,17 +140,23 @@ export default function PerformanceMarketingManagerView({
       return;
     }
 
+    const namesToCreate = campaignNames.slice(0, count).map((name) => name.trim());
+    if (namesToCreate.length !== count || namesToCreate.some((name) => !name)) {
+      showToast("error", "Enter a name for every campaign.");
+      return;
+    }
+
     const existingNames = new Set(
       campaigns.map((campaign) => campaign.name.trim().toLowerCase()),
     );
-    const namesToCreate = [];
-    let nextNumber = 1;
-    while (namesToCreate.length < count) {
-      const name = `Campaign ${nextNumber}`;
-      nextNumber += 1;
-      if (existingNames.has(name.toLowerCase())) continue;
-      existingNames.add(name.toLowerCase());
-      namesToCreate.push(name);
+    const requestedNames = new Set();
+    for (const name of namesToCreate) {
+      const normalizedName = name.toLowerCase();
+      if (existingNames.has(normalizedName) || requestedNames.has(normalizedName)) {
+        showToast("error", "Campaign names must be unique within this project.");
+        return;
+      }
+      requestedNames.add(normalizedName);
     }
 
     setCreatingCampaigns(true);
@@ -387,11 +394,42 @@ export default function PerformanceMarketingManagerView({
                       max="50"
                       step="1"
                       value={campaignCount}
-                      onChange={(event) => setCampaignCount(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setCampaignCount(value);
+                        const count = Number(value);
+                        if (Number.isInteger(count) && count >= 0 && count <= 50) {
+                          setCampaignNames((names) =>
+                            Array.from({ length: count }, (_, index) => names[index] || ""),
+                          );
+                        }
+                      }}
                       className={inputCls}
                       disabled={creatingCampaigns}
                     />
                   </label>
+                  {campaignNames.map((name, index) => (
+                    <label key={index} className="w-full max-w-[220px]">
+                      <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Campaign {index + 1} name
+                      </span>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(event) =>
+                          setCampaignNames((names) =>
+                            names.map((currentName, nameIndex) =>
+                              nameIndex === index ? event.target.value : currentName,
+                            ),
+                          )
+                        }
+                        placeholder={`Campaign ${index + 1}`}
+                        maxLength={100}
+                        className={inputCls}
+                        disabled={creatingCampaigns}
+                      />
+                    </label>
+                  ))}
                   <button
                     type="submit"
                     disabled={creatingCampaigns}
