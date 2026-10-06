@@ -33,7 +33,7 @@ const fmtDate = (d) =>
 const INITIAL_FORM = {
   clientName: "",
   clientContactNumber: "",
-  videoLink: "",
+  videoLinks: [""],
   areaName: "",
   isAdRunning: "",
   campaignStartDate: "",
@@ -182,7 +182,11 @@ export default function PerformanceMarketingManagerView({
     setForm({
       clientName: report.clientName || "",
       clientContactNumber: report.clientContactNumber || "",
-      videoLink: report.videoLink || "",
+      videoLinks: Array.isArray(report.videoLinks) && report.videoLinks.length > 0
+        ? report.videoLinks
+        : report.videoLink
+          ? [report.videoLink]
+          : [""],
       areaName: report.areaName || "",
       isAdRunning:
         report.isAdRunning === true
@@ -223,6 +227,7 @@ export default function PerformanceMarketingManagerView({
     try {
       const payload = {
         ...form,
+        videoLinks: form.videoLinks.map((link) => link.trim()).filter(Boolean),
         projectId,
         clientContactNumber: form.clientContactNumber?.trim() || null,
         todayReachObtained: form.todayReachObtained !== "" ? Number(form.todayReachObtained) : null,
@@ -588,9 +593,44 @@ export default function PerformanceMarketingManagerView({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Video Link</label>
-                <input value={form.videoLink} onChange={(e) => setForm((f) => ({ ...f, videoLink: e.target.value }))} placeholder="https://..." className={inputCls} />
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Video Links</label>
+                {form.videoLinks.map((link, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={link}
+                      onChange={(e) => setForm((current) => ({
+                        ...current,
+                        videoLinks: current.videoLinks.map((value, rowIndex) => rowIndex === index ? e.target.value : value),
+                      }))}
+                      placeholder="https://..."
+                      aria-label={`Video link ${index + 1}`}
+                      className={inputCls}
+                    />
+                    {form.videoLinks.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setForm((current) => ({
+                          ...current,
+                          videoLinks: current.videoLinks.filter((_, rowIndex) => rowIndex !== index),
+                        }))}
+                        className="shrink-0 rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                        aria-label={`Remove video link ${index + 1}`}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setForm((current) => ({ ...current, videoLinks: [...current.videoLinks, ""] }))}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                >
+                  <Plus size={14} />
+                  Add another link
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

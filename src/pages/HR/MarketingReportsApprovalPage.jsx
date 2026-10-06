@@ -186,6 +186,20 @@ export default function MarketingReportsApprovalPage() {
                   {report.campaignEndDate && <p><span className="block text-xs text-slate-500">Campaign end</span><strong className="text-slate-800">{displayDate(report.campaignEndDate)}</strong></p>}
                   {report.startDate && <p><span className="block text-xs text-slate-500">Start date</span><strong className="text-slate-800">{displayDate(report.startDate)}</strong></p>}
                 </div>
+                {(Array.isArray(report.videoLinks) ? report.videoLinks : report.videoLink ? [report.videoLink] : []).length > 0 && (
+                  <div className="mt-4 border-t border-indigo-100 pt-3">
+                    <p className="text-xs text-slate-500">Video links</p>
+                    <ul className="mt-1 space-y-1">
+                      {(Array.isArray(report.videoLinks) ? report.videoLinks : [report.videoLink]).map((link, index) => (
+                        <li key={`${link}-${index}`}>
+                          <a href={link} target="_blank" rel="noreferrer" className="break-all text-sm font-medium text-indigo-700 underline hover:text-indigo-900">
+                            Video {index + 1}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
               {(report.reasonNotRunning || report.unableToSubmitReason || report.reviewNote) && <div className="mt-4 space-y-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
                 {report.reasonNotRunning && <p><strong>Not running reason:</strong> {report.reasonNotRunning}</p>}
