@@ -459,6 +459,8 @@ const HrUploads = ({ embedded = false }) => {
       if (item.uploadStatus === "APPROVED") return [];
 
       const originalDate = dateKey(item.uploadDate);
+      if (originalDate.slice(0, 7) !== today.slice(0, 7)) return [];
+
       const storedRetryDate = dateKey(item.uploadRetryDate);
       const retryDate = storedRetryDate || (
         item.uploadStatus === "PENDING" && originalDate < today ? today : ""
