@@ -22,7 +22,18 @@ import ProfessionalLoader from "../../components/ProfessionalLoader";
 // ─────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const dateParts = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+};
+
+const dateKey = (date) => String(date || "").slice(0, 10);
 
 const formatDate = (d) =>
   d
@@ -81,6 +92,13 @@ function UploadCard({ item, user, onUpdateStatus }) {
         <XCircle size={12} /> REJECTED
       </span>
     );
+  } else if (item.isRetry) {
+    cardStyles = "border-amber-300 ring-1 ring-amber-200 bg-amber-50/30";
+    statusBadge = (
+      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 flex items-center gap-1">
+        RETRY DUE
+      </span>
+    );
   } else if (isToday) {
     cardStyles = "border-indigo-300 ring-1 ring-indigo-200 bg-white";
   }
@@ -92,7 +110,7 @@ function UploadCard({ item, user, onUpdateStatus }) {
       {isToday && (!item.uploadStatus || item.uploadStatus === "PENDING") && (
         <div className="flex items-center gap-2 rounded-t-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2">
           <span className="text-xs font-bold text-white tracking-wide">
-            📌 TODAY'S UPLOAD
+            {item.isRetry ? "RETRY UPLOAD DUE TODAY" : "📌 TODAY'S UPLOAD"}
           </span>
         </div>
       )}
@@ -155,6 +173,12 @@ function UploadCard({ item, user, onUpdateStatus }) {
             {item.uploadStatus === "REJECTED" && item.uploadRejectReason && (
               <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 inline-block">
                 <strong>Reason:</strong> {item.uploadRejectReason}
+              </div>
+            )}
+            {item.isRetry && (
+              <div className="mt-2 text-sm text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-100 inline-block">
+                <strong>Carried over from {formatDate(item.originalUploadDate)}.</strong>
+                {item.uploadRejectReason ? ` ${item.uploadRejectReason}` : " It was not uploaded by its scheduled date."}
               </div>
             )}
             <span className="mt-1 inline-block text-xs font-semibold text-indigo-600">
@@ -281,6 +305,7 @@ const HrUploads = ({ embedded = false }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(todayISO());
+  const [today, setToday] = useState(todayISO());
   const [filterMode, setFilterMode] = useState("date"); // "date" | "all"
 
   // Rejection Modal State
@@ -304,26 +329,28 @@ const HrUploads = ({ embedded = false }) => {
       const sheetsRes = await API.get("/api/monthly-sheets/uploads");
       const sheets = sheetsRes.data?.data || [];
       const results = sheets.map((sheet) =>
-        (sheet.days || []).map((day) => ({
-          id: `${sheet.id}-${day.id}`,
-          projectId: sheet.projectId,
-          sheetId: sheet.id,
-          dayId: day.id,
-          projectName: sheet.projectName,
-          clientName: sheet.clientName || "-",
-          uploadDate: day.date,
-          title: day.title,
-          contentUploadLinks: day.contentUploadLinks || [],
-          videoUploadLinks: day.videoUploadLinks || [],
-          uploadStatus: day.uploadStatus || "PENDING",
-          uploadRejectReason: day.uploadRejectReason,
-        })),
+        (sheet.days || []).flatMap((day) => {
+          const item = {
+            id: `${sheet.id}-${day.id}`,
+            projectId: sheet.projectId,
+            sheetId: sheet.id,
+            dayId: day.id,
+            projectName: sheet.projectName,
+            clientName: sheet.clientName || "-",
+            uploadDate: day.date,
+            title: day.title,
+            contentUploadLinks: day.contentUploadLinks || [],
+            videoUploadLinks: day.videoUploadLinks || [],
+            uploadStatus: day.uploadStatus || "PENDING",
+            uploadRejectReason: day.uploadRejectReason,
+            uploadRetryDate: day.uploadRetryDate,
+          };
+          return item;
+        }),
       );
 
       // Sort globally by date (descending)
-      const flatResults = results
-        .flat()
-        .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+      const flatResults = results.flat();
       setUploads(flatResults);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load uploads");
@@ -335,6 +362,20 @@ const HrUploads = ({ embedded = false }) => {
   useEffect(() => {
     fetchUploads();
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextToday = todayISO();
+      if (nextToday !== today) {
+        setToday(nextToday);
+        setSelectedDate((currentDate) =>
+          currentDate === today ? nextToday : currentDate,
+        );
+      }
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [today]);
 
   // ── Update Status Handler ───────────────────────────────
   const handleUpdateStatus = async (item, status, reason = "", extraData = {}) => {
@@ -372,22 +413,12 @@ const HrUploads = ({ embedded = false }) => {
         payload
       );
 
-      toast.success(`Upload ${status.toLowerCase()} successfully`);
-
-      // Update local state instantly
-      setUploads((prev) =>
-        prev.map((u) =>
-          u.id === item.id
-            ? { 
-                ...u, 
-                uploadStatus: status, 
-                uploadRejectReason: reason,
-                contentUploadLinks: status === "APPROVED" && extraData.contentUploadLinks ? extraData.contentUploadLinks : u.contentUploadLinks,
-                videoUploadLinks: status === "APPROVED" && extraData.videoUploadLinks ? extraData.videoUploadLinks : u.videoUploadLinks
-              }
-            : u,
-        ),
+      toast.success(
+        status === "REJECTED"
+          ? "Upload rejected; a retry is now due the next day. Other calendar dates were not changed."
+          : `Upload ${status.toLowerCase()} successfully`,
       );
+      await fetchUploads();
 
       setRejectItem(null);
       setRejectReason("");
@@ -424,12 +455,31 @@ const HrUploads = ({ embedded = false }) => {
 
   // ── Filter ────────────────────────────────────────────
   const filteredUploads = useMemo(() => {
-    let list = uploads;
+    const retries = uploads.flatMap((item) => {
+      if (item.uploadStatus === "APPROVED") return [];
+
+      const originalDate = dateKey(item.uploadDate);
+      const storedRetryDate = dateKey(item.uploadRetryDate);
+      const retryDate = storedRetryDate || (
+        item.uploadStatus === "PENDING" && originalDate < today ? today : ""
+      );
+      if (!retryDate) return [];
+
+      return [{
+        ...item,
+        id: `${item.id}-retry`,
+        originalUploadDate: item.uploadDate,
+        uploadDate: retryDate < today ? today : retryDate,
+        uploadStatus: "PENDING",
+        isRetry: true,
+      }];
+    });
+
+    let list = [...uploads, ...retries];
 
     if (filterMode === "date" && selectedDate) {
       list = list.filter((u) => {
-        const d = new Date(u.uploadDate).toISOString().slice(0, 10);
-        return d === selectedDate;
+        return dateKey(u.uploadDate) === selectedDate;
       });
     }
 
@@ -450,8 +500,8 @@ const HrUploads = ({ embedded = false }) => {
       );
     }
 
-    return list;
-  }, [uploads, selectedDate, search, filterMode]);
+    return list.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+  }, [uploads, selectedDate, search, filterMode, today]);
 
   // ─────────────────────────────────────────────────────
   return (
