@@ -34,6 +34,30 @@ export default function EditorWorkloadPage() {
     }
   };
 
+  const handleEditTarget = async (editor, type) => {
+    const isVideo = type === 'video';
+    const currentTarget = isVideo ? (editor.dailyVideoTarget || 0) : (editor.dailyPostTarget || 0);
+    const newTargetStr = window.prompt(`Set daily ${type} target for ${editor.name}:`, currentTarget);
+    
+    if (newTargetStr === null) return;
+    
+    const newTarget = parseInt(newTargetStr, 10);
+    if (isNaN(newTarget) || newTarget < 0) {
+      alert("Please enter a valid positive number");
+      return;
+    }
+
+    try {
+      const payload = isVideo ? { dailyVideoTarget: newTarget } : { dailyPostTarget: newTarget };
+      const res = await API.put(`/api/editor-workload/${editor.id}/targets`, payload);
+      if (res.data.success) {
+        setWorkloads(prev => prev.map(w => w.id === editor.id ? { ...w, ...payload } : w));
+      }
+    } catch (err) {
+      alert("Failed to update target. Please try again.");
+    }
+  };
+
   const filteredWorkloads = workloads.filter(w => 
     w.name.toLowerCase().includes(search.toLowerCase()) ||
     w.employeeId?.toLowerCase().includes(search.toLowerCase())
@@ -145,26 +169,64 @@ export default function EditorWorkloadPage() {
                     
                     <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
 
-                    <div className="text-center">
-                      <p className="text-xs text-indigo-500 uppercase font-bold tracking-wider">Videos</p>
-                      <div className="flex items-baseline gap-1 justify-center">
-                        <p className="text-xl font-black text-slate-800">
-                          {editor.stats?.[timeframe]?.videosEdited || 0}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500" title="Average TAT">
-                          ({editor.stats?.[timeframe]?.videoAvgTat || 0}h)
-                        </p>
+                    <div className="text-center group relative">
+                      <p className="text-xs text-indigo-500 uppercase font-bold tracking-wider flex items-center justify-center gap-1">
+                        Videos
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleEditTarget(editor, 'video'); }}
+                          className="opacity-50 hover:opacity-100 text-indigo-400 hover:text-indigo-600 transition-opacity"
+                          title="Set daily video target"
+                        >
+                          ✏️
+                        </button>
+                      </p>
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="flex items-baseline gap-1 justify-center">
+                          <p className="text-xl font-black text-slate-800">
+                            {editor.stats?.[timeframe]?.videosEdited || 0}
+                            <span className="text-sm font-semibold text-slate-400 ml-1">
+                              / {(editor.dailyVideoTarget || 0) * (editor.stats?.[timeframe]?.workingDays || 1)}
+                            </span>
+                          </p>
+                          <p className="text-xs font-medium text-slate-500" title="Average TAT">
+                            ({editor.stats?.[timeframe]?.videoAvgTat || 0}h)
+                          </p>
+                        </div>
+                        {timeframe !== 'daily' && editor.dailyVideoTarget > 0 && (
+                          <div className="mt-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block">
+                            🎯 Hit: {editor.stats?.[timeframe]?.videoHitDays || 0}/{editor.stats?.[timeframe]?.workingDays || 1}d
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xs text-pink-500 uppercase font-bold tracking-wider">Posts</p>
-                      <div className="flex items-baseline gap-1 justify-center">
-                        <p className="text-xl font-black text-slate-800">
-                          {editor.stats?.[timeframe]?.postsEdited || 0}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500" title="Average TAT">
-                          ({editor.stats?.[timeframe]?.postAvgTat || 0}h)
-                        </p>
+                    <div className="text-center group relative">
+                      <p className="text-xs text-pink-500 uppercase font-bold tracking-wider flex items-center justify-center gap-1">
+                        Posts
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleEditTarget(editor, 'post'); }}
+                          className="opacity-50 hover:opacity-100 text-pink-400 hover:text-pink-600 transition-opacity"
+                          title="Set daily post target"
+                        >
+                          ✏️
+                        </button>
+                      </p>
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="flex items-baseline gap-1 justify-center">
+                          <p className="text-xl font-black text-slate-800">
+                            {editor.stats?.[timeframe]?.postsEdited || 0}
+                            <span className="text-sm font-semibold text-slate-400 ml-1">
+                              / {(editor.dailyPostTarget || 0) * (editor.stats?.[timeframe]?.workingDays || 1)}
+                            </span>
+                          </p>
+                          <p className="text-xs font-medium text-slate-500" title="Average TAT">
+                            ({editor.stats?.[timeframe]?.postAvgTat || 0}h)
+                          </p>
+                        </div>
+                        {timeframe !== 'daily' && editor.dailyPostTarget > 0 && (
+                          <div className="mt-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block">
+                            🎯 Hit: {editor.stats?.[timeframe]?.postHitDays || 0}/{editor.stats?.[timeframe]?.workingDays || 1}d
+                          </div>
+                        )}
                       </div>
                     </div>
                     
