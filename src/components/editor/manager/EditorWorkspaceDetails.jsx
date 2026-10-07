@@ -250,16 +250,21 @@ const EditorWorkspaceDetails = () => {
       source: 'submission',
       optionId: `submission:${submission.id}`,
       label: `${shoot.title} / ${submission.title}`,
+      tooltip: submission.description || submission.title,
     }))
   )
   const shootExtraContentOptions = (selectedShootWorkspace?.shoots || []).flatMap((shoot) =>
-    (shoot.extraContent || []).map((content) => ({
-      ...content,
-      shoot,
-      source: 'extra',
-      optionId: `extra:${content.id}`,
-      label: `${shoot.title} / ${content.title}`,
-    }))
+    (shoot.extraContent || []).map((content) => {
+      const descSnippet = content.description ? ` - ${content.description.slice(0, 30)}${content.description.length > 30 ? '...' : ''}` : '';
+      return {
+        ...content,
+        shoot,
+        source: 'extra',
+        optionId: `extra:${content.id}`,
+        label: `${shoot.title} / ${content.title}${descSnippet}`,
+        tooltip: content.description || content.title,
+      };
+    })
   )
   const selectedShootAssets = selectedShootAssetGroup === 'extra' ? shootExtraContentOptions : shootSubmissionOptions
   const contentCreativeEmployees = employees.filter((employee) => {
@@ -862,7 +867,7 @@ const EditorWorkspaceDetails = () => {
                     >
                       <option value="">Select Exact Asset...</option>
                       {selectedShootAssets.map((asset) => (
-                        <option key={asset.optionId} value={asset.optionId}>{asset.label}</option>
+                        <option key={asset.optionId} value={asset.optionId} title={asset.tooltip}>{asset.label}</option>
                       ))}
                     </select>
                     <button
