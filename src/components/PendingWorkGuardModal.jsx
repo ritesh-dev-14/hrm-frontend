@@ -12,8 +12,15 @@ const getItemId = (item) =>
   item?.id || item?._id || item?.taskId || item?.taskItemId || item?.assignmentId ||
   item?.reportId || item?.projectId || "Not available";
 
-const getDueDate = (item) =>
-  item?.dueDate || item?.dueAt || item?.deadline || item?.date || "Not specified";
+const getDueDate = (item) => {
+  const dateStr = item?.dueDate || item?.dueAt || item?.deadline || item?.date;
+  if (!dateStr) return null;
+  try {
+    return new Date(dateStr).toLocaleDateString();
+  } catch (e) {
+    return dateStr;
+  }
+};
 
 const getNavigationPath = (item, isReport, isManager) => {
   if (item?.path || item?.route) return item.path || item.route;
@@ -54,14 +61,15 @@ export default function PendingWorkGuardModal({ status, onClose, action = "logou
     navigate(getNavigationPath(item, isReport, isManager));
   };
 
-  const renderItem = (item, isReport, index) => (
-    <div key={`${getItemId(item)}-${index}`} className="rounded-xl border border-slate-200 bg-white p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold text-slate-800">{getItemTitle(item, isReport)}</p>
-          <p className="mt-1 text-xs text-slate-500">ID: {getItemId(item)}</p>
-          <p className="text-xs text-slate-500">Due: {getDueDate(item)}</p>
-        </div>
+  const renderItem = (item, isReport, index) => {
+    const dueDate = getDueDate(item);
+    return (
+      <div key={`${getItemId(item)}-${index}`} className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-800">{getItemTitle(item, isReport)}</p>
+            {dueDate && <p className="mt-1 text-xs text-slate-500">Due: {dueDate}</p>}
+          </div>
         <span className="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
           {item?.status || (isReport ? item?.approvalStatus : "PENDING")}
         </span>
@@ -74,7 +82,8 @@ export default function PendingWorkGuardModal({ status, onClose, action = "logou
         Open {isReport ? "report" : "task"} <ArrowRight size={14} />
       </button>
     </div>
-  );
+    );
+  };
 
   return (
     <AnimatePresence>
