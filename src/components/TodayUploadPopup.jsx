@@ -33,11 +33,11 @@ export default function TodayUploadPopup({ data, onClose }) {
 
   const uploadDate = data?.uploadDate
     ? new Date(data.uploadDate).toLocaleDateString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : null;
 
   return (
@@ -84,7 +84,7 @@ export default function TodayUploadPopup({ data, onClose }) {
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: "linear-gradient(135deg, #818cf8, #a78bfa)" }}
                 >
-                    {data?.alertTitle ? <ArrowRight size={18} className="text-white" /> : <Upload size={18} className="text-white" />}
+                  {data?.alertTitle ? <ArrowRight size={18} className="text-white" /> : <Upload size={18} className="text-white" />}
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-widest text-indigo-300 font-bold mb-0.5">

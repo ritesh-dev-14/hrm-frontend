@@ -330,8 +330,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Error fetching monthly sheet day-level details.",
+        err.message ||
+        "Error fetching monthly sheet day-level details.",
       );
     } finally {
       setLoadingCalendarId(null);
@@ -408,8 +408,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       } else {
         setError(
           err.response?.data?.message ||
-            err.message ||
-            "Error communicating with infrastructure.",
+          err.message ||
+          "Error communicating with infrastructure.",
         );
       }
     } finally {
@@ -579,8 +579,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Failed to submit patch operational configuration.",
+        err.message ||
+        "Failed to submit patch operational configuration.",
       );
     } finally {
       setIsUpdating(false);
@@ -616,8 +616,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Failed to upload project logo.",
+        err.message ||
+        "Failed to upload project logo.",
       );
     } finally {
       setIsUploadingLogo(false);
@@ -652,8 +652,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Failed to upload the end-screen video.",
+        err.message ||
+        "Failed to upload the end-screen video.",
       );
     } finally {
       setIsUploadingEndScreen(false);
@@ -747,8 +747,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Error occurred handling sheet payload schema validation.",
+        err.message ||
+        "Error occurred handling sheet payload schema validation.",
       );
     } finally {
       setIsSubmittingSheet(false);
@@ -834,14 +834,14 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       } else {
         alert(
           resData?.message ||
-            "Operational framework update failed validations.",
+          "Operational framework update failed validations.",
         );
       }
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Network exceptions occurring parsing structural elements.",
+        err.message ||
+        "Network exceptions occurring parsing structural elements.",
       );
     } finally {
       setIsPatchingDay(false);
@@ -916,8 +916,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          err.message ||
-          "Could not copy the content calendar.",
+        err.message ||
+        "Could not copy the content calendar.",
       );
     } finally {
       setIsCopyingCalendar(false);
@@ -1235,9 +1235,9 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                 <p className="font-bold text-slate-800 text-sm">
                   {project?.startDate
                     ? new Date(project.startDate).toLocaleDateString(
-                        undefined,
-                        { dateStyle: "medium" },
-                      )
+                      undefined,
+                      { dateStyle: "medium" },
+                    )
                     : "N/A"}
                 </p>
               </div>
@@ -1248,8 +1248,8 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                 <p className="font-bold text-slate-800 text-sm">
                   {project?.endDate
                     ? new Date(project.endDate).toLocaleDateString(undefined, {
-                        dateStyle: "medium",
-                      })
+                      dateStyle: "medium",
+                    })
                     : "N/A"}
                 </p>
               </div>
@@ -1260,9 +1260,9 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                 <p className="font-bold text-indigo-600 text-sm">
                   {project?.renewalDate
                     ? new Date(project.renewalDate).toLocaleDateString(
-                        undefined,
-                        { dateStyle: "medium" },
-                      )
+                      undefined,
+                      { dateStyle: "medium" },
+                    )
                     : "N/A"}
                 </p>
               </div>
@@ -1394,9 +1394,9 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                           if (newReference.trim()) {
                             const currentRefs = formData.reference
                               ? formData.reference
-                                  .split(",")
-                                  .map((s) => s.trim())
-                                  .filter(Boolean)
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean)
                               : [];
                             currentRefs.push(newReference.trim());
                             setFormData({
@@ -2011,146 +2011,146 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
             <>
               {showCopyPicker && (
                 <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-              <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">
-                    Select Calendar to Copy
-                  </h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500">
-                    Choose any existing month from this project.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowCopyPicker(false)}
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                  title="Close"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              {monthlySheets.length === 0 ? (
-                <p className="rounded-xl bg-slate-50 p-5 text-center text-sm font-semibold text-slate-500">
-                  No existing content calendars are available to copy.
-                </p>
-              ) : (
-                <div className="max-h-80 space-y-2 overflow-y-auto">
-                  {monthlySheets.map((sheet) => (
-                    <button
-                      key={sheet.id}
-                      type="button"
-                      onClick={() => {
-                        setCopyTarget({
-                          month: new Date().getMonth() + 1,
-                          year: new Date().getFullYear(),
-                        });
-                        setCalendarToCopy(sheet);
-                        setShowCopyPicker(false);
-                      }}
-                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50/50"
-                    >
-                      <span className="text-sm font-bold text-slate-800">
-                        {new Date(0, sheet.month - 1).toLocaleString(undefined, {
-                          month: "long",
-                        })} {sheet.year}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-500">
-                        {sheet.days?.length || 0} days
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                  <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                    <div className="mb-5 flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900">
+                          Select Calendar to Copy
+                        </h3>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Choose any existing month from this project.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowCopyPicker(false)}
+                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        title="Close"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    {monthlySheets.length === 0 ? (
+                      <p className="rounded-xl bg-slate-50 p-5 text-center text-sm font-semibold text-slate-500">
+                        No existing content calendars are available to copy.
+                      </p>
+                    ) : (
+                      <div className="max-h-80 space-y-2 overflow-y-auto">
+                        {monthlySheets.map((sheet) => (
+                          <button
+                            key={sheet.id}
+                            type="button"
+                            onClick={() => {
+                              setCopyTarget({
+                                month: new Date().getMonth() + 1,
+                                year: new Date().getFullYear(),
+                              });
+                              setCalendarToCopy(sheet);
+                              setShowCopyPicker(false);
+                            }}
+                            className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50/50"
+                          >
+                            <span className="text-sm font-bold text-slate-800">
+                              {new Date(0, sheet.month - 1).toLocaleString(undefined, {
+                                month: "long",
+                              })} {sheet.year}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-500">
+                              {sheet.days?.length || 0} days
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {calendarToCopy && (
                 <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-              <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">
-                    Copy Content Calendar
-                  </h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500">
-                    Copy {new Date(0, calendarToCopy.month - 1).toLocaleString(undefined, { month: "long" })} {calendarToCopy.year} into a new month.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCalendarToCopy(null)}
-                  disabled={isCopyingCalendar}
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                  title="Close"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+                  <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                    <div className="mb-5 flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900">
+                          Copy Content Calendar
+                        </h3>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Copy {new Date(0, calendarToCopy.month - 1).toLocaleString(undefined, { month: "long" })} {calendarToCopy.year} into a new month.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCalendarToCopy(null)}
+                        disabled={isCopyingCalendar}
+                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                        title="Close"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-xs font-bold text-slate-600">
-                  Target month
-                  <select
-                    value={copyTarget.month}
-                    onChange={(e) =>
-                      setCopyTarget((prev) => ({ ...prev, month: e.target.value }))
-                    }
-                    disabled={isCopyingCalendar}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                  >
-                    {Array.from({ length: 12 }, (_, index) => index + 1).map(
-                      (month) => (
-                        <option key={month} value={month}>
-                          {new Date(0, month - 1).toLocaleString(undefined, {
-                            month: "long",
-                          })}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </label>
-                <label className="text-xs font-bold text-slate-600">
-                  Target year
-                  <input
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    value={copyTarget.year}
-                    onChange={(e) =>
-                      setCopyTarget((prev) => ({ ...prev, year: e.target.value }))
-                    }
-                    disabled={isCopyingCalendar}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                  />
-                </label>
-              </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-xs font-bold text-slate-600">
+                        Target month
+                        <select
+                          value={copyTarget.month}
+                          onChange={(e) =>
+                            setCopyTarget((prev) => ({ ...prev, month: e.target.value }))
+                          }
+                          disabled={isCopyingCalendar}
+                          className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        >
+                          {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                            (month) => (
+                              <option key={month} value={month}>
+                                {new Date(0, month - 1).toLocaleString(undefined, {
+                                  month: "long",
+                                })}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                      <label className="text-xs font-bold text-slate-600">
+                        Target year
+                        <input
+                          type="number"
+                          min="2000"
+                          max="2100"
+                          value={copyTarget.year}
+                          onChange={(e) =>
+                            setCopyTarget((prev) => ({ ...prev, year: e.target.value }))
+                          }
+                          disabled={isCopyingCalendar}
+                          className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                      </label>
+                    </div>
 
-              <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-[11px] font-medium leading-relaxed text-amber-800">
-                Content, scripts, notes, references, and planned types will be copied. Upload links and review status will start empty.
-              </p>
+                    <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-[11px] font-medium leading-relaxed text-amber-800">
+                      Content, scripts, notes, references, and planned types will be copied. Upload links and review status will start empty.
+                    </p>
 
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCalendarToCopy(null)}
-                  disabled={isCopyingCalendar}
-                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyCalendar}
-                  disabled={isCopyingCalendar}
-                  className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  <Copy size={15} />
-                  {isCopyingCalendar ? "Copying..." : "Copy Calendar"}
-                </button>
-              </div>
-            </div>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCalendarToCopy(null)}
+                        disabled={isCopyingCalendar}
+                        className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyCalendar}
+                        disabled={isCopyingCalendar}
+                        className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        <Copy size={15} />
+                        {isCopyingCalendar ? "Copying..." : "Copy Calendar"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </>,
@@ -2236,11 +2236,10 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                         <button
                           onClick={handleUpdateExistingCalendar}
                           disabled={isPatchingDay}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${
-                            isPatchingDay
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${isPatchingDay
                               ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                               : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          }`}
+                            }`}
                         >
                           <svg
                             className="w-4 h-4"
@@ -2664,22 +2663,22 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                           />
                                           {dayItem.contentUploadLinks?.length >
                                             0 && (
-                                            <div className="flex flex-col gap-1">
-                                              {dayItem.contentUploadLinks.map(
-                                                (link, i) => (
-                                                  <a
-                                                    key={`content-up-${i}`}
-                                                    href={link}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="text-[11px] font-bold text-sky-600 hover:text-sky-800 break-all"
-                                                  >
-                                                    Content Asset {i + 1} 🔗
-                                                  </a>
-                                                ),
-                                              )}
-                                            </div>
-                                          )}
+                                              <div className="flex flex-col gap-1">
+                                                {dayItem.contentUploadLinks.map(
+                                                  (link, i) => (
+                                                    <a
+                                                      key={`content-up-${i}`}
+                                                      href={link}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="text-[11px] font-bold text-sky-600 hover:text-sky-800 break-all"
+                                                    >
+                                                      Content Asset {i + 1} 🔗
+                                                    </a>
+                                                  ),
+                                                )}
+                                              </div>
+                                            )}
                                         </div>
                                       </td>
 
@@ -2703,40 +2702,39 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                           />
                                           {dayItem.videoUploadLinks?.length >
                                             0 && (
-                                            <div className="flex flex-col gap-1">
-                                              {dayItem.videoUploadLinks.map(
-                                                (link, i) => (
-                                                  <a
-                                                    key={`video-up-${i}`}
-                                                    href={link}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="text-[11px] font-bold text-purple-600 hover:text-purple-800 break-all"
-                                                  >
-                                                    Video Asset {i + 1} 🔗
-                                                  </a>
-                                                ),
-                                              )}
-                                            </div>
-                                          )}
+                                              <div className="flex flex-col gap-1">
+                                                {dayItem.videoUploadLinks.map(
+                                                  (link, i) => (
+                                                    <a
+                                                      key={`video-up-${i}`}
+                                                      href={link}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="text-[11px] font-bold text-purple-600 hover:text-purple-800 break-all"
+                                                    >
+                                                      Video Asset {i + 1} 🔗
+                                                    </a>
+                                                  ),
+                                                )}
+                                              </div>
+                                            )}
                                         </div>
                                       </td>
 
                                       <td className="px-4 py-3 whitespace-nowrap pt-4">
                                         {dayItem.submissionStatus ? (
                                           <span
-                                            className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${
-                                              dayItem.submissionStatus ===
-                                              "APPROVED"
+                                            className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${dayItem.submissionStatus ===
+                                                "APPROVED"
                                                 ? "bg-emerald-100 text-emerald-800"
                                                 : dayItem.submissionStatus ===
-                                                    "REJECTED"
+                                                  "REJECTED"
                                                   ? "bg-red-100 text-red-800"
                                                   : dayItem.submissionStatus ===
-                                                      "SUBMITTED"
+                                                    "SUBMITTED"
                                                     ? "bg-blue-100 text-blue-800"
                                                     : "bg-amber-100 text-amber-800"
-                                            }`}
+                                              }`}
                                           >
                                             {dayItem.submissionStatus}
                                           </span>
@@ -3624,11 +3622,10 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                         <button
                           type="submit"
                           disabled={isSubmittingSheet}
-                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${
-                            isSubmittingSheet
+                          className={`px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all ${isSubmittingSheet
                               ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                               : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          }`}
+                            }`}
                         >
                           {isSubmittingSheet
                             ? "Compiling Matrix..."
@@ -3682,11 +3679,10 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                     type="button"
                                     aria-pressed={batchContentKind === kind.value}
                                     onClick={() => setBatchContentKind(kind.value)}
-                                    className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${
-                                      batchContentKind === kind.value
+                                    className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${batchContentKind === kind.value
                                         ? "border-indigo-600 bg-indigo-50 text-indigo-700"
                                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                                    }`}
+                                      }`}
                                   >
                                     {kind.label}
                                   </button>
@@ -3785,16 +3781,15 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                           setSelectedBatchDates((previous) =>
                                             selected
                                               ? previous.filter(
-                                                  (date) => date !== dateKey,
-                                                )
+                                                (date) => date !== dateKey,
+                                              )
                                               : [...previous, dateKey],
                                           )
                                         }
-                                        className={`aspect-square rounded-xl text-sm font-bold transition-colors ${
-                                          selected
+                                        className={`aspect-square rounded-xl text-sm font-bold transition-colors ${selected
                                             ? "bg-indigo-600 text-white shadow-sm"
                                             : "text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
-                                        }`}
+                                          }`}
                                       >
                                         {dayNumber}
                                       </button>

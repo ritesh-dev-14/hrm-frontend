@@ -38,11 +38,11 @@ const dateKey = (date) => String(date || "").slice(0, 10);
 const formatDate = (d) =>
   d
     ? new Date(d).toLocaleDateString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "—";
 
 const parseLinks = (value) =>
@@ -53,10 +53,10 @@ const parseLinks = (value) =>
 
 const getSafeExternalUrl = (value) => {
   try {
-      const url = new URL(value);
-      return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
   } catch {
-      return null;
+    return null;
   }
 };
 
@@ -166,7 +166,20 @@ function UploadCard({ item, user, onUpdateStatus }) {
                         : "text-indigo-400"
                   }
                 />
-                {item.title || "Uploaded Content"}
+                {(() => {
+                  // Derive label from reelType / postType from the monthly sheet day
+                  const parts = [];
+                  if (item.reelType && item.reelType !== "NONE") parts.push("Reel");
+                  if (item.postType && item.postType !== "NONE") parts.push("Post");
+                  if (item.videoType && item.videoType !== "NONE" && parts.length === 0) parts.push("Video");
+                  // Fallback to explicit upload items (dataType array) if present
+                  if (parts.length === 0 && item.items && item.items.length > 0) {
+                    return item.items
+                      .map((i) => i.platform ? `${i.dataType} (${i.platform})` : i.dataType)
+                      .join(" · ");
+                  }
+                  return parts.length > 0 ? parts.join(" · ") : "Upload";
+                })()}
               </span>
             </div>
 
@@ -339,6 +352,9 @@ const HrUploads = ({ embedded = false }) => {
             clientName: sheet.clientName || "-",
             uploadDate: day.date,
             title: day.title,
+            reelType: day.reelType || null,
+            postType: day.postType || null,
+            videoType: day.videoType || null,
             contentUploadLinks: day.contentUploadLinks || [],
             videoUploadLinks: day.videoUploadLinks || [],
             uploadStatus: day.uploadStatus || "PENDING",
@@ -398,13 +414,13 @@ const HrUploads = ({ embedded = false }) => {
         uploadStatus: status,
         uploadRejectReason: reason,
       };
-      
+
       if (status === "APPROVED") {
         if (extraData.contentUploadLinks !== undefined) {
-           payload.contentUploadLinks = extraData.contentUploadLinks;
+          payload.contentUploadLinks = extraData.contentUploadLinks;
         }
         if (extraData.videoUploadLinks !== undefined) {
-           payload.videoUploadLinks = extraData.videoUploadLinks;
+          payload.videoUploadLinks = extraData.videoUploadLinks;
         }
       }
 
@@ -544,21 +560,19 @@ const HrUploads = ({ embedded = false }) => {
         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2 py-1.5 shadow-sm">
           <button
             onClick={() => setFilterMode("date")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-              filterMode === "date"
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${filterMode === "date"
                 ? "bg-indigo-600 text-white"
                 : "text-slate-500 hover:text-slate-700"
-            }`}
+              }`}
           >
             By Date
           </button>
           <button
             onClick={() => setFilterMode("all")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-              filterMode === "all"
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${filterMode === "all"
                 ? "bg-indigo-600 text-white"
                 : "text-slate-500 hover:text-slate-700"
-            }`}
+              }`}
           >
             All
           </button>
@@ -685,7 +699,7 @@ const HrUploads = ({ embedded = false }) => {
               <p className="text-xs text-slate-500">
                 At least one content or video upload link is required.
               </p>
-              
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Content Upload Links (comma separated)
