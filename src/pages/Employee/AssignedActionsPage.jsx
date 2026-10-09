@@ -84,6 +84,8 @@ export default function AssignedActionsPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sendingReply, setSendingReply] = useState(false);
   const [replyInputs, setReplyInputs] = useState({});
+  const [newMessage, setNewMessage] = useState("");
+  const [sendingNewMessage, setSendingNewMessage] = useState(false);
 
   // History progressive viewport sizing
   const [visibleMessagesCount, setVisibleMessagesCount] = useState(10);
@@ -248,6 +250,37 @@ export default function AssignedActionsPage() {
       console.error(error);
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  // Send a brand new message (initiated by anyone — HR, Employee, Manager)
+  const handleSendNewMessage = async (assignmentId) => {
+    if (!newMessage.trim() || !assignmentId) return;
+
+    try {
+      setSendingNewMessage(true);
+
+      await API.post(`/api/coordinator-assignments/${assignmentId}/follow-up`, {
+        message: newMessage.trim(),
+      });
+
+      setNewMessage("");
+
+      const res = await API.get(
+        `/api/coordinator-assignments/${assignmentId}/follow-up-messages`,
+      );
+
+      const sorted = (res?.data?.data || []).sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+
+      setMessages(sorted);
+    } catch (error) {
+      console.error(error);
+      alert(error?.response?.data?.message || "Failed to send message");
+    } finally {
+      setSendingNewMessage(false);
     }
   };
 
@@ -708,144 +741,124 @@ export default function AssignedActionsPage() {
                   {/* FOLLOW UP MESSAGING CONTAINER SYSTEM */}
                   {expandedTaskId === item.id && viewMode === "PERSONAL" && (
                     <div className="mt-5 border border-slate-200 rounded-xl overflow-hidden bg-white">
-                      <div className="px-4 py-3 border-b bg-slate-50">
-                        <h4 className="text-sm font-semibold text-slate-900">
-                          Follow Up Messages & Your Responses
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          Reply to specific coordinator follow-ups to keep them updated on your progress.
-                        </p>
+                      {/* Header */}
+                      <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-900">
+                            Follow Up Messages
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            Chat with your coordinator — send messages or reply anytime.
+                          </p>
+                        </div>
+                        <span className="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2 py-1 rounded-full border border-indigo-100">
+                          {messages.length} message{messages.length !== 1 ? "s" : ""}
+                        </span>
                       </div>
 
-                      {messagesLoading ? (
-                        <div className="py-12 flex justify-center">
-                          <Loader2 size={22} className="animate-spin text-slate-400" />
-                        </div>
-                      ) : messages.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-slate-400">
-                          No follow up messages available.
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="bg-slate-50 border-b">
-                                <th className="text-left text-xs font-semibold text-slate-600 px-4 py-3">
-                                  Coordinator Follow Up
-                                </th>
-                                <th className="text-left text-xs font-semibold text-slate-600 px-4 py-3 w-[180px]">
-                                  Date Sent
-                                </th>
-                                <th className="text-left text-xs font-semibold text-slate-600 px-4 py-3">
-                                  Your Replies
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {messages
-                                .filter((msg) => msg.senderRole === "COORDINATOR")
-                                .map((coordMsg) => {
-                                  const replies = messages.filter(
-                                    (m) =>
-                                      m.senderRole === "EMPLOYEE" &&
-                                      new Date(m.createdAt) > new Date(coordMsg.createdAt),
-                                  );
+                      {/* Messages List */}
+                      <div className="max-h-64 overflow-y-auto p-4 space-y-3 bg-slate-50/40">
+                        {messagesLoading ? (
+                          <div className="py-8 flex justify-center">
+                            <Loader2 size={22} className="animate-spin text-slate-400" />
+                          </div>
+                        ) : messages.length === 0 ? (
+                          <div className="py-6 text-center">
+                            <MessageSquare size={28} className="mx-auto text-slate-300 mb-2" />
+                            <p className="text-sm text-slate-400">No messages yet. Be the first to send one!</p>
+                          </div>
+                        ) : (
+                          messages
+                            .slice()
+                            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                            .map((msg) => {
+                              const isMe = msg.sender?.id === user?.id || msg.senderId === user?.id;
+                              const isCoordinator = ["COORDINATOR", "EA"].includes(msg.senderRole);
+                              return (
+                                <div
+                                  key={msg.id}
+                                  className={`flex ${
+                                    isMe ? "justify-end" : "justify-start"
+                                  }`}
+                                >
+                                  <div
+                                    className={`max-w-[75%] rounded-xl px-3 py-2 shadow-sm ${
+                                      isMe
+                                        ? "bg-indigo-600 text-white rounded-br-sm"
+                                        : isCoordinator
+                                        ? "bg-amber-50 border border-amber-200 text-slate-800 rounded-bl-sm"
+                                        : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span
+                                        className={`text-[11px] font-semibold ${
+                                          isMe
+                                            ? "text-indigo-200"
+                                            : isCoordinator
+                                            ? "text-amber-700"
+                                            : "text-slate-500"
+                                        }`}
+                                      >
+                                        {isMe ? "You" : msg.sender?.name || "User"}
+                                        {isCoordinator && !isMe && " (Coordinator)"}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm leading-snug">{msg.message}</p>
+                                    <p
+                                      className={`text-[10px] mt-1 text-right ${
+                                        isMe ? "text-indigo-300" : "text-slate-400"
+                                      }`}
+                                    >
+                                      {new Date(msg.createdAt).toLocaleString(undefined, {
+                                        dateStyle: "short",
+                                        timeStyle: "short",
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                        )}
+                        <div ref={chatEndRef} />
+                      </div>
 
-                                  return (
-                                    <tr key={coordMsg.id} className="border-b last:border-b-0">
-                                      <td className="px-4 py-4 align-top">
-                                        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-sm text-slate-700">
-                                          {coordMsg.message}
-                                        </div>
-                                        <p className="text-xs text-slate-400 mt-2">
-                                          From:{" "}
-                                          <span className="font-semibold text-slate-600">
-                                            {coordMsg.sender?.name || "System"}
-                                          </span>
-                                        </p>
-                                      </td>
-                                      <td className="px-4 py-4 align-top">
-                                        <span className="text-xs text-slate-500 whitespace-nowrap">
-                                          {new Date(coordMsg.createdAt).toLocaleString(undefined, {
-                                            dateStyle: "short",
-                                            timeStyle: "short",
-                                          })}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-4 align-top">
-                                        <div className="space-y-3">
-                                          {replies.length > 0 && (
-                                            <div className="space-y-2 mb-4 pb-4 border-b border-slate-100">
-                                              {replies.map((reply) => (
-                                                <div
-                                                  key={reply.id}
-                                                  className="bg-emerald-50 border border-emerald-100 rounded-lg p-2 text-xs text-slate-700"
-                                                >
-                                                  <div className="flex items-start justify-between mb-1">
-                                                    <span className="font-semibold text-emerald-700">
-                                                      Your Response
-                                                    </span>
-                                                    <span className="text-[11px] text-emerald-600 font-medium">
-                                                      {new Date(reply.createdAt).toLocaleTimeString(
-                                                        undefined,
-                                                        { timeStyle: "short" },
-                                                      )}
-                                                    </span>
-                                                  </div>
-                                                  <p className="text-slate-700">{reply.message}</p>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-
-                                          <form
-                                            onSubmit={(e) => {
-                                              e.preventDefault();
-                                              handleSendReply(
-                                                item.id,
-                                                coordMsg.id,
-                                                replyInputs[coordMsg.id],
-                                              );
-                                            }}
-                                            className="space-y-2"
-                                          >
-                                            <textarea
-                                              rows={2}
-                                              value={replyInputs[coordMsg.id] || ""}
-                                              onChange={(e) =>
-                                                setReplyInputs((prev) => ({
-                                                  ...prev,
-                                                  [coordMsg.id]: e.target.value,
-                                                }))
-                                              }
-                                              placeholder="Write your update..."
-                                              className="w-full border border-slate-200 rounded-lg p-2 text-xs resize-none focus:outline-none focus:border-indigo-500 bg-white"
-                                            />
-                                            <button
-                                              type="submit"
-                                              disabled={
-                                                sendingReply ||
-                                                !replyInputs[coordMsg.id]?.trim()
-                                              }
-                                              className="h-8 px-3 bg-slate-900 text-white rounded-md text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50 shadow-sm"
-                                            >
-                                              {sendingReply ? (
-                                                <Loader2 size={12} className="animate-spin" />
-                                              ) : (
-                                                <Send size={12} />
-                                              )}
-                                              Send Reply
-                                            </button>
-                                          </form>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                      {/* Always-Visible Compose Box */}
+                      <div className="border-t border-slate-200 bg-white px-4 py-3">
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSendNewMessage(item.id);
+                          }}
+                          className="flex items-end gap-2"
+                        >
+                          <textarea
+                            rows={2}
+                            value={expandedTaskId === item.id ? newMessage : ""}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendNewMessage(item.id);
+                              }
+                            }}
+                            placeholder="Write a message to your coordinator... (Enter to send)"
+                            className="flex-1 border border-slate-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-indigo-500 bg-white"
+                          />
+                          <button
+                            type="submit"
+                            disabled={sendingNewMessage || !newMessage.trim()}
+                            className="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-40 transition shadow-sm whitespace-nowrap"
+                          >
+                            {sendingNewMessage ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Send size={13} />
+                            )}
+                            Send
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   )}
                 </div>

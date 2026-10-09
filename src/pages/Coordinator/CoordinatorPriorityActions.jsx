@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import API from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import {
   Plus,
   CalendarDays,
@@ -20,6 +21,7 @@ import {
 import { toast } from "react-toastify";
 
 const CoordinatorPriorityActions = () => {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -195,9 +197,10 @@ const CoordinatorPriorityActions = () => {
       `/api/coordinator-assignments/${assignmentId}/follow-up-messages`,
     );
 
+    // Sort oldest first so chat reads top-to-bottom
     const sorted = (res?.data?.data || []).sort(
       (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
     setMessages(sorted);
@@ -726,163 +729,117 @@ const CoordinatorPriorityActions = () => {
                     {activeTaskForFollowUp?.id === item.id && (
                       <tr className="bg-slate-50">
                         <td colSpan={11} className="p-4">
-                          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-                            <div className="p-4 space-y-4">
-                              <div className="grid gap-4 md:grid-cols-[1.4fr_180px_1.7fr] text-slate-500 text-xs uppercase tracking-wide">
-                                <div className="font-semibold text-slate-900">
-                                  Coordinator Follow Up
-                                </div>
-                                <div className="font-semibold text-slate-900">
-                                  Date Sent
-                                </div>
-                                <div className="font-semibold text-slate-900">
-                                  Employee Replies
-                                </div>
-                              </div>
+                          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
+                            {/* Chat Header */}
+                            <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900">Follow Up Conversation</p>
+                                <p className="text-xs text-slate-500">
+                                  All messages between you and{" "}
+                                  <span className="font-semibold text-slate-700">
+                                    {activeTaskForFollowUp?.assignedTo?.name || "the employee"}
+                                  </span>
+                                </p>
+                              </div>
+                              <span className="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2 py-1 rounded-full border border-indigo-100">
+                                {messages.length} message{messages.length !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+
+                            {/* Messages */}
+                            <div className="max-h-72 overflow-y-auto p-4 space-y-3 bg-slate-50/40">
                               {messagesLoading ? (
-                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-500">
-                                  Loading follow-up history...
+                                <div className="py-8 flex justify-center">
+                                  <Loader2 size={22} className="animate-spin text-slate-400" />
                                 </div>
                               ) : messages.length === 0 ? (
-                                <div className="rounded-3xl border border-slate-200 bg-amber-50 p-6 text-center text-amber-700">
-                                  No follow-up activity yet. Send a quick
-                                  request below.
+                                <div className="py-6 text-center">
+                                  <MessageSquarePlus size={28} className="mx-auto text-slate-300 mb-2" />
+                                  <p className="text-sm text-slate-400">No messages yet. Send the first follow-up!</p>
                                 </div>
                               ) : (
-                                <div className="space-y-3">
-                                  {hasMoreMessages && (
-                                    <div className="flex justify-center">
-                                      <button
-                                        onClick={() =>
-                                          setVisibleMessagesCount(
-                                            (prev) => prev + 15,
-                                          )
-                                        }
-                                        className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full hover:bg-indigo-100/70 transition"
-                                      >
-                                        <History
-                                          size={11}
-                                          className="inline-block"
-                                        />
-                                        <span className="ml-1">
-                                          Load previous history (
-                                          {messages.length -
-                                            visibleMessagesCount}{" "}
-                                          left)
-                                        </span>
-                                      </button>
-                                    </div>
-                                  )}
-
-                                  <div className="space-y-4">
-                                    {messagePairs.map((pair, idx) => (
+                                messages.map((msg) => {
+                                  const isMe = msg.sender?.id === user?.id || msg.senderId === user?.id;
+                                  const isCoordinator = ["COORDINATOR", "EA"].includes(msg.senderRole);
+                                  return (
+                                    <div
+                                      key={msg.id}
+                                      className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                                    >
                                       <div
-                                        key={idx}
-                                        className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                                        className={`max-w-[72%] rounded-xl px-3 py-2 shadow-sm ${
+                                          isMe
+                                            ? "bg-indigo-600 text-white rounded-br-sm"
+                                            : isCoordinator
+                                            ? "bg-amber-50 border border-amber-200 text-slate-800 rounded-bl-sm"
+                                            : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm"
+                                        }`}
                                       >
-                                        <div className="grid gap-4 md:grid-cols-[1.4fr_180px_1.7fr] items-start">
-                                          <div>
-                                            <div className="text-sm text-slate-800">
-                                              {pair.coordinator.message}
-                                            </div>
-                                            <p className="text-xs text-slate-400 mt-2">
-                                              From:{" "}
-                                              <span className="font-semibold text-slate-600">
-                                                {pair.coordinator.sender
-                                                  ?.name || "System"}
-                                              </span>
-                                            </p>
-                                          </div>
-                                          <div className="text-sm text-slate-700">
-                                            {new Date(
-                                              pair.coordinator.createdAt,
-                                            ).toLocaleString(undefined, {
-                                              dateStyle: "short",
-                                              timeStyle: "short",
-                                            })}
-                                          </div>
-                                          <div className="space-y-3">
-                                            {pair.employeeReplies.length > 0 ? (
-                                              pair.employeeReplies.map(
-                                                (reply) => (
-                                                  <div
-                                                    key={reply.id}
-                                                    className="rounded-3xl border border-emerald-100 bg-white p-3"
-                                                  >
-                                                    <p className="text-sm text-slate-700">
-                                                      {reply.message}
-                                                    </p>
-                                                    <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-                                                      <span>
-                                                        From:{" "}
-                                                        <span className="font-semibold text-slate-600">
-                                                          {reply.sender?.name ||
-                                                            "System"}
-                                                        </span>
-                                                      </span>
-                                                      <span className="text-emerald-600 font-medium">
-                                                        {new Date(
-                                                          reply.createdAt,
-                                                        ).toLocaleTimeString(
-                                                          undefined,
-                                                          {
-                                                            timeStyle: "short",
-                                                          },
-                                                        )}
-                                                      </span>
-                                                    </div>
-                                                  </div>
-                                                ),
-                                              )
-                                            ) : (
-                                              <div className="rounded-3xl border border-amber-100 bg-amber-50 p-3 text-xs text-amber-700 text-center">
-                                                Awaiting response...
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
+                                        <p
+                                          className={`text-[11px] font-semibold mb-0.5 ${
+                                            isMe ? "text-indigo-200" : "text-slate-500"
+                                          }`}
+                                        >
+                                          {isMe
+                                            ? "You"
+                                            : `${msg.sender?.name || "User"} (${msg.senderRole})`}
+                                        </p>
+                                        <p className="text-sm leading-snug">{msg.message}</p>
+                                        <p
+                                          className={`text-[10px] mt-1 text-right ${
+                                            isMe ? "text-indigo-300" : "text-slate-400"
+                                          }`}
+                                        >
+                                          {new Date(msg.createdAt).toLocaleString(undefined, {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          })}
+                                        </p>
                                       </div>
-                                    ))}
-                                  </div>
-                                </div>
+                                    </div>
+                                  );
+                                })
                               )}
+                              <div ref={chatEndRef} />
+                            </div>
 
+                            {/* Compose Box */}
+                            <div className="border-t border-slate-200 bg-white px-4 py-3">
                               <form
                                 onSubmit={handleSendFollowUp}
-                                className="grid gap-2 md:grid-cols-[1fr_auto]"
+                                className="flex items-end gap-2"
                               >
-                                <input
-                                  type="text"
+                                <textarea
+                                  rows={2}
                                   required
                                   disabled={sendingFollowUp || messagesLoading}
                                   value={followUpText}
-                                  onChange={(e) =>
-                                    setFollowUpText(e.target.value)
-                                  }
-                                  placeholder="Ask for operational status updates..."
-                                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+                                  onChange={(e) => setFollowUpText(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      handleSendFollowUp(e);
+                                    }
+                                  }}
+                                  placeholder="Send a follow-up to the employee... (Enter to send)"
+                                  className="flex-1 border border-slate-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-indigo-500 bg-white"
                                 />
                                 <button
                                   type="submit"
-                                  disabled={
-                                    sendingFollowUp ||
-                                    !followUpText.trim() ||
-                                    messagesLoading
-                                  }
-                                  className="h-10 rounded-lg bg-slate-900 text-white px-4 text-sm font-semibold hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 transition"
+                                  disabled={sendingFollowUp || !followUpText.trim() || messagesLoading}
+                                  className="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold inline-flex items-center gap-1.5 disabled:opacity-40 transition shadow-sm whitespace-nowrap"
                                 >
                                   {sendingFollowUp ? (
-                                    <Loader2
-                                      size={16}
-                                      className="animate-spin"
-                                    />
+                                    <Loader2 size={15} className="animate-spin" />
                                   ) : (
-                                    <Send size={16} />
+                                    <Send size={15} />
                                   )}
+                                  Send
                                 </button>
                               </form>
                             </div>
+
                           </div>
                         </td>
                       </tr>
