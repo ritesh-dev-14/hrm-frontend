@@ -137,6 +137,29 @@ export default function AdminControlTower({
   };
   const activeMonthLabel = activeSheet ? getMonthLabel(activeSheet.month, activeSheet.year) : "";
 
+  const marketingProjects = React.useMemo(() => projects.filter((project) => {
+    const departmentName = project.department?.name?.toLowerCase() || "";
+    return departmentName.includes("performance") || departmentName.includes("marketing") || departmentName.includes("ads") || departmentName.includes("meta");
+  }), [projects]);
+
+  const [selectedMarketingProjectId, setSelectedMarketingProjectId] = React.useState("");
+
+  const selectedMarketingProject = marketingProjects.find(
+    (project) => project.id === selectedMarketingProjectId,
+  );
+
+  const selectedMarketingBudget = React.useMemo(() => {
+    if (!selectedMarketingProjectId || !data?.thisWeek?.budgetBreakdown) return 0;
+    const b = data.thisWeek.budgetBreakdown.find(p => p.projectId === selectedMarketingProjectId);
+    return b ? b.amount : 0;
+  }, [selectedMarketingProjectId, data]);
+
+  const selectedMarketingSpent = React.useMemo(() => {
+    if (!selectedMarketingProjectId || !data?.thisWeek?.spentBreakdown) return 0;
+    const s = data.thisWeek.spentBreakdown.find(p => p.projectId === selectedMarketingProjectId);
+    return s ? s.amount : 0;
+  }, [selectedMarketingProjectId, data]);
+
   if (loading) {
     return (
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-center min-h-[150px]">
@@ -467,6 +490,82 @@ export default function AdminControlTower({
             ) : (
               <p className="rounded-xl border border-dashed border-violet-200 bg-white/70 p-4 text-center text-sm font-medium text-slate-500">
                 Select a Social Media project to view this month’s planned and approved upload counts.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-6 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/50">
+        <div className="flex items-center gap-3 border-b border-blue-100 bg-white/70 p-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+            <DollarSign size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900">Performance Marketing & Meta Ads</h3>
+            <p className="text-xs font-medium text-slate-500">
+              Monthly budget and total spend for marketing projects.
+            </p>
+          </div>
+        </div>
+
+        {marketingProjects.length === 0 ? (
+          <p className="p-5 text-center text-sm font-medium text-slate-500">
+            No Marketing projects are available.
+          </p>
+        ) : (
+          <div className="space-y-5 p-5">
+            <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+              {marketingProjects.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => setSelectedMarketingProjectId(project.id)}
+                  aria-pressed={selectedMarketingProjectId === project.id}
+                  className={`group flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition ${
+                    selectedMarketingProjectId === project.id
+                      ? "border-blue-400 bg-blue-100 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-blue-600">
+                    {project.logo ? (
+                      <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
+                    ) : (
+                      <FolderOpen size={17} />
+                    )}
+                  </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-bold text-slate-900">{project.projectName}</span>
+                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{project.clientName || project.department?.name}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {selectedMarketingProject ? (
+              <div className="rounded-2xl border border-blue-100 bg-white p-4 md:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <p className="text-sm font-extrabold text-slate-900">{selectedMarketingProject.projectName}</p>
+                    <p className="text-xs text-slate-500">{selectedMarketingProject.clientName || "Marketing Project"}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="rounded-xl border p-3 text-blue-700 bg-blue-50 border-blue-100">
+                    <p className="text-2xl font-black flex items-center gap-1"><IndianRupee size={16} />{selectedMarketingBudget.toLocaleString('en-IN')}</p>
+                    <p className="mt-1 text-[9px] font-bold uppercase tracking-wide opacity-80">Monthly Budget</p>
+                  </div>
+                  <div className="rounded-xl border p-3 text-indigo-700 bg-indigo-50 border-indigo-100">
+                    <p className="text-2xl font-black flex items-center gap-1"><IndianRupee size={16} />{selectedMarketingSpent.toLocaleString('en-IN')}</p>
+                    <p className="mt-1 text-[9px] font-bold uppercase tracking-wide opacity-80">Total Spent (MTD)</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-xl border border-dashed border-blue-200 bg-white/70 p-4 text-center text-sm font-medium text-slate-500">
+                Select a Marketing project to view its budget and spend.
               </p>
             )}
           </div>
