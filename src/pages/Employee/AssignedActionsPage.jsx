@@ -564,7 +564,7 @@ export default function AssignedActionsPage() {
                         <BriefcaseBusiness size={18} />
                       </div>
                       <div className="space-y-1 w-full">
-                        <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
+                        <h3 className="text-sm font-semibold text-slate-900 tracking-tight whitespace-pre-wrap break-words">
                           {item?.task?.projectName || item?.task?.name || "Unnamed Operational Assignment"}
                         </h3>
 
@@ -740,7 +740,7 @@ export default function AssignedActionsPage() {
 
                   {/* FOLLOW UP MESSAGING CONTAINER SYSTEM */}
                   {expandedTaskId === item.id && viewMode === "PERSONAL" && (
-                    <div className="mt-5 border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <div className="mt-5 max-w-4xl mx-auto w-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
                       {/* Header */}
                       <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
                         <div>
@@ -804,7 +804,7 @@ export default function AssignedActionsPage() {
                                         {isCoordinator && !isMe && " (Coordinator)"}
                                       </span>
                                     </div>
-                                    <p className="text-sm leading-snug">{msg.message}</p>
+                                    <p className="text-sm leading-snug whitespace-pre-wrap break-words">{msg.message}</p>
                                     <p
                                       className={`text-[10px] mt-1 text-right ${
                                         isMe ? "text-indigo-300" : "text-slate-400"
@@ -843,7 +843,7 @@ export default function AssignedActionsPage() {
                               }
                             }}
                             placeholder="Write a message to your coordinator... (Enter to send)"
-                            className="flex-1 border border-slate-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-indigo-500 bg-white"
+                            className="flex-1 min-w-0 border border-slate-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-indigo-500 bg-white"
                           />
                           <button
                             type="submit"

@@ -519,7 +519,7 @@ const CoordinatorPriorityActions = () => {
                 assignments.map((item) => (
                   <React.Fragment key={item.id}>
                     <tr className="hover:bg-slate-50/50 transition duration-150">
-                      <td className="p-4 text-sm font-medium text-slate-900">
+                      <td className="p-4 text-sm font-medium text-slate-900 whitespace-pre-wrap break-words min-w-[250px] max-w-[400px]">
                         {item?.task?.projectName || "—"}
                       </td>
 
@@ -729,7 +729,7 @@ const CoordinatorPriorityActions = () => {
                     {activeTaskForFollowUp?.id === item.id && (
                       <tr className="bg-slate-50">
                         <td colSpan={11} className="p-4">
-                          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                          <div className="max-w-4xl mx-auto w-full rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
                             {/* Chat Header */}
                             <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
@@ -785,7 +785,7 @@ const CoordinatorPriorityActions = () => {
                                             ? "You"
                                             : `${msg.sender?.name || "User"} (${msg.senderRole})`}
                                         </p>
-                                        <p className="text-sm leading-snug">{msg.message}</p>
+                                        <p className="text-sm leading-snug whitespace-pre-wrap break-words">{msg.message}</p>
                                         <p
                                           className={`text-[10px] mt-1 text-right ${
                                             isMe ? "text-indigo-300" : "text-slate-400"
@@ -823,7 +823,7 @@ const CoordinatorPriorityActions = () => {
                                     }
                                   }}
                                   placeholder="Send a follow-up to the employee... (Enter to send)"
-                                  className="flex-1 border border-slate-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-indigo-500 bg-white"
+                                  className="flex-1 min-w-0 border border-slate-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-indigo-500 bg-white"
                                 />
                                 <button
                                   type="submit"
