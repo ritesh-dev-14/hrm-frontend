@@ -16,6 +16,7 @@ import {
   User,
   FolderOpen,
   ChevronRight,
+  Calendar,
 } from "lucide-react";
 
 export default function AdminControlTower({
@@ -40,6 +41,7 @@ export default function AdminControlTower({
   const [showUrgentApprovalsModal, setShowUrgentApprovalsModal] = React.useState(false);
   const [showClientsAtRiskModal, setShowClientsAtRiskModal] = React.useState(false);
   const [showClientsIgnoredModal, setShowClientsIgnoredModal] = React.useState(false);
+  const [showCalendarModal, setShowCalendarModal] = React.useState(false);
 
   let clientsAtRisk = 0;
   let notContacted7Days = 0;
@@ -89,16 +91,32 @@ export default function AdminControlTower({
   const selectedSocialProject = socialProjects.find(
     (project) => project.id === selectedSocialProjectId,
   );
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
-  const currentMonthSheet = uploadCalendarSheets.find(
-    (sheet) =>
-      sheet.projectId === selectedSocialProjectId &&
-      Number(sheet.month) === currentMonth &&
-      Number(sheet.year) === currentYear,
-  );
-  const approvedUploads = (currentMonthSheet?.days || []).reduce(
+  const [selectedSheetId, setSelectedSheetId] = React.useState("");
+
+  const projectSheets = React.useMemo(() => {
+    return uploadCalendarSheets.filter(
+      (sheet) => sheet.projectId === selectedSocialProjectId
+    ).sort((a, b) => {
+      if (b.year !== a.year) return Number(b.year) - Number(a.year);
+      return Number(b.month) - Number(a.month);
+    });
+  }, [uploadCalendarSheets, selectedSocialProjectId]);
+
+  const activeSheet = React.useMemo(() => {
+    if (selectedSheetId) {
+      const found = projectSheets.find(s => s.id === selectedSheetId);
+      if (found) return found;
+    }
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    const currentMonthSheet = projectSheets.find(
+      (sheet) => Number(sheet.month) === currentMonth && Number(sheet.year) === currentYear
+    );
+    return currentMonthSheet || projectSheets[0] || null;
+  }, [selectedSheetId, projectSheets]);
+
+  const approvedUploads = (activeSheet?.days || []).reduce(
     (counts, day) => {
       if (day.uploadStatus !== "APPROVED") return counts;
       counts.reels += (day.videoUploadLinks || []).filter((link) => String(link || "").trim()).length;
@@ -107,10 +125,17 @@ export default function AdminControlTower({
     },
     { reels: 0, posts: 0 },
   );
-  const currentMonthLabel = currentDate.toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
+
+  const getMonthLabel = (month, year) => {
+    const date = new Date();
+    date.setMonth(Number(month) - 1);
+    date.setFullYear(Number(year));
+    return date.toLocaleDateString("en-IN", {
+      month: "long",
+      year: "numeric",
+    });
+  };
+  const activeMonthLabel = activeSheet ? getMonthLabel(activeSheet.month, activeSheet.year) : "";
 
   if (loading) {
     return (
@@ -396,16 +421,35 @@ export default function AdminControlTower({
                     <p className="text-sm font-extrabold text-slate-900">{selectedSocialProject.projectName}</p>
                     <p className="text-xs text-slate-500">{selectedSocialProject.clientName || "Social Media Project"}</p>
                   </div>
-                  <span className="rounded-full bg-violet-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">
-                    {currentMonthLabel}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {projectSheets.length > 0 && (
+                      <select
+                        value={activeSheet?.id || ""}
+                        onChange={(e) => setSelectedSheetId(e.target.value)}
+                        className="rounded-lg border border-violet-200 bg-white px-2 py-1 text-xs font-bold text-violet-700 outline-none transition focus:border-violet-400 focus:ring-1 focus:ring-violet-100 uppercase tracking-wide"
+                      >
+                        {projectSheets.map(sheet => (
+                          <option key={sheet.id} value={sheet.id}>
+                            {getMonthLabel(sheet.month, sheet.year)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      onClick={() => setShowCalendarModal(true)}
+                      className="px-3 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-[11px] font-bold uppercase tracking-wide hover:bg-violet-200 transition"
+                      disabled={!activeSheet}
+                    >
+                      View Calendar
+                    </button>
+                  </div>
                 </div>
-                {currentMonthSheet ? (
+                {activeSheet ? (
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     {[
-                      { label: "Planned Reels", value: Number(currentMonthSheet.totalReels) || 0, tone: "text-violet-700 bg-violet-50 border-violet-100" },
+                      { label: "Planned Reels", value: Number(activeSheet.totalReels) || 0, tone: "text-violet-700 bg-violet-50 border-violet-100" },
                       { label: "Approved Reel Uploads", value: approvedUploads.reels, tone: "text-emerald-700 bg-emerald-50 border-emerald-100" },
-                      { label: "Planned Posts", value: Number(currentMonthSheet.totalPosts) || 0, tone: "text-indigo-700 bg-indigo-50 border-indigo-100" },
+                      { label: "Planned Posts", value: Number(activeSheet.totalPosts) || 0, tone: "text-indigo-700 bg-indigo-50 border-indigo-100" },
                       { label: "Approved Post Uploads", value: approvedUploads.posts, tone: "text-emerald-700 bg-emerald-50 border-emerald-100" },
                     ].map((stat) => (
                       <div key={stat.label} className={`rounded-xl border p-3 ${stat.tone}`}>
@@ -416,7 +460,7 @@ export default function AdminControlTower({
                   </div>
                 ) : (
                   <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500">
-                    No content calendar is available for this project for {currentMonthLabel}.
+                    No content calendar is available for this project.
                   </p>
                 )}
               </div>
@@ -745,6 +789,86 @@ export default function AdminControlTower({
                   All clients have been contacted recently.
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Modal */}
+      {showCalendarModal && activeSheet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-5xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Calendar size={18} className="text-violet-600" /> Monthly Content Calendar
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                  {selectedSocialProject?.projectName} ({activeMonthLabel})
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowCalendarModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 bg-slate-50">
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                        <th className="px-4 py-3 font-bold text-xs uppercase">Date</th>
+                        <th className="px-4 py-3 font-bold text-xs uppercase">Title</th>
+                        <th className="px-4 py-3 font-bold text-xs uppercase">Content Type</th>
+                        <th className="px-4 py-3 font-bold text-xs uppercase">Upload Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(activeSheet.days || []).map((day, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50 transition">
+                          <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
+                            {new Date(day.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-slate-800">
+                            {day.title || <span className="text-slate-400 italic">No Title</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {day.reelType && day.reelType !== 'NONE' && (
+                                <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-bold rounded">REEL</span>
+                              )}
+                              {day.postType && day.postType !== 'NONE' && (
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded">POST</span>
+                              )}
+                              {(!day.reelType || day.reelType === 'NONE') && (!day.postType || day.postType === 'NONE') && (
+                                <span className="text-slate-400 text-xs italic">Unspecified</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
+                              day.uploadStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                              day.uploadStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                              'bg-slate-100 text-slate-500'
+                            }`}>
+                              {day.uploadStatus || 'NOT UPLOADED'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {(!activeSheet.days || activeSheet.days.length === 0) && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-8 text-center text-slate-500">
+                            No planned days in this calendar yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
             </div>
           </div>
         </div>
