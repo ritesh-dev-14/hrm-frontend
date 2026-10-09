@@ -17,6 +17,9 @@ import {
   ThumbsDown,
   RefreshCw,
   Trash2,
+  ChevronDown,
+  X,
+  Filter,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -47,10 +50,14 @@ const CoordinatorPriorityActions = () => {
   const chatEndRef = useRef(null);
 
   // Review (Approve / Reject) State
-  const [reviewingId, setReviewingId] = useState(null); // assignment ID being reviewed
-  const [reviewAction, setReviewAction] = useState(null); // "COMPLETED" | "REJECTED"
+  const [reviewingId, setReviewingId] = useState(null);
+  const [reviewAction, setReviewAction] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
+
+  // Filter States
+  const [filterName, setFilterName] = useState("");     // assigned-to employee id
+  const [filterStatus, setFilterStatus] = useState(""); // status string or ""
 
   // Derived state: Extract information seamlessly without mirroring state variables
   const selectedEmployeeDetails = useMemo(() => {
@@ -286,6 +293,37 @@ const CoordinatorPriorityActions = () => {
     return pairs.reverse();
   }, [messages]);
 
+  // Unique list of employees that appear in current assignments (for filter dropdown)
+  const assignedEmployeeOptions = useMemo(() => {
+    const seen = new Map();
+    assignments.forEach((a) => {
+      if (a.assignedTo?.id && !seen.has(a.assignedTo.id)) {
+        seen.set(a.assignedTo.id, { id: a.assignedTo.id, name: a.assignedTo.name || "Unknown" });
+      }
+    });
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [assignments]);
+
+  // Filtered assignments based on both filters
+  const filteredAssignments = useMemo(() => {
+    return assignments.filter((item) => {
+      const matchesName = !filterName || item.assignedTo?.id === filterName;
+      const matchesStatus = !filterStatus || item.status === filterStatus;
+      return matchesName && matchesStatus;
+    });
+  }, [assignments, filterName, filterStatus]);
+
+  const STATUS_FILTERS = [
+    { label: "All",        value: "",                color: "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" },
+    { label: "Assigned",   value: "ASSIGNED",         color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
+    { label: "In Progress",value: "IN_PROGRESS",      color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+    { label: "Submitted",  value: "SUBMITTED",        color: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
+    { label: "Completed",  value: "COMPLETED",        color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
+    { label: "Rejected",   value: "REJECTED",         color: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" },
+    { label: "Unable",     value: "UNABLE_TO_SUBMIT", color: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" },
+  ];
+
+
   const getStatusStyle = (status) => {
     const styles = {
       COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-100",
@@ -446,7 +484,7 @@ const CoordinatorPriorityActions = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500 font-medium bg-slate-200/60 px-2.5 py-1 rounded-md">
-                {assignments.length} {assignments.length === 1 ? "task" : "tasks"}
+                {filteredAssignments.length} of {assignments.length} {assignments.length === 1 ? "task" : "tasks"}
               </span>
               <button
                 type="button"
@@ -459,6 +497,55 @@ const CoordinatorPriorityActions = () => {
                 Refresh
               </button>
             </div>
+          </div>
+
+          {/* ── FILTER BAR ── */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {/* Name Filter */}
+            <div className="relative">
+              <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                className="h-8 pl-8 pr-8 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-indigo-400 appearance-none cursor-pointer min-w-[160px]"
+              >
+                <option value="">All Employees</option>
+                {assignedEmployeeOptions.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Status Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {STATUS_FILTERS.map((sf) => (
+                <button
+                  key={sf.value}
+                  onClick={() => setFilterStatus(sf.value)}
+                  className={`h-7 px-3 text-xs font-semibold rounded-full border transition ${
+                    filterStatus === sf.value
+                      ? sf.value === ""
+                        ? "bg-slate-800 text-white border-slate-800"
+                        : sf.color.replace("hover:", "") + " ring-2 ring-offset-1 ring-current"
+                      : sf.color
+                  }`}
+                >
+                  {sf.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Clear All Filters */}
+            {(filterName || filterStatus) && (
+              <button
+                onClick={() => { setFilterName(""); setFilterStatus(""); }}
+                className="h-7 px-2.5 text-xs font-medium text-rose-600 border border-rose-200 bg-rose-50 rounded-full hover:bg-rose-100 transition inline-flex items-center gap-1"
+              >
+                <X size={11} />
+                Clear filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -515,8 +602,8 @@ const CoordinatorPriorityActions = () => {
                     </div>
                   </td>
                 </tr>
-              ) : assignments.length > 0 ? (
-                assignments.map((item) => (
+              ) : filteredAssignments.length > 0 ? (
+                filteredAssignments.map((item) => (
                   <React.Fragment key={item.id}>
                     <tr className="hover:bg-slate-50/50 transition duration-150">
                       <td className="p-4 text-sm font-medium text-slate-900 whitespace-pre-wrap break-words min-w-[250px] max-w-[400px]">
@@ -851,14 +938,28 @@ const CoordinatorPriorityActions = () => {
                   <td colSpan={11} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                       <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-400 mb-4">
-                        <ClipboardList size={20} />
+                        {filterName || filterStatus ? (
+                          <Filter size={20} />
+                        ) : (
+                          <ClipboardList size={20} />
+                        )}
                       </div>
                       <h4 className="text-sm font-semibold text-slate-900">
-                        No tasks assigned yet
+                        {filterName || filterStatus ? "No tasks match your filters" : "No tasks assigned yet"}
                       </h4>
                       <p className="text-xs text-slate-400 mt-1">
-                        Tasks you assign to employees, managers, or HR will appear here.
+                        {filterName || filterStatus
+                          ? "Try adjusting or clearing the filters above."
+                          : "Tasks you assign to employees, managers, or HR will appear here."}
                       </p>
+                      {(filterName || filterStatus) && (
+                        <button
+                          onClick={() => { setFilterName(""); setFilterStatus(""); }}
+                          className="mt-3 h-8 px-4 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
