@@ -17,9 +17,10 @@ import {
   ThumbsDown,
   RefreshCw,
   Trash2,
-  ChevronDown,
   X,
   Filter,
+  Edit2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -58,6 +59,16 @@ const CoordinatorPriorityActions = () => {
   // Filter States
   const [filterName, setFilterName] = useState("");     // assigned-to employee id
   const [filterStatus, setFilterStatus] = useState(""); // status string or ""
+
+  // Edit Task State
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    task: "",
+    assignedToId: "",
+    assignedBy: "",
+    completionDate: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
 
   // Derived state: Extract information seamlessly without mirroring state variables
   const selectedEmployeeDetails = useMemo(() => {
@@ -139,7 +150,7 @@ const CoordinatorPriorityActions = () => {
         employeeEmail: selectedEmployeeDetails?.email || "",
       };
 
-      await API.post("/api/coordinator-assignments", payload);
+      const res = await API.post("/api/coordinator-assignments", payload);
 
       setFormData({
         task: "",
@@ -147,7 +158,13 @@ const CoordinatorPriorityActions = () => {
         assignedBy: "",
         completionDate: "",
       });
-      fetchAssignments();
+      
+      // Optimistic addition to avoid full page refresh
+      if (res.data?.data) {
+        setAssignments((prev) => [res.data.data, ...prev]);
+      } else {
+        fetchAssignments();
+      }
     } catch (error) {
       console.error("Error creating task:", error);
       toast.error(error.response?.data?.message || "Failed to create task.");
@@ -161,7 +178,7 @@ const CoordinatorPriorityActions = () => {
     if (status === "REJECTED" && !rejectReason.trim()) return;
     try {
       setReviewLoading(true);
-      await API.patch(`/api/coordinator-assignments/${assignmentId}/review`, {
+      const res = await API.patch(`/api/coordinator-assignments/${assignmentId}/review`, {
         status,
         reason: status === "REJECTED" ? rejectReason.trim() : undefined,
       });
@@ -169,8 +186,15 @@ const CoordinatorPriorityActions = () => {
       setReviewingId(null);
       setReviewAction(null);
       setRejectReason("");
-      // Refresh assignments
-      fetchAssignments();
+      
+      // Optimistic update to avoid full page refresh
+      if (res.data?.data) {
+        setAssignments((prev) =>
+          prev.map((item) => (item.id === assignmentId ? res.data.data : item))
+        );
+      } else {
+        fetchAssignments();
+      }
     } catch (error) {
       console.error("Failed to review submission:", error);
     } finally {
@@ -196,6 +220,50 @@ const CoordinatorPriorityActions = () => {
       toast.error(error.response?.data?.message || "Failed to delete task assignment.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // Edit Handlers
+  const handleEditClick = (item) => {
+    setEditingAssignment(item);
+    setEditFormData({
+      task: item.task?.projectName || "",
+      assignedToId: item.assignedTo?.id || "",
+      assignedBy: item.assignedBy || "",
+      completionDate: item.completionDate ? new Date(item.completionDate).toISOString().slice(0, 16) : "",
+    });
+  };
+
+  const handleCloseEdit = () => {
+    setEditingAssignment(null);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingAssignment) return;
+    try {
+      setEditLoading(true);
+      const payload = {
+        ...editFormData,
+        completionDate: new Date(editFormData.completionDate).toISOString(),
+      };
+      const res = await API.patch(`/api/coordinator-assignments/${editingAssignment.id}`, payload);
+      
+      // Optimistic update
+      if (res.data?.data) {
+        setAssignments((prev) =>
+          prev.map((item) => (item.id === editingAssignment.id ? res.data.data : item))
+        );
+      } else {
+        fetchAssignments();
+      }
+      handleCloseEdit();
+      toast.success("Task updated successfully");
+    } catch (error) {
+      console.error("Failed to update assignment:", error);
+      toast.error(error.response?.data?.message || "Failed to update task.");
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -337,6 +405,7 @@ const CoordinatorPriorityActions = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 p-6 md:p-8 antialiased relative">
       {/* Header section */}
       <div className="mb-8">
@@ -703,12 +772,23 @@ const CoordinatorPriorityActions = () => {
                         </span>
                       </td>
 
-                      {/* Actions Column: Follow-Up + Approve/Reject for SUBMITTED */}
+                      {/* Actions Column: Edit + Follow-Up + Approve/Reject + Delete */}
                       <td className="p-4 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center gap-2">
-                          {/* Follow-Up button always available */}
-                          <button
-                            onClick={() => handleOpenFollowUpPanel(item)}
+                          <div className="flex w-full gap-2 justify-center">
+                            {/* Edit button */}
+                            <button
+                              type="button"
+                              onClick={() => handleEditClick(item)}
+                              className="flex-1 h-8 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold transition inline-flex items-center justify-center gap-1.5 hover:bg-slate-50 shadow-sm"
+                            >
+                              <Edit2 size={13} />
+                              Edit
+                            </button>
+                            
+                            {/* Follow-Up button */}
+                            <button
+                              onClick={() => handleOpenFollowUpPanel(item)}
                             className={`h-8 px-3 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm ${activeTaskForFollowUp?.id === item.id
                                 ? "bg-indigo-600 text-white border-indigo-600"
                                 : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
@@ -721,6 +801,7 @@ const CoordinatorPriorityActions = () => {
                                 : "Follow Ups"}
                             </span>
                           </button>
+                          </div>
 
                           <button
                             type="button"
@@ -970,6 +1051,100 @@ const CoordinatorPriorityActions = () => {
 
       </div>
     </div>
+
+    {/* EDIT MODAL */}
+    {editingAssignment && (
+      <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Edit Task</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Modify assignment details</p>
+            </div>
+            <button
+              onClick={handleCloseEdit}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto">
+            <form id="edit-task-form" onSubmit={handleSaveEdit} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700">Task Title</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={editFormData.task}
+                  onChange={(e) => setEditFormData({ ...editFormData, task: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700">Assign To</label>
+                <select
+                  required
+                  value={editFormData.assignedToId}
+                  onChange={(e) => setEditFormData({ ...editFormData, assignedToId: e.target.value })}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                >
+                  <option value="">Select Target User</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700">Assigned By (Originator)</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.assignedBy}
+                  onChange={(e) => setEditFormData({ ...editFormData, assignedBy: e.target.value })}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700">Completion Target</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={editFormData.completionDate}
+                  onChange={(e) => setEditFormData({ ...editFormData, completionDate: e.target.value })}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                />
+              </div>
+            </form>
+          </div>
+
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleCloseEdit}
+              className="h-9 px-4 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-task-form"
+              disabled={editLoading}
+              className="h-9 px-5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition inline-flex items-center justify-center gap-2 shadow-sm"
+            >
+              {editLoading && <Loader2 size={14} className="animate-spin" />}
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
