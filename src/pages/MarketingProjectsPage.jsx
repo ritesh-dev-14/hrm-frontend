@@ -130,7 +130,14 @@ const MarketingProjectsPage = () => {
       const pagination = responseData?.pagination || responseData?.data?.pagination || {};
 
       // Filter natively just in case the backend doesn't fully restrict to marketing, then normalize
-      const marketingProjects = projects.filter(isMarketingProject).map(normalizeMetaAdsProject);
+      const marketingProjects = projects
+        .filter(isMarketingProject)
+        .map(normalizeMetaAdsProject)
+        .filter((project) => {
+          if (runningFilter === "all") return true;
+          const isRunning = project.isRunning === true || project.isRunning === "true";
+          return runningFilter === "running" ? isRunning : !isRunning;
+        });
       
       setAllProjects(marketingProjects);
       setTotalPages(pagination.totalPages || 1);

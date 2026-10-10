@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
 import AdminProjectDetailModal from "../../components/admin/AdminProjectDetailModal";
 import UrgentAlertModal from "../../components/dashboard/UrgentAlertModal";
@@ -49,6 +50,7 @@ import {
 import AdminControlTower from "../../components/admin/AdminControlTower";
 
 export default function AdminHomePage() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [uploadCalendarSheets, setUploadCalendarSheets] = useState([]);
   const [uploadCalendarError, setUploadCalendarError] = useState("");
@@ -323,6 +325,78 @@ export default function AdminHomePage() {
               className={loading ? "animate-spin text-indigo-600" : ""}
             />
             Refresh Directory
+          </button>
+        </div>
+
+        {/* ── DEPARTMENT DASHBOARDS (ADS, SOCIAL MEDIA, SEO) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Ads Dashboard Card */}
+          <button
+            onClick={() => navigate("/marketing-projects")}
+            className="group relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-indigo-400/50"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+              <TrendingUp size={80} />
+            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 shadow-inner">
+                <TrendingUp size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-wide">
+                  Ads & Marketing
+                </h3>
+                <p className="text-indigo-100 text-xs font-medium mt-1">
+                  Manage ongoing ad campaigns, view ROI, & access manager voice reports.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Social Media Dashboard Card */}
+          <button
+            onClick={() => navigate("/social-media-projects")}
+            className="group relative overflow-hidden bg-gradient-to-br from-violet-500 to-purple-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-violet-400/50"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+              <Heart size={80} />
+            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 shadow-inner">
+                <Heart size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-wide">
+                  Social Media
+                </h3>
+                <p className="text-violet-100 text-xs font-medium mt-1">
+                  Content calendars, engagement metrics & scheduled shoots.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* SEO Dashboard Card */}
+          <button
+            onClick={() => navigate("/seo-projects")}
+            className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-emerald-400/50"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+              <Search size={80} />
+            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 shadow-inner">
+                <Search size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-wide">
+                  SEO & Organic
+                </h3>
+                <p className="text-emerald-100 text-xs font-medium mt-1">
+                  Keyword rankings, backlinks & technical SEO audits.
+                </p>
+              </div>
+            </div>
           </button>
         </div>
 
