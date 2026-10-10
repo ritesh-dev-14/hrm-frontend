@@ -11,7 +11,7 @@ export default function App() {
   const toastContainer = (
     <ToastContainer
       position="bottom-right"
-      autoClose={2500}
+      autoClose={4000}
       theme="light"
       toastClassName="!bg-white !text-slate-900 !rounded-2xl !shadow-xl !border !border-slate-200"
       bodyClassName="text-sm font-medium"

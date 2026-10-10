@@ -12,6 +12,8 @@
   "dependencies": {
     "@studio-freight/lenis": "^1.0.42",
     "@tailwindcss/vite": "^4.2.4",
+    "acorn": "^8.19.0",
+    "acorn-jsx": "^5.3.2",
     "axios": "^1.16.0",
     "framer-motion": "^12.38.0",
     "gsap": "^3.15.0",

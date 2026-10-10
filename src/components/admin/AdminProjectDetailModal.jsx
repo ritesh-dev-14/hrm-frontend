@@ -112,41 +112,33 @@ function CredField({ label, value, fieldKey, showPasswords, onToggle, onCopy }) 
 }
 
 
-// ── Client Tier Inline Editor ──────────────────────────────────────────────────
-function ClientTierEditor({ project, onTierUpdate }) {
+// ── Priority Inline Editor ──────────────────────────────────────────────────
+function PriorityEditor({ project, onPriorityUpdate }) {
   const [saving, setSaving] = useState(false);
-  const [tier, setTierState] = useState(project?.clientTier || "");
   const [priority, setPriorityState] = useState(project?.clientPriority || "");
 
-  const save = async (newTier, newPriority) => {
+  const save = async (newPriority) => {
     setSaving(true);
     try {
       const res = await API.patch(`/api/projects/${project.id}/tier`, {
-        clientTier: newTier || null,
         clientPriority: newPriority || null,
       });
       if (res?.data?.success) {
-        toast.success("Client tier updated!");
-        onTierUpdate?.(res.data.data);
+        toast.success("Priority updated!");
+        onPriorityUpdate?.(res.data.data);
       }
     } catch (err) {
-      toast.error("Failed to update tier.");
+      toast.error("Failed to update priority.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleTierChange = (val) => {
-    setTierState(val);
-    save(val, priority);
-  };
-
   const handlePriorityChange = (val) => {
     setPriorityState(val);
-    save(tier, val);
+    save(val);
   };
 
-  const tierCfg = getTierConfig(tier);
   const priCfg = getPriorityConfig(priority);
 
   return (
@@ -157,29 +149,7 @@ function ClientTierEditor({ project, onTierUpdate }) {
         </h4>
         {saving && <Loader2 size={13} className="animate-spin text-indigo-500" />}
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {/* Tier selector */}
-        <div className="space-y-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Client Tier</span>
-          <select
-            value={tier}
-            onChange={(e) => handleTierChange(e.target.value)}
-            disabled={saving}
-            className={`w-full px-3 py-2 rounded-xl border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-400/30 ${
-              tierCfg
-                ? `${tierCfg.badge} border-current`
-                : "border-slate-200 text-slate-500 bg-slate-50"
-            }`}
-          >
-            <option value="">— Not Set —</option>
-            {Object.entries(TIER_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
-            ))}
-          </select>
-          {tierCfg && (
-            <p className="text-[10px] text-slate-400 leading-snug">{tierCfg.description}</p>
-          )}
-        </div>
+      <div className="grid grid-cols-1 gap-3">
 
         {/* Priority selector */}
         <div className="space-y-1.5">
@@ -225,8 +195,8 @@ function OverviewTab({ project, monthlySheets, onTierUpdate }) {
         </div>
       )}
 
-      {/* Client Tier & Priority Editor */}
-      <ClientTierEditor project={project} onTierUpdate={onTierUpdate} />
+      {/* Priority Editor */}
+      <PriorityEditor project={project} onPriorityUpdate={onTierUpdate} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[

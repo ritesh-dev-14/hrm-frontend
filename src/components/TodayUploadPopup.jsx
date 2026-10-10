@@ -17,6 +17,7 @@ export default function TodayUploadPopup({ data, onClose }) {
   // Auto-close countdown
   useEffect(() => {
     if (!data) return;
+    setProgress(100);
     const step = 100 / (AUTO_CLOSE_MS / 100);
     const interval = setInterval(() => {
       setProgress((p) => {
@@ -43,15 +44,16 @@ export default function TodayUploadPopup({ data, onClose }) {
   return (
     <AnimatePresence>
       {data && (
-        <motion.div
-          key="today-upload-popup"
-          initial={{ opacity: 0, x: 100, scale: 0.92 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 100, scale: 0.92 }}
-          transition={{ type: "spring", stiffness: 280, damping: 28 }}
-          className={`fixed z-[9999] w-[360px] max-w-[calc(100vw-2rem)] pointer-events-auto ${data?.alertTitle === "New Meta Ads Task" ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "top-4 right-4"}`}
-          style={{ fontFamily: "inherit" }}
-        >
+        <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center">
+          <motion.div
+            key="today-upload-popup"
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ type: "spring", stiffness: 280, damping: 28 }}
+            className="w-[360px] max-w-[calc(100vw-2rem)] pointer-events-auto"
+            style={{ fontFamily: "inherit" }}
+          >
           {/* Card */}
           <div
             className="relative overflow-hidden rounded-2xl shadow-2xl border border-indigo-200/60"
@@ -169,6 +171,7 @@ export default function TodayUploadPopup({ data, onClose }) {
             </div>
           </div>
         </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

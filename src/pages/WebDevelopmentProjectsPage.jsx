@@ -135,11 +135,6 @@ export default function WebDevelopmentProjectsPage() {
                           {togglingStatusId === (project.id || project._id) ? <Loader2 size={16} className="animate-spin" /> : project.status === "PAUSED" ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
                         </button>
                       )}
-                      {project.clientTier && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                          {project.clientTier.replace("_", " ")}
-                        </span>
-                      )}
                     </div>
                   </div>
                   

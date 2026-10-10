@@ -399,7 +399,6 @@ const INITIAL_STATE = {
   endDate: "",
   renewalDate: "",
   frequency: "",
-  clientTier: "",
   clientPriority: "",
   assignTo: [],
 };
@@ -501,7 +500,6 @@ const CreateTaskModal = ({ open, onClose, onTaskCreated, defaultDepartmentName =
           : null,
         endDate: formData.endDate ? `${formData.endDate}T00:00:00.000Z` : null,
         assignTo: formData.assignTo,
-        clientTier: formData.clientTier || null,
         clientPriority: formData.clientPriority || null,
       };
 
@@ -617,25 +615,8 @@ const CreateTaskModal = ({ open, onClose, onTaskCreated, defaultDepartmentName =
                 </select>
               </div>
 
-              {/* CLIENT TIER & PRIORITY */}
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    ⭐ Client Tier
-                  </label>
-                  <select
-                    name="clientTier"
-                    value={formData.clientTier}
-                    onChange={handleChange}
-                    className="w-full h-12 px-4 rounded-2xl border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 transition appearance-none"
-                  >
-                    <option value="">— Not Set —</option>
-                    <option value="STRATEGIC">⭐ Strategic</option>
-                    <option value="PREMIUM">🥇 Premium</option>
-                    <option value="GROWTH">🚀 Growth</option>
-                    <option value="STANDARD">📋 Standard</option>
-                  </select>
-                </div>
+              {/* PRIORITY */}
+              <div className="grid grid-cols-1 gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Priority

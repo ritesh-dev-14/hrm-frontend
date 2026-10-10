@@ -4,7 +4,7 @@ import API from "../../services/api";
 
 const OBJECTIVES = ["LEAD", "AWARENESS", "BOTH"];
 const FUND_SOURCES = ["CLIENT", "HARSH"];
-const EMPTY_FORM = { clientName: "", monthlyBudget: "", objective: "", area: "", fundsAddedBy: "", isRunning: false, assignedToId: "", startDate: "", endDate: "", clientTier: "", clientPriority: "" };
+const EMPTY_FORM = { clientName: "", monthlyBudget: "", objective: "", area: "", fundsAddedBy: "", isRunning: false, assignedToId: "", startDate: "", endDate: "", clientPriority: "" };
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 disabled:bg-slate-100";
 const labelClass = "mb-1.5 block text-[11px] font-black uppercase tracking-widest text-slate-500";
 
@@ -40,7 +40,6 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
         assignedToId,
         startDate,
         endDate,
-        clientTier: projectToEdit.clientTier || "",
         clientPriority: projectToEdit.clientPriority || "",
       });
     } else {
@@ -92,7 +91,6 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
         departmentId,
         startDate: `${form.startDate}T00:00:00.000Z`,
         endDate: `${form.endDate}T00:00:00.000Z`,
-        clientTier: form.clientTier || null,
         clientPriority: form.clientPriority || null,
       };
       
@@ -140,17 +138,7 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
         <label><span className={labelClass}>Assign Manager</span><select required value={form.assignedToId} onChange={(event) => updateField("assignedToId", event.target.value)} className={inputClass} disabled={loading || loadingOptions}><option value="">Select manager</option>{managers.map((manager) => { const managerId = manager.id || manager._id || manager.employeeId; return <option key={managerId} value={managerId}>{manager.name || manager.fullName || manager.email || manager.employeeId}</option>; })}</select></label>
         {error && <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">{error}</p>}
 
-        {/* CLIENT TIER & PRIORITY */}
-        <label>
-          <span className={labelClass}>⭐ Client Tier</span>
-          <select value={form.clientTier} onChange={(event) => updateField("clientTier", event.target.value)} className={inputClass} disabled={loading || loadingOptions}>
-            <option value="">— Not Set —</option>
-            <option value="STRATEGIC">⭐ Strategic</option>
-            <option value="PREMIUM">🥇 Premium</option>
-            <option value="GROWTH">🚀 Growth</option>
-            <option value="STANDARD">📋 Standard</option>
-          </select>
-        </label>
+        {/* CLIENT PRIORITY */}
         <label>
           <span className={labelClass}>Priority</span>
           <select value={form.clientPriority} onChange={(event) => updateField("clientPriority", event.target.value)} className={inputClass} disabled={loading || loadingOptions}>
