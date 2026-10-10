@@ -42,6 +42,7 @@ export default function AdminControlTower({
   const [showClientsAtRiskModal, setShowClientsAtRiskModal] = React.useState(false);
   const [showClientsIgnoredModal, setShowClientsIgnoredModal] = React.useState(false);
   const [showCalendarModal, setShowCalendarModal] = React.useState(false);
+  const [marketingFilter, setMarketingFilter] = React.useState("ALL");
 
   let clientsAtRisk = 0;
   let notContacted7Days = 0;
@@ -141,6 +142,12 @@ export default function AdminControlTower({
     const departmentName = project.department?.name?.toLowerCase() || "";
     return departmentName.includes("performance") || departmentName.includes("marketing") || departmentName.includes("ads") || departmentName.includes("meta");
   }), [projects]);
+
+  const filteredMarketingProjects = React.useMemo(() => {
+    if (marketingFilter === "RUNNING") return marketingProjects.filter(p => p.isRunning === true);
+    if (marketingFilter === "NOT_RUNNING") return marketingProjects.filter(p => p.isRunning !== true);
+    return marketingProjects;
+  }, [marketingProjects, marketingFilter]);
 
   const [selectedMarketingProjectId, setSelectedMarketingProjectId] = React.useState("");
 
@@ -509,14 +516,27 @@ export default function AdminControlTower({
           </div>
         </div>
 
-        {marketingProjects.length === 0 ? (
+        <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50/30 px-5 py-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-blue-800">Filter Projects</p>
+          <select
+            value={marketingFilter}
+            onChange={(e) => setMarketingFilter(e.target.value)}
+            className="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-700 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-100 uppercase tracking-wide"
+          >
+            <option value="ALL">All Projects</option>
+            <option value="RUNNING">Ads Running</option>
+            <option value="NOT_RUNNING">Ads Not Running</option>
+          </select>
+        </div>
+
+        {filteredMarketingProjects.length === 0 ? (
           <p className="p-5 text-center text-sm font-medium text-slate-500">
-            No Marketing projects are available.
+            No Marketing projects found for this filter.
           </p>
         ) : (
           <div className="space-y-5 p-5">
             <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
-              {marketingProjects.map((project) => (
+              {filteredMarketingProjects.map((project) => (
                 <button
                   key={project.id}
                   type="button"
