@@ -10,7 +10,10 @@ import {
   ClipboardList,
   Zap,
   PlusCircle,
+  PlayCircle,
+  PauseCircle,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -71,6 +74,28 @@ const SocialMediaProjectsPage = () => {
 
   const navigate = useNavigate();
   const { role } = useAuth();
+  
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
+  const toggleProjectStatus = async (event, project) => {
+    event.stopPropagation();
+    const isPaused = project.status === "PAUSED";
+    const newStatus = isPaused ? "ONGOING" : "PAUSED";
+    if (!window.confirm(`Are you sure you want to ${isPaused ? 'activate' : 'deactivate'} this project?`)) return;
+    
+    const projectId = project.id || project._id;
+    setTogglingStatusId(projectId);
+    try {
+      const res = await API.patch(`/api/projects/${projectId}`, { status: newStatus });
+      if (res?.data?.success) {
+        toast.success(`Project ${isPaused ? 'activated' : 'deactivated'} successfully!`);
+        setAllProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update project status.");
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
 
   // Debounce search query
   useEffect(() => {
@@ -246,20 +271,29 @@ const SocialMediaProjectsPage = () => {
                   animate="show"
                   exit={{ opacity: 0, scale: 0.9 }}
                   key={project.id}
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className="bg-white/90 backdrop-blur-xl border border-cyan-100/60 rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
+                  onClick={() => {
+                    if (project.status !== "PAUSED") navigate(`/project/${project.id}`);
+                  }}
+                  className={`${project.status === "PAUSED" ? "bg-slate-100/90 border-slate-300 grayscale opacity-75 cursor-not-allowed" : "bg-white/90 border-cyan-100/60 cursor-pointer"} backdrop-blur-xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full`}
                 >
                   {/* Status + Arrow */}
                   <div className="flex justify-between items-start mb-4">
                     <span
                       className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
-                        statusStyles[project.status] || statusStyles.DRAFT
+                        project.status === "PAUSED" ? "bg-amber-100 text-amber-800 border-amber-200" : (statusStyles[project.status] || statusStyles.DRAFT)
                       }`}
                     >
-                      {project.status}
+                      {project.status || "ONGOING"}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-cyan-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ChevronRight size={16} className="text-cyan-500" />
+                    <div className="flex items-center gap-2">
+                      {["ADMIN", "HR", "EA"].includes(role) && (
+                        <button type="button" onClick={(e) => toggleProjectStatus(e, project)} disabled={togglingStatusId === (project.id || project._id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-amber-600 transition-colors" title={project.status === "PAUSED" ? "Activate Project" : "Deactivate Project"}>
+                          {togglingStatusId === (project.id || project._id) ? <Loader2 size={16} className="animate-spin" /> : project.status === "PAUSED" ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+                        </button>
+                      )}
+                      <div className="w-8 h-8 rounded-full bg-cyan-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ChevronRight size={16} className="text-cyan-500" />
+                      </div>
                     </div>
                   </div>
 

@@ -10,8 +10,11 @@ import {
   Search,
   Edit,
   ClipboardList,
+  PlayCircle,
+  PauseCircle,
 } from "lucide-react";
 import ProfessionalLoader from "../components/ProfessionalLoader";
+import { toast } from "react-toastify";
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import CreateTaskButton from "../components/taskCreation/CreateTaskButton";
@@ -87,6 +90,7 @@ const MarketingProjectsPage = () => {
   const [openModal, setOpenModal] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState(null);
   const [updatingProjectId, setUpdatingProjectId] = useState(null);
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
 
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -183,6 +187,27 @@ const MarketingProjectsPage = () => {
       console.error("Failed to update Meta Ads running status:", error);
     } finally {
       setUpdatingProjectId(null);
+    }
+  };
+
+  const toggleProjectStatus = async (event, project) => {
+    event.stopPropagation();
+    const isPaused = project.status === "PAUSED";
+    const newStatus = isPaused ? "ONGOING" : "PAUSED";
+    if (!window.confirm(`Are you sure you want to ${isPaused ? 'activate' : 'deactivate'} this project?`)) return;
+    
+    const projectId = project.id || project._id;
+    setTogglingStatusId(projectId);
+    try {
+      const res = await API.patch(`/api/projects/${projectId}`, { status: newStatus });
+      if (res?.data?.success) {
+        toast.success(`Project ${isPaused ? 'activated' : 'deactivated'} successfully!`);
+        setAllProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update project status.");
+    } finally {
+      setTogglingStatusId(null);
     }
   };
 
@@ -309,19 +334,26 @@ const MarketingProjectsPage = () => {
                   animate="show"
                   exit={{ opacity: 0, scale: 0.9 }}
                   key={project.id}
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className={`${isRunning ? "bg-emerald-50/90 border-emerald-200" : "bg-red-50/90 border-red-200"} backdrop-blur-xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full border-2`}
+                  onClick={() => {
+                    if (project.status !== "PAUSED") navigate(`/project/${project.id}`);
+                  }}
+                  className={`${project.status === "PAUSED" ? "bg-slate-100/90 border-slate-300 grayscale opacity-75 cursor-not-allowed" : isRunning ? "bg-emerald-50/90 border-emerald-200 cursor-pointer" : "bg-red-50/90 border-red-200 cursor-pointer"} backdrop-blur-xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full border-2`}
                 >
                   {/* Status + Arrow */}
                   <div className="flex justify-between items-start mb-4">
                     <span
                       className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
-                        statusStyles[project.status] || statusStyles.DRAFT
+                        project.status === "PAUSED" ? "bg-amber-100 text-amber-800 border-amber-200" : (statusStyles[project.status] || statusStyles.DRAFT)
                       }`}
                     >
-                      {project.status}
+                      {project.status || "ONGOING"}
                     </span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                      {["ADMIN", "HR", "EA"].includes(role) && (
+                        <button type="button" onClick={(e) => toggleProjectStatus(e, project)} disabled={togglingStatusId === (project.id || project._id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-amber-600 transition-colors" title={project.status === "PAUSED" ? "Activate Project" : "Deactivate Project"}>
+                          {togglingStatusId === (project.id || project._id) ? <Loader2 size={16} className="animate-spin" /> : project.status === "PAUSED" ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+                        </button>
+                      )}
                       <button type="button" onClick={(e) => { e.stopPropagation(); setProjectToEdit(project); setOpenModal(true); }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-pink-600 transition-colors">
                         <Edit size={16} />
                       </button>
@@ -388,11 +420,12 @@ const MarketingProjectsPage = () => {
 
                     <button
                       type="button"
+                      disabled={project.status === "PAUSED"}
                       onClick={(event) => {
                         event.stopPropagation();
-                        navigate(`/project/${project.id || project._id}`);
+                        if (project.status !== "PAUSED") navigate(`/project/${project.id || project._id}`);
                       }}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-pink-600"
+                      className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white transition-colors ${project.status === "PAUSED" ? "bg-slate-400 cursor-not-allowed" : "bg-slate-900 hover:bg-pink-600"}`}
                     >
                       Open Project
                       <ChevronRight size={16} />

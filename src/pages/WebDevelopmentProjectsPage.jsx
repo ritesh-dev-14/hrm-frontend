@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Code2, Search, Globe, Calendar } from "lucide-react";
+import { Code2, Search, Globe, Calendar, PlayCircle, PauseCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import CreateTaskButton from "../components/taskCreation/CreateTaskButton";
 import CreateTaskModal from "../components/taskCreation/CreateTaskModal";
 import ProfessionalLoader from "../components/ProfessionalLoader";
+import { toast } from "react-toastify";
 
 const isWebDevelopmentProject = (project) =>
   project?.department?.name?.toLowerCase().includes("web") ||
@@ -22,6 +23,28 @@ export default function WebDevelopmentProjectsPage() {
   const [openModal, setOpenModal] = useState(false);
   const navigate = useNavigate();
   const { role } = useAuth();
+  
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
+  const toggleProjectStatus = async (event, project) => {
+    event.stopPropagation();
+    const isPaused = project.status === "PAUSED";
+    const newStatus = isPaused ? "ONGOING" : "PAUSED";
+    if (!window.confirm(`Are you sure you want to ${isPaused ? 'activate' : 'deactivate'} this project?`)) return;
+    
+    const projectId = project.id || project._id;
+    setTogglingStatusId(projectId);
+    try {
+      const res = await API.patch(`/api/projects/${projectId}`, { status: newStatus });
+      if (res?.data?.success) {
+        toast.success(`Project ${isPaused ? 'activated' : 'deactivated'} successfully!`);
+        setProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update project status.");
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
 
   // Debounce search
   useEffect(() => {
@@ -95,20 +118,29 @@ export default function WebDevelopmentProjectsPage() {
                 <button
                   type="button"
                   key={project.id}
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className="group relative overflow-hidden rounded-3xl border border-blue-100 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-300"
+                  onClick={() => {
+                    if (project.status !== "PAUSED") navigate(`/project/${project.id}`);
+                  }}
+                  className={`group relative overflow-hidden rounded-3xl border p-6 text-left shadow-sm transition-all duration-300 ${project.status === "PAUSED" ? "bg-slate-100/90 border-slate-300 grayscale opacity-75 cursor-not-allowed" : "bg-white border-blue-100 hover:-translate-y-1 hover:shadow-xl hover:border-blue-300 cursor-pointer"}`}
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none transition group-hover:from-blue-100" />
                   
                   <div className="flex items-start justify-between mb-4 relative z-10">
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${project.status === 'ONGOING' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {project.status}
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${project.status === 'ONGOING' ? 'bg-emerald-100 text-emerald-700' : project.status === 'PAUSED' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>
+                      {project.status || "ONGOING"}
                     </span>
-                    {project.clientTier && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                        {project.clientTier.replace("_", " ")}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {["ADMIN", "HR", "EA"].includes(role) && (
+                        <button type="button" onClick={(e) => toggleProjectStatus(e, project)} disabled={togglingStatusId === (project.id || project._id)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600 transition-colors" title={project.status === "PAUSED" ? "Activate Project" : "Deactivate Project"}>
+                          {togglingStatusId === (project.id || project._id) ? <Loader2 size={16} className="animate-spin" /> : project.status === "PAUSED" ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+                        </button>
+                      )}
+                      {project.clientTier && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                          {project.clientTier.replace("_", " ")}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="relative z-10">

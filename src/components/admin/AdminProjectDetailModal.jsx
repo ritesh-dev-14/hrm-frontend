@@ -4,7 +4,7 @@ import {
   X, Loader2, Building2, User, Phone, MapPin, Calendar, RefreshCw,
   Globe, Lock, Eye, EyeOff, Copy, Camera, TrendingUp, Megaphone, Code2,
   ExternalLink, FileText, AlertCircle, Clock, BarChart3, Sparkles, ShieldAlert, Hash, MessageCircle, Video,
-  ArrowUp, ArrowDown, ArrowRight, Image, ChevronDown
+  ArrowUp, ArrowDown, ArrowRight, Image, ChevronDown, PauseCircle, PlayCircle
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -1085,6 +1085,28 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
     toast.success(`${label} copied!`);
   };
 
+  const [togglingStatus, setTogglingStatus] = useState(false);
+  const toggleProjectStatus = async () => {
+    if (!project) return;
+    const isPaused = project.status === "PAUSED";
+    const newStatus = isPaused ? "ONGOING" : "PAUSED";
+    
+    if (!window.confirm(`Are you sure you want to ${isPaused ? 'activate' : 'deactivate'} this project?`)) return;
+
+    setTogglingStatus(true);
+    try {
+      const res = await API.patch(`/api/projects/${project.id}`, { status: newStatus });
+      if (res?.data?.success) {
+        toast.success(`Project ${isPaused ? 'activated' : 'deactivated'} successfully!`);
+        setProject(res.data.data);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update project status.");
+    } finally {
+      setTogglingStatus(false);
+    }
+  };
+
   // Build smart tabs based on dept + available data
   const baseTabs = [{ id: "overview", label: "Overview", icon: Building2 }];
   if (deptType === "social" || monthlySheets.length > 0 || shootWorkspaces.length > 0)
@@ -1228,10 +1250,32 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
           {/* Footer */}
           <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
             <span className="text-[11px] text-slate-400 font-mono">ID: {project?.id || "—"}</span>
-            <button onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">
-              Close
-            </button>
+            <div className="flex items-center gap-3">
+              {project?.status !== "COMPLETED" && (
+                <button
+                  onClick={toggleProjectStatus}
+                  disabled={togglingStatus}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition ${
+                    project?.status === "PAUSED"
+                      ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200"
+                      : "bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200"
+                  }`}
+                >
+                  {togglingStatus ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : project?.status === "PAUSED" ? (
+                    <PlayCircle size={14} />
+                  ) : (
+                    <PauseCircle size={14} />
+                  )}
+                  {project?.status === "PAUSED" ? "Activate Project" : "Deactivate Project"}
+                </button>
+              )}
+              <button onClick={onClose}
+                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">
+                Close
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
