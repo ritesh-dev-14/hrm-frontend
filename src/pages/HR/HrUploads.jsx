@@ -521,6 +521,18 @@ const HrUploads = ({ embedded = false }) => {
     return list.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
   }, [uploads, selectedDate, search, filterMode, today]);
 
+  const stats = useMemo(() => {
+    const currentMonthPrefix = today.slice(0, 7);
+    const thisMonthUploads = uploads.filter(
+      (u) => String(u.uploadDate || "").slice(0, 7) === currentMonthPrefix
+    );
+    const total = thisMonthUploads.length;
+    const done = thisMonthUploads.filter((u) => u.uploadStatus === "APPROVED").length;
+    const pending = total - done;
+
+    return { total, done, pending };
+  }, [uploads, today]);
+
   // ─────────────────────────────────────────────────────
   return (
     <div className={embedded ? "" : "min-h-screen bg-slate-50 p-4 sm:p-8"}>
@@ -539,6 +551,37 @@ const HrUploads = ({ embedded = false }) => {
           </div>
         </div>
       )}
+
+      {/* Statistics Cards */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex items-center gap-5 transition hover:shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
+          <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+            <CalendarDays size={28} />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">This Month</p>
+            <p className="text-3xl font-black text-slate-800 leading-none">{stats.total}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex items-center gap-5 transition hover:shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
+          <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+            <CheckCircle size={28} />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Done</p>
+            <p className="text-3xl font-black text-slate-800 leading-none">{stats.done}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex items-center gap-5 transition hover:shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
+          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shrink-0">
+            <Loader2 size={28} />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Pending</p>
+            <p className="text-3xl font-black text-slate-800 leading-none">{stats.pending}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
