@@ -15,7 +15,7 @@ import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "../PendingWorkGuardModal";
 import { appealSidebarAccess } from "../../services/attendanceApi";
 
-export default function AttendanceCard() {
+export default function AttendanceCard({ compact = false }) {
   const [status, setStatus] = useState("idle");
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -362,6 +362,131 @@ export default function AttendanceCard() {
       setLoading(false);
     }
   };
+
+  if (compact) {
+    return (
+      <>
+        <div className="flex flex-col justify-between gap-3.5">
+          {/* Top Row: Shift Info & Live Timer */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-md shrink-0">
+                <Timer size={19} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-extrabold text-slate-800">Shift Tracker</h4>
+                  {status === "working" && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Working
+                    </span>
+                  )}
+                  {status === "break" && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      On Break
+                    </span>
+                  )}
+                  {status === "completed" && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600">
+                      Shift Completed
+                    </span>
+                  )}
+                  {status === "idle" && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-500">
+                      Not Started
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium">Daily work hours & punches</p>
+              </div>
+            </div>
+
+            {/* Active Timer */}
+            <div className="text-right shrink-0">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                Active Time
+              </span>
+              <span className="text-2xl font-black font-mono tracking-tight text-slate-900 leading-none">
+                {formatTime(seconds)}
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Row: Actions */}
+          <div className="flex items-center gap-2.5 pt-2 border-t border-slate-100">
+            {status === "idle" && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleClockIn}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-linear-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <LogIn size={15} />
+                {loading ? "Starting..." : "Start Workday"}
+              </button>
+            )}
+
+            {(status === "working" || status === "break") && (
+              <>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleBreakToggle}
+                  className={`py-2 px-3.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                    status === "working"
+                      ? "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
+                      : "bg-amber-500 border-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                  }`}
+                >
+                  {status === "working" ? <Coffee size={14} /> : <Play size={14} />}
+                  {loading ? "..." : status === "working" ? "Take Break" : "Resume Work"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleClockOut}
+                  className="flex-1 py-2 px-3.5 rounded-xl text-xs font-bold text-white bg-linear-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <LogOut size={14} />
+                  {loading ? "Ending..." : "End Workday"}
+                </button>
+              </>
+            )}
+
+            {status === "completed" && (
+              <div className="flex-1 py-2 px-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 text-xs font-bold flex items-center justify-between">
+                <span>Workday completed</span>
+                {sidebarAccessStatus === "APPROVED" ? (
+                  <span className="text-[10px] text-emerald-600">Access Approved</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRequestAccess}
+                    disabled={loading || sidebarAccessStatus === "PENDING"}
+                    className="text-[11px] text-indigo-600 hover:underline cursor-pointer"
+                  >
+                    {sidebarAccessStatus === "PENDING" ? "Access Pending" : "Request Access"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* PENDING WORK ALERT MODAL */}
+        <PendingWorkGuardModal
+          isOpen={!!pendingWorkStatus}
+          onClose={() => setPendingWorkStatus(null)}
+          title="Action Required Before Clock Out"
+          message={pendingWorkStatus?.message || "Please complete pending tasks before leaving."}
+          pendingItems={pendingWorkStatus?.pendingActions || []}
+        />
+      </>
+    );
+  }
 
   return (
     <>

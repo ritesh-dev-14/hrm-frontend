@@ -165,7 +165,7 @@ export default function ProfessionalSidebar({ children }) {
   useEffect(() => {
     if (isAttendanceRestricted) {
       setCollapsed(true);
-      if (location.pathname !== "/dashboard") {
+      if (location.pathname !== "/dashboard" && location.pathname !== "/attendance") {
         navigate("/dashboard");
       }
     }
@@ -680,7 +680,7 @@ export default function ProfessionalSidebar({ children }) {
         {/* NAV LINKS - Hidden native scrollbar but scrollable */}
         <div className="flex-1 overflow-y-auto px-3 space-y-1 relative z-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {allowedNav.map((item) => {
-            if (isAttendanceRestricted && item.id !== "dashboard") return null;
+            if (isAttendanceRestricted && item.id !== "dashboard" && item.id !== "attendance") return null;
 
             const hasChildren = item.id === "project" && item.children?.length > 0;
             const activeChild = hasChildren && item.children.some((child) => activeId === child.id);

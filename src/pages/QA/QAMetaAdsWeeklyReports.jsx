@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
 import { toast } from "react-toastify";
+import AttendanceCard from "../../components/attendece/AttendenceCard";
 import {
   ShieldCheck,
   Calendar,
+  CalendarDays,
   CheckCircle,
   AlertCircle,
   Briefcase,
@@ -24,10 +27,14 @@ import {
   Clock,
   ThumbsUp,
   ThumbsDown,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  CreditCard,
+  ArrowRight
 } from "lucide-react";
 
 export default function QAMetaAdsWeeklyReports() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
@@ -270,6 +277,77 @@ export default function QAMetaAdsWeeklyReports() {
             <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden md:inline font-semibold text-sm">Refresh</span>
           </button>
+        </div>
+      </div>
+
+      {/* QA Employee Shift & Quick Access Bar */}
+      <div className="bg-white rounded-3xl p-5 md:p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          
+          {/* Left: Compact Attendance Shift Controls */}
+          <div className="lg:col-span-7 lg:pr-6 lg:border-r lg:border-slate-100">
+            <AttendanceCard compact={true} />
+          </div>
+
+          {/* Right: Quick Staff Portals (Leave, Payslips, Attendance History) */}
+          <div className="lg:col-span-5 flex flex-col justify-center">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Staff Portals
+              </span>
+              <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">
+                Quick Access
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5">
+              {/* Apply Leave */}
+              <button
+                type="button"
+                onClick={() => navigate("/leave")}
+                className="group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 hover:shadow-sm transition-all text-center cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-xl bg-emerald-100/80 text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                  Apply Leave
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Balance & Req</span>
+              </button>
+
+              {/* My Payslips */}
+              <button
+                type="button"
+                onClick={() => navigate("/payslips")}
+                className="group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-sm transition-all text-center cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-xl bg-blue-100/80 text-blue-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                  My Payslips
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Salary Slips</span>
+              </button>
+
+              {/* Full Calendar */}
+              <button
+                type="button"
+                onClick={() => navigate("/attendance")}
+                className="group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/50 hover:shadow-sm transition-all text-center cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-xl bg-indigo-100/80 text-indigo-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                  <CalendarDays className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+                  Attendance
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Full Log</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 

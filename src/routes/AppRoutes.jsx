@@ -85,6 +85,7 @@ export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
   const location = useLocation();
   const isAuthenticated = user && token;
+  const currentRole = String(role || user?.role || "").trim().toUpperCase();
 
   if (isLoading) {
     return <ProfessionalLoader text="Loading environment..." />;
@@ -373,15 +374,13 @@ export const AppRoutes = () => {
           <Route
             path="/attendance"
             element={
-              role === "EMPLOYEE" ? (
-                <EmployeeAttendence />
-              ) : role === "MANAGER" ? (
+              currentRole === "MANAGER" ? (
                 <ManagerAttendence />
-              ) : role === "HR" ? (
+              ) : currentRole === "HR" ? (
                 <HrAttendance />
-              ) : role === "COORDINATOR" || role === "EA" ? (
+              ) : (
                 <EmployeeAttendence />
-              ) : null
+              )
             }
           />
 
@@ -389,15 +388,13 @@ export const AppRoutes = () => {
           <Route
             path="/leave"
             element={
-              role === "EMPLOYEE" ? (
-                <EmployeeLeave />
-              ) : role === "MANAGER" ? (
+              currentRole === "MANAGER" ? (
                 <ManagerLeave />
-              ) : role === "HR" ? (
+              ) : currentRole === "HR" ? (
                 <HrLeaves />
-              ) : role === "COORDINATOR" || role === "EA" ? (
+              ) : (
                 <EmployeeLeave />
-              ) : null
+              )
             }
           />
 
@@ -405,22 +402,20 @@ export const AppRoutes = () => {
           <Route
             path="/payslips"
             element={
-              role === "EMPLOYEE" ? (
-                <EmployeePayslips />
-              ) : role === "MANAGER" ? (
-                <ManagerPayslips />
-              ) : ["HR", "ADMIN", "EA"].includes(role) ? (
+              ["HR", "ADMIN", "EA"].includes(currentRole) ? (
                 <HrPayslips />
-              ) : role === "COORDINATOR" ? (
+              ) : currentRole === "MANAGER" ? (
+                <ManagerPayslips />
+              ) : (
                 <EmployeePayslips />
-              ) : null
+              )
             }
           />
 
           <Route
             path="/uploads"
             element={
-              ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"].includes(role) ? (
+              ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"].includes(currentRole) ? (
                 <HrUploads />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -432,15 +427,13 @@ export const AppRoutes = () => {
           <Route
             path="/settings"
             element={
-              role === "EMPLOYEE" ? (
-                <EmployeeSettings />
-              ) : role === "MANAGER" ? (
+              currentRole === "MANAGER" ? (
                 <ManagerSettings />
-              ) : role === "HR" ? (
+              ) : currentRole === "HR" ? (
                 <HrSettings />
-              ) : role === "COORDINATOR" || role === "EA" ? (
+              ) : (
                 <EmployeeSettings />
-              ) : null
+              )
             }
           />
 

@@ -45,34 +45,46 @@ export default function AttendanceView({
   const INITIAL_SHOW_COUNT = 5;
 
   const getIcon = (label) => {
-    if (label.includes("Present")) {
+    const str = String(label || "");
+    if (str.includes("Present")) {
       return <Calendar size={20} />;
     }
-    if (label.includes("Absent")) {
+    if (str.includes("Absent")) {
       return <CircleDot size={20} />;
     }
     return <Clock size={20} />;
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    if (!date) return "--";
+    try {
+      const d = new Date(date);
+      return isNaN(d.getTime()) ? "--" : d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "--";
+    }
   };
 
   const formatTime = (time) => {
     if (!time) return "--";
-    return new Date(time).toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      const d = new Date(time);
+      return isNaN(d.getTime()) ? "--" : d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "--";
+    }
   };
 
   const formatHours = (hours) => {
-    if (!hours) return "0h";
-    return `${hours.toFixed(1)} hrs`;
+    if (hours === null || hours === undefined || isNaN(Number(hours))) return "0h";
+    return `${Number(hours).toFixed(1)} hrs`;
   };
 
   const filteredRecords = useMemo(() => {
