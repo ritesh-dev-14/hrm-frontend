@@ -187,7 +187,7 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
                     <BarChart2 size={15} className="text-blue-600" />
                   </div>
                   <p className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-                    Missing Voice Reports (Saturday)
+                    Missing Weekly Reports (Saturday)
                   </p>
                   <span className="ml-auto bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
                     {status.pendingWeeklyVoiceReports.length} missing
@@ -205,7 +205,7 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
                         </p>
                       </div>
                       <span className="shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">
-                        Missing Audio
+                        Missing Report
                       </span>
                     </div>
                   ))}
@@ -217,7 +217,7 @@ export default function ManagerLogoutGuardModal({ status, onClose }) {
                   }}
                   className="mt-3 w-full flex items-center justify-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-2.5 rounded-xl border border-blue-200 transition-colors"
                 >
-                  Go to Voice Reports
+                  Go to Weekly Reports
                   <ArrowRight size={15} />
                 </button>
               </div>
