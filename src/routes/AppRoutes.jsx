@@ -80,6 +80,7 @@ const DailyDepartmentReportPage = lazy(() => import("../pages/DailyDepartmentRep
 const DepartmentReportsPage = lazy(() => import("../pages/DepartmentReportsPage"));
 const DataDashboardPage = lazy(() => import("../pages/DataDashboardPage"));
 const ManagerWeeklyVoiceReport = lazy(() => import("../pages/Manager/ManagerWeeklyVoiceReport"));
+const QAMetaAdsWeeklyReports = lazy(() => import("../pages/QA/QAMetaAdsWeeklyReports.jsx"));
 export const AppRoutes = () => {
   const { role, user, token, isLoading } = useAuth();
   const location = useLocation();
@@ -120,6 +121,8 @@ export const AppRoutes = () => {
                 <ManagerHomePage />
               ) : role === "COORDINATOR" || role === "EA" ? (
                 <CoordinatorHomePage />
+              ) : role === "QA" ? (
+                <QAMetaAdsWeeklyReports />
               ) : (
                 <EmployeHomePage />
               )
@@ -274,6 +277,17 @@ export const AppRoutes = () => {
             element={
               ["ADMIN", "HR", "EA"].includes(role) ? (
                 <AdminWeeklyVoiceReports />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/qa/weekly-reports"
+            element={
+              ["QA", "ADMIN", "EA", "HR"].includes(role) ? (
+                <QAMetaAdsWeeklyReports />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

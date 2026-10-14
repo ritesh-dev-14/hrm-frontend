@@ -39,7 +39,7 @@ import { getManagerPendingCategories, refreshManagerLogoutStatus } from "../util
 import PendingWorkGuardModal from "./PendingWorkGuardModal";
 
 const NAV_CONFIG = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
+  { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
   { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
   { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR"] },
@@ -63,6 +63,7 @@ const NAV_CONFIG = [
   { id: "editor-workload", label: "Editor Workload", icon: Keyboard, path: "/editor-workload", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
   { id: "weekly-voice-report", label: "Weekly Voice Report", icon: Mic, path: "/manager/weekly-voice-report", roles: ["MANAGER"] },
   { id: "admin-weekly-voice-reports", label: "Voice Reports", icon: Mic, path: "/admin/weekly-voice-reports", roles: ["ADMIN", "HR", "EA"] },
+  { id: "qa-meta-ads-reports", label: "QA Reports", icon: ShieldCheck, path: "/qa/weekly-reports", roles: ["QA", "ADMIN", "EA"] },
   { id: "pending-approvals", label: "Pending Approvals", icon: ClipboardList, path: "/pending-approvals", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
@@ -71,12 +72,12 @@ const NAV_CONFIG = [
   { id: "coordinator-task-progress", label: "Task Progress", icon: BarChart2, path: "/coordinator/task-progress", roles: ["COORDINATOR", "EA"] },
   { id: "sidebar-appeals", label: "Sidebar Appeals", icon: ShieldCheck, path: "/sidebar-appeals", roles: ["EA", "ADMIN", "HR", "COORDINATOR"] },
   { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },
-  { id: "attendance", label: "Attendance", icon: CalendarDays, path: "/attendance", roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA"] },
+  { id: "attendance", label: "Attendance", icon: CalendarDays, path: "/attendance", roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA", "QA"] },
   { id: "employee-attendance", label: "Employee Attendance", icon: CalendarDays, path: "/hr/employees-attendance", roles: ["HR"] },
   { id: "employee-leaves", label: "Employee Leaves", icon: FileText, path: "/hr/employees-leaves", roles: ["HR"] },
   { id: "team", label: "Team", icon: Users, path: "/hr/team", roles: ["HR", "ADMIN"] },
-  { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
-  { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA"] },
+  { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
+  { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA"] },

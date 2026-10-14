@@ -58,10 +58,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
   useEffect(() => {
     if (employeeData && isOpen) {
       fetchDepartments();
-      
-      if (employeeData.role !== "MANAGER") {
-        fetchManagers();
-      }
+      fetchManagers();
 
       // Normalize backend departments array mapping parameters cleanly
       let initialDepts = [];
@@ -165,8 +162,10 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
         payload = {
           name: form.name.trim(),
           email: form.email.trim(),
+          role: form.role,
           department: form.department,
           position: form.position.trim(),
+          ...(form.role === "EMPLOYEE" && { managerIds: form.managerIds }),
           probationPeriod: form.probationPeriod,
           ...(form.password && { password: form.password }),
         };
@@ -256,20 +255,22 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
             />
           </div>
 
-          {employeeData.role === "EMPLOYEE" && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Role</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5"
-              >
-                <option value="EMPLOYEE">Employee</option>
-                <option value="MANAGER">Manager</option>
-              </select>
-            </div>
-          )}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-700">Role</label>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5 cursor-pointer"
+            >
+              <option value="EMPLOYEE">Employee</option>
+              <option value="MANAGER">Manager</option>
+              <option value="QA">Quality Control (QA)</option>
+              <option value="EA">Executive Assistant (EA)</option>
+              <option value="COORDINATOR">Coordinator</option>
+              <option value="HR">HR</option>
+            </select>
+          </div>
 
           {/* DEPARTMENTS SELECTION ELEMENT */}
           <div className="space-y-1 relative multiselect-interactive-container">

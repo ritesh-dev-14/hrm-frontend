@@ -60,6 +60,7 @@ export default function HrAddEmployee({ isOpen, onClose, onSave, initialData }) 
     department: [], // Holds array of Department NAMES string
     position: "",
     managerIds: [], // Holds array of Manager IDs (UUID string)
+    role: "EMPLOYEE",
     probationPeriod: true,
   });
 
@@ -198,7 +199,7 @@ export default function HrAddEmployee({ isOpen, onClose, onSave, initialData }) 
         name: form.name,
         email: form.email,
         password: form.password,
-        role: "EMPLOYEE",
+        role: form.role || "EMPLOYEE",
         department: form.department,
         position: form.position,
         managerIds: form.managerIds,
@@ -287,6 +288,22 @@ export default function HrAddEmployee({ isOpen, onClose, onSave, initialData }) 
               placeholder="••••••••"
               required
             />
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 tracking-wide">
+                Role <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.role}
+                onChange={(e) => updateForm("role", e.target.value)}
+                className="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-sm text-slate-800 outline-none focus:border-slate-900 transition-all cursor-pointer"
+              >
+                <option value="EMPLOYEE">Employee</option>
+                <option value="QA">Quality Control (QA)</option>
+                <option value="EA">Executive Assistant (EA)</option>
+                <option value="COORDINATOR">Coordinator</option>
+              </select>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* CUSTOM PRODUCTION GRADE MULTISELECT: DEPARTMENT */}

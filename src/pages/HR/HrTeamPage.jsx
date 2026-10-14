@@ -245,6 +245,17 @@ export default function HrTeamPage() {
                 Employees (
                 {staff?.filter((p) => p.role === "EMPLOYEE").length || 0})
               </button>
+              <button
+                onClick={() => setRoleFilter("QA")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-300 whitespace-nowrap ${
+                  roleFilter === "QA"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                }`}
+              >
+                QA (
+                {staff?.filter((p) => p.role === "QA").length || 0})
+              </button>
             </div>
           </div>
 

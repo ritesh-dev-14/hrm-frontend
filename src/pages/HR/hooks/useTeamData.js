@@ -24,8 +24,8 @@ export function useTeamData() {
         API.get("/api/hr/managers"),
       ]);
       
-      const managers = (mgrRes.data?.data || []).map(m => ({ ...m, role: "MANAGER" }));
-      const employees = (empRes.data?.data || []).map(e => ({ ...e, role: "EMPLOYEE" }));
+      const managers = (mgrRes.data?.data || []).map(m => ({ ...m, role: m.role || "MANAGER" }));
+      const employees = (empRes.data?.data || []).map(e => ({ ...e, role: e.role || "EMPLOYEE" }));
       
       dispatch({ type: "FETCH_SUCCESS", payload: [...managers, ...employees] });
     } catch (err) {
