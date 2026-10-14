@@ -72,6 +72,7 @@ export default function PerformanceMarketingManagerView({
   const [form, setForm] = useState(INITIAL_FORM);
   const [search, setSearch] = useState("");
   const [adTypeFilter, setAdTypeFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [toast, setToast] = useState(null);
 
   /* toast helper */
@@ -266,7 +267,10 @@ export default function PerformanceMarketingManagerView({
   /* ─── filtered list ───────────────────────────────────────────────────── */
   const filtered = reports.filter((r) => {
     const q = search.toLowerCase();
-    return (
+    const reportDateStr = r.date ? new Date(r.date).toISOString().split("T")[0] : "";
+    const matchesDate = !dateFilter || reportDateStr === dateFilter;
+    
+    return matchesDate && (
       !q ||
       r.clientName?.toLowerCase().includes(q) ||
       r.areaName?.toLowerCase().includes(q) ||
@@ -531,6 +535,14 @@ export default function PerformanceMarketingManagerView({
                 className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
             </div>
+            
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-white border border-slate-200 text-slate-500 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20"
+            />
+            
             <select value={adTypeFilter} onChange={(e) => setAdTypeFilter(e.target.value)} className="bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60">
               <option value="">All Ad Types</option>
               <option value="Awareness">Awareness</option>
