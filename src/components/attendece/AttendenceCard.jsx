@@ -9,11 +9,11 @@ import {
   endBreak,
   stopAttendance,
   getTodayAttendance,
+  appealSidebarAccess,
 } from "../../services/attendanceApi";
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "../PendingWorkGuardModal";
-import { appealSidebarAccess } from "../../services/attendanceApi";
 
 export default function AttendanceCard({ compact = false }) {
   const [status, setStatus] = useState("idle");
@@ -464,7 +464,7 @@ export default function AttendanceCard({ compact = false }) {
                 ) : (
                   <button
                     type="button"
-                    onClick={handleRequestAccess}
+                    onClick={handleAppealAccess}
                     disabled={loading || sidebarAccessStatus === "PENDING"}
                     className="text-[11px] text-indigo-600 hover:underline cursor-pointer"
                   >
