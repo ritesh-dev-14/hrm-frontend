@@ -48,6 +48,7 @@ import {
   HEALTH_CONFIG,
 } from "../../utils/clientHealthScore";
 import AdminControlTower from "../../components/admin/AdminControlTower";
+import AdminAdsMarketingReportsModal from "../../components/admin/AdminAdsMarketingReportsModal";
 
 export default function AdminHomePage() {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ export default function AdminHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", type: "error" });
+  const [isAdsMarketingModalOpen, setIsAdsMarketingModalOpen] = useState(false);
 
   // Health score state
   const [healthMap, setHealthMap] = useState({});
@@ -76,6 +78,14 @@ export default function AdminHomePage() {
   const [healthFilter, setHealthFilter] = useState("ALL"); // ALL | HEALTHY | ATTENTION | AT_RISK
   // Selected Project for Detail View Modal
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+  const marketingProjects = useMemo(
+    () => projects.filter((project) => {
+      const departmentName = project.department?.name?.toLowerCase() || "";
+      return departmentName.includes("marketing") || departmentName.includes("ads");
+    }),
+    [projects],
+  );
 
   useEffect(() => {
     fetchInitialData();
@@ -332,7 +342,7 @@ export default function AdminHomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Ads Dashboard Card */}
           <button
-            onClick={() => navigate("/marketing-projects")}
+            onClick={() => setIsAdsMarketingModalOpen(true)}
             className="group relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-indigo-400/50"
           >
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
@@ -899,6 +909,13 @@ export default function AdminHomePage() {
         <AdminProjectDetailModal
           projectId={selectedProjectId}
           onClose={() => setSelectedProjectId(null)}
+        />
+      )}
+
+      {isAdsMarketingModalOpen && (
+        <AdminAdsMarketingReportsModal
+          projects={marketingProjects}
+          onClose={() => setIsAdsMarketingModalOpen(false)}
         />
       )}
 
