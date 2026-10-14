@@ -33,6 +33,7 @@ const EditorManagerPage = () => {
   // Assigned Projects Catalogs for Dropdown
   const [assignedProjects, setAssignedProjects] = useState([])
   const [loadingProjects, setLoadingProjects] = useState(false)
+  const [projectsError, setProjectsError] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState('')
 
   // Create Modal Controls
@@ -65,6 +66,42 @@ const EditorManagerPage = () => {
     fetchTasks()
   }, [])
 
+  const fetchAssignedProjects = async () => {
+    try {
+      setLoadingProjects(true)
+      setProjectsError('')
+
+      const response = await API.get('/api/projects/assigned?limit=100&page=1')
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to load assigned projects.')
+      }
+
+      const firstPageProjects = response.data.data || []
+      const totalPages = Number(response.data.pagination?.totalPages) || 1
+      const remainingPages = await Promise.all(
+        Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+          API.get(`/api/projects/assigned?limit=100&page=${index + 2}`),
+        ),
+      )
+      const failedPage = remainingPages.find((page) => !page.data?.success)
+      if (failedPage) {
+        throw new Error(failedPage.data?.message || 'Failed to load all assigned projects.')
+      }
+
+      setAssignedProjects([
+        ...firstPageProjects,
+        ...remainingPages.flatMap((page) => page.data.data || []),
+      ])
+    } catch (err) {
+      setAssignedProjects([])
+      setProjectsError(
+        err.response?.data?.message || err.message || 'Failed to load assigned projects.',
+      )
+    } finally {
+      setLoadingProjects(false)
+    }
+  }
+
   const fetchTasks = async () => {
     try {
       setLoading(true)
@@ -85,18 +122,9 @@ const EditorManagerPage = () => {
   const handleOpenCreateModal = async () => {
     setIsModalOpen(true)
     setSelectedProjectId('')
+    setAssignedProjects([])
     setFormData({ projectName: '', description: '', startDate: '', endDate: '' })
-    try {
-      setLoadingProjects(true)
-      const response = await API.get('/api/projects/assigned')
-      if (response.data?.success) {
-        setAssignedProjects(response.data.data || [])
-      }
-    } catch (err) {
-      console.error('Failed to resolve assigned projects catalog:', err)
-    } finally {
-      setLoadingProjects(false)
-    }
+    await fetchAssignedProjects()
   }
 
   const isProjectAlreadyPlanned = (project) =>
@@ -523,6 +551,17 @@ const EditorManagerPage = () => {
                         <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 flex items-center gap-3">
                           <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
                           Resolving project vectors catalog...
+                        </div>
+                      ) : projectsError ? (
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+                          <span>{projectsError}</span>
+                          <button
+                            type="button"
+                            onClick={fetchAssignedProjects}
+                            className="shrink-0 font-bold underline underline-offset-2"
+                          >
+                            Retry
+                          </button>
                         </div>
                       ) : (
                         <select
