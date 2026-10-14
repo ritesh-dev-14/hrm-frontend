@@ -50,6 +50,7 @@ import {
 import AdminControlTower from "../../components/admin/AdminControlTower";
 import AdminAdsMarketingReportsModal from "../../components/admin/AdminAdsMarketingReportsModal";
 import AdminSocialMediaProjectsModal from "../../components/admin/AdminSocialMediaProjectsModal";
+import AdminSeoProjectsModal from "../../components/admin/AdminSeoProjectsModal";
 
 export default function AdminHomePage() {
   const navigate = useNavigate();
@@ -65,6 +66,8 @@ export default function AdminHomePage() {
   const [isAdsMarketingModalOpen, setIsAdsMarketingModalOpen] = useState(false);
   const [isSocialMediaModalOpen, setIsSocialMediaModalOpen] = useState(false);
   const [isSocialProjectDetailOpen, setIsSocialProjectDetailOpen] = useState(false);
+  const [isSeoModalOpen, setIsSeoModalOpen] = useState(false);
+  const [isSeoProjectDetailOpen, setIsSeoProjectDetailOpen] = useState(false);
 
   // Health score state
   const [healthMap, setHealthMap] = useState({});
@@ -94,6 +97,10 @@ export default function AdminHomePage() {
       const departmentName = project.department?.name?.toLowerCase() || "";
       return departmentName.includes("social") || departmentName.includes("smm");
     }),
+    [projects],
+  );
+  const seoProjects = useMemo(
+    () => projects.filter((project) => project.department?.name?.toLowerCase().includes("seo")),
     [projects],
   );
 
@@ -398,7 +405,7 @@ export default function AdminHomePage() {
 
           {/* SEO Dashboard Card */}
           <button
-            onClick={() => navigate("/seo-projects")}
+            onClick={() => setIsSeoModalOpen(true)}
             className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-emerald-400/50"
           >
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
@@ -918,11 +925,12 @@ export default function AdminHomePage() {
       {selectedProjectId && (
         <AdminProjectDetailModal
           projectId={selectedProjectId}
-          initialTab={isSocialProjectDetailOpen ? "social" : "overview"}
-          overlayClassName={isSocialProjectDetailOpen ? "z-[80]" : "z-[60]"}
+          initialTab={isSocialProjectDetailOpen ? "social" : isSeoProjectDetailOpen ? "seo" : "overview"}
+          overlayClassName={isSocialProjectDetailOpen || isSeoProjectDetailOpen ? "z-[80]" : "z-[60]"}
           onClose={() => {
             setSelectedProjectId(null);
             setIsSocialProjectDetailOpen(false);
+            setIsSeoProjectDetailOpen(false);
           }}
         />
       )}
@@ -941,6 +949,17 @@ export default function AdminHomePage() {
           onSelectProject={(projectId) => {
             setSelectedProjectId(projectId);
             setIsSocialProjectDetailOpen(true);
+          }}
+        />
+      )}
+
+      {isSeoModalOpen && (
+        <AdminSeoProjectsModal
+          projects={seoProjects}
+          onClose={() => setIsSeoModalOpen(false)}
+          onSelectProject={(projectId) => {
+            setSelectedProjectId(projectId);
+            setIsSeoProjectDetailOpen(true);
           }}
         />
       )}

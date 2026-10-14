@@ -1,17 +1,96 @@
-import { useMemo, useState } from "react";
-import { Camera, ChevronRight, Heart, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Camera, ChevronRight, Heart, Loader2, Search, X } from "lucide-react";
+import API from "../../services/api";
+
+const getToday = () => {
+  const today = new Date();
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+};
+
+const getLocalDateBounds = (dateValue) => {
+  const start = new Date(`${dateValue}T00:00:00`);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+};
+
+const formatDate = (dateValue) => new Date(`${dateValue}T00:00:00`).toLocaleDateString("en-IN", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
 
 const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [draftDate, setDraftDate] = useState(getToday);
+  const [appliedDate, setAppliedDate] = useState("");
+  const [submittedProjectIds, setSubmittedProjectIds] = useState([]);
+  const [loadingSubmittedProjects, setLoadingSubmittedProjects] = useState(false);
+  const [submittedProjectsError, setSubmittedProjectsError] = useState("");
+
+  useEffect(() => {
+    if (!appliedDate) return undefined;
+
+    let isMounted = true;
+    API.get("/api/projects/monthly-sheets/submitted-projects", {
+      params: getLocalDateBounds(appliedDate),
+    })
+      .then((response) => {
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || "Unable to load Social Media reports for this date.");
+        }
+        if (isMounted) {
+          setSubmittedProjectIds((response.data.data || []).map(String));
+          setSubmittedProjectsError("");
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setSubmittedProjectIds([]);
+          setSubmittedProjectsError(
+            error.response?.data?.message || error.message || "Unable to load Social Media reports for this date.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSubmittedProjects(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [appliedDate]);
+
   const filteredProjects = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    if (!normalizedQuery) return projects;
-    return projects.filter((project) =>
-      [project.projectName, project.clientName, project.department?.name]
+    return projects.filter((project) => {
+      const matchesSearch = !normalizedQuery || [project.projectName, project.clientName, project.department?.name]
         .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(normalizedQuery)),
-    );
-  }, [projects, searchQuery]);
+        .some((value) => value.toLowerCase().includes(normalizedQuery));
+      const matchesDate = !appliedDate || submittedProjectIds.includes(String(project.id || project._id));
+      return matchesSearch && matchesDate;
+    });
+  }, [projects, searchQuery, appliedDate, submittedProjectIds]);
+
+  const applyDateFilter = () => {
+    if (!draftDate) return;
+    setLoadingSubmittedProjects(true);
+    setSubmittedProjectIds([]);
+    setSubmittedProjectsError("");
+    setAppliedDate(draftDate);
+  };
+
+  const removeDateFilter = () => {
+    setAppliedDate("");
+    setDraftDate(getToday());
+    setSubmittedProjectIds([]);
+    setLoadingSubmittedProjects(false);
+    setSubmittedProjectsError("");
+  };
 
   return (
     <div
@@ -40,6 +119,54 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 sm:p-6">
+          <div className="flex flex-col gap-3 rounded-2xl border border-violet-100 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-800">Filter by manager report submission date</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                {appliedDate
+                  ? `Showing projects with a content calendar report submitted on ${formatDate(appliedDate)}.`
+                  : "Apply a date to see projects whose manager submitted a content calendar report that day."}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Submitted on
+                <input
+                  type="date"
+                  value={draftDate}
+                  onChange={(event) => setDraftDate(event.target.value)}
+                  className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={applyDateFilter}
+                disabled={!draftDate || loadingSubmittedProjects || draftDate === appliedDate}
+                className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Apply Filter
+              </button>
+              {appliedDate && (
+                <button
+                  type="button"
+                  onClick={removeDateFilter}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+                >
+                  Remove Filter
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loadingSubmittedProjects && (
+            <p className="flex items-center gap-2 rounded-xl bg-violet-50 px-4 py-3 text-xs text-violet-700">
+              <Loader2 size={14} className="animate-spin" /> Loading Social Media submissions for {formatDate(appliedDate || draftDate)}…
+            </p>
+          )}
+          {submittedProjectsError && (
+            <p className="rounded-xl bg-rose-50 px-4 py-3 text-xs text-rose-700" role="alert">{submittedProjectsError}</p>
+          )}
+
           <label className="relative block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -52,7 +179,7 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
           </label>
 
           <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>All Social Media projects</span>
+            <span>{appliedDate ? `Projects with reports submitted ${formatDate(appliedDate)}` : "All Social Media projects"}</span>
             <span className="rounded-full bg-violet-100 px-2.5 py-1 text-violet-800">{filteredProjects.length}</span>
           </div>
 
@@ -60,7 +187,7 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
             <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
               <Camera size={30} className="mb-3 text-slate-300" />
               <p className="text-sm font-bold text-slate-700">{projects.length ? "No matching projects" : "No Social Media projects found"}</p>
-              <p className="mt-1 text-xs text-slate-500">{projects.length ? "Try a different project or client name." : "Projects assigned to the Social Media department will appear here."}</p>
+              <p className="mt-1 text-xs text-slate-500">{projects.length ? appliedDate && !submittedProjectsError ? `No Social Media reports were submitted on ${formatDate(appliedDate)}.` : "Try a different project or client name." : "Projects assigned to the Social Media department will appear here."}</p>
             </div>
           ) : (
             <div className="grid min-h-0 grid-cols-1 gap-3 overflow-y-auto pb-1 sm:grid-cols-2 lg:grid-cols-3">

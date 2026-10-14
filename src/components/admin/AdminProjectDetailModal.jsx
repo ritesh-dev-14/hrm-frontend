@@ -1003,6 +1003,21 @@ export default function AdminProjectDetailModal({
         return;
       }
 
+      if (initialTab === "seo") {
+        const [seoReportsRes, seoTasksRes] = await Promise.all([
+          API.get(`/api/seo-reports?projectId=${proj.id}`),
+          API.get(`/api/seo-tasks?projectId=${proj.id}`),
+        ]);
+
+        if (seoReportsRes.data?.success) {
+          setSeoReports(seoReportsRes.data.data || []);
+        }
+        if (seoTasksRes.data?.success) {
+          setSeoTasks(seoTasksRes.data.data || []);
+        }
+        return;
+      }
+
       const [sheetsRes, seoRepRes, seoTasksRes, shootRes, metaAdsRes, healthRes, commsRes] = await Promise.allSettled([
         API.get(`/api/projects/${proj.id}/monthly-sheets`),
         API.get(`/api/seo-reports?projectId=${proj.id}`),
