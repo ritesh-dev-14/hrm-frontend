@@ -956,11 +956,16 @@ function CommunicationsTab({ communications }) {
   );
 }
 
-export default function AdminProjectDetailModal({ projectId, onClose }) {
+export default function AdminProjectDetailModal({
+  projectId,
+  onClose,
+  initialTab = "overview",
+  overlayClassName = "z-[60]",
+}) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showPasswords, setShowPasswords] = useState({});
 
   const [monthlySheets, setMonthlySheets] = useState([]);
@@ -980,6 +985,23 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
       if (!projRes?.data?.success) throw new Error("Project not found");
       const proj = projRes.data.data;
       setProject(proj);
+
+      if (initialTab === "social") {
+        const [sheetsRes, shootRes] = await Promise.all([
+          API.get(`/api/projects/${proj.id}/monthly-sheets`),
+          API.get("/api/shoot-workspaces", {
+            params: { projectId: proj.id, projectName: proj.projectName },
+          }),
+        ]);
+
+        if (sheetsRes.data?.success) {
+          setMonthlySheets(sheetsRes.data.data || []);
+        }
+        if (shootRes.data?.success) {
+          setShootWorkspaces(shootRes.data.data || []);
+        }
+        return;
+      }
 
       const [sheetsRes, seoRepRes, seoTasksRes, shootRes, metaAdsRes, healthRes, commsRes] = await Promise.allSettled([
         API.get(`/api/projects/${proj.id}/monthly-sheets`),
@@ -1037,7 +1059,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, initialTab]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => {
@@ -1105,7 +1127,7 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 md:p-6"
+        className={`fixed inset-0 ${overlayClassName} bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 md:p-6`}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div

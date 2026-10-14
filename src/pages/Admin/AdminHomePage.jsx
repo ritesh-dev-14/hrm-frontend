@@ -49,6 +49,7 @@ import {
 } from "../../utils/clientHealthScore";
 import AdminControlTower from "../../components/admin/AdminControlTower";
 import AdminAdsMarketingReportsModal from "../../components/admin/AdminAdsMarketingReportsModal";
+import AdminSocialMediaProjectsModal from "../../components/admin/AdminSocialMediaProjectsModal";
 
 export default function AdminHomePage() {
   const navigate = useNavigate();
@@ -62,6 +63,8 @@ export default function AdminHomePage() {
   const [error, setError] = useState("");
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", type: "error" });
   const [isAdsMarketingModalOpen, setIsAdsMarketingModalOpen] = useState(false);
+  const [isSocialMediaModalOpen, setIsSocialMediaModalOpen] = useState(false);
+  const [isSocialProjectDetailOpen, setIsSocialProjectDetailOpen] = useState(false);
 
   // Health score state
   const [healthMap, setHealthMap] = useState({});
@@ -83,6 +86,13 @@ export default function AdminHomePage() {
     () => projects.filter((project) => {
       const departmentName = project.department?.name?.toLowerCase() || "";
       return departmentName.includes("marketing") || departmentName.includes("ads");
+    }),
+    [projects],
+  );
+  const socialMediaProjects = useMemo(
+    () => projects.filter((project) => {
+      const departmentName = project.department?.name?.toLowerCase() || "";
+      return departmentName.includes("social") || departmentName.includes("smm");
     }),
     [projects],
   );
@@ -365,7 +375,7 @@ export default function AdminHomePage() {
 
           {/* Social Media Dashboard Card */}
           <button
-            onClick={() => navigate("/social-media-projects")}
+            onClick={() => setIsSocialMediaModalOpen(true)}
             className="group relative overflow-hidden bg-gradient-to-br from-violet-500 to-purple-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-violet-400/50"
           >
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
@@ -908,7 +918,12 @@ export default function AdminHomePage() {
       {selectedProjectId && (
         <AdminProjectDetailModal
           projectId={selectedProjectId}
-          onClose={() => setSelectedProjectId(null)}
+          initialTab={isSocialProjectDetailOpen ? "social" : "overview"}
+          overlayClassName={isSocialProjectDetailOpen ? "z-[80]" : "z-[60]"}
+          onClose={() => {
+            setSelectedProjectId(null);
+            setIsSocialProjectDetailOpen(false);
+          }}
         />
       )}
 
@@ -916,6 +931,17 @@ export default function AdminHomePage() {
         <AdminAdsMarketingReportsModal
           projects={marketingProjects}
           onClose={() => setIsAdsMarketingModalOpen(false)}
+        />
+      )}
+
+      {isSocialMediaModalOpen && (
+        <AdminSocialMediaProjectsModal
+          projects={socialMediaProjects}
+          onClose={() => setIsSocialMediaModalOpen(false)}
+          onSelectProject={(projectId) => {
+            setSelectedProjectId(projectId);
+            setIsSocialProjectDetailOpen(true);
+          }}
         />
       )}
 
