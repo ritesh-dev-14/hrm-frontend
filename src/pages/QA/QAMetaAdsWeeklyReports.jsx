@@ -190,7 +190,6 @@ export default function QAMetaAdsWeeklyReports() {
     }));
   };
 
-  // Filter submitted reports
   const filteredSubmittedReports = (activeWeek?.submittedProjects || []).filter((item) => {
     if (qaStatusFilter !== "ALL" && item.qaStatus !== qaStatusFilter) return false;
     if (formatFilter !== "ALL" && item.reportType !== formatFilter) return false;
@@ -198,7 +197,8 @@ export default function QAMetaAdsWeeklyReports() {
       const q = searchQuery.toLowerCase();
       const matchProject = item.projectName?.toLowerCase().includes(q);
       const matchManager = item.manager?.name?.toLowerCase().includes(q);
-      if (!matchProject && !matchManager) return false;
+      const matchReason = item.reason?.toLowerCase().includes(q);
+      if (!matchProject && !matchManager && !matchReason) return false;
     }
     return true;
   });
@@ -655,6 +655,7 @@ export default function QAMetaAdsWeeklyReports() {
                   <option value="ALL">All Media Types</option>
                   <option value="VOICE">Voice Recording</option>
                   <option value="SCREENSHOTS">Screenshots</option>
+                  <option value="UNABLE_TO_SUBMIT">Unable to Submit</option>
                 </select>
               </>
             )}
@@ -682,6 +683,7 @@ export default function QAMetaAdsWeeklyReports() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredSubmittedReports.map((item) => {
                   const isVoice = item.reportType === "VOICE";
+                  const isUnableToSubmit = item.reportType === "UNABLE_TO_SUBMIT" || item.status === "Unable to Submit";
                   const screenshots = item.screenshots || [];
 
                   return (
@@ -729,6 +731,10 @@ export default function QAMetaAdsWeeklyReports() {
                               <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
                                 <Mic className="w-3 h-3" /> Voice Note
                               </span>
+                            ) : isUnableToSubmit ? (
+                              <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3 text-amber-600" /> Unable to Submit
+                              </span>
                             ) : (
                               <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
                                 <Images className="w-3 h-3" /> Screenshots ({screenshots.length})
@@ -757,8 +763,22 @@ export default function QAMetaAdsWeeklyReports() {
                           )}
                         </div>
 
-                        {/* Media Preview Box */}
-                        {isVoice ? (
+                        {/* Media or Reason Preview Box */}
+                        {isUnableToSubmit ? (
+                          <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Reason for Inability to Submit
+                              </p>
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200">
+                                Manager Note
+                              </span>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-amber-200/70 text-xs text-amber-950 font-medium leading-relaxed italic shadow-xs">
+                              "{item.reason || "No detailed reason was provided by manager."}"
+                            </div>
+                          </div>
+                        ) : isVoice ? (
                           <div className="bg-blue-50/40 p-3.5 rounded-2xl border border-blue-100 mb-4">
                             <p className="text-[11px] font-bold text-blue-900 mb-2 flex items-center gap-1 uppercase tracking-wider">
                               <Mic className="w-3 h-3" /> Listen to Voice Update
@@ -989,6 +1009,17 @@ export default function QAMetaAdsWeeklyReports() {
             </div>
 
             <div className="space-y-4 mb-6">
+              {reviewModal.report?.reason && (
+                <div className="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-xs">
+                  <span className="font-bold text-amber-900 block mb-1 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Manager's Reason for Inability to Submit:
+                  </span>
+                  <p className="text-amber-950 italic font-medium bg-white/90 p-2.5 rounded-xl border border-amber-200/60 shadow-xs">
+                    "{reviewModal.report.reason}"
+                  </p>
+                </div>
+              )}
+
               <p className="text-xs text-gray-600 leading-relaxed">
                 {reviewModal.action === "APPROVE"
                   ? "Are you sure you want to approve this weekly report? You can add optional feedback notes below."
