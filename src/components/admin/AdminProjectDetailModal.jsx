@@ -741,6 +741,12 @@ function SEOTab({ project, seoReports, seoTasks }) {
                             <Image size={12} /> View Screenshot
                           </a>
                         )}
+                        {rep.sheetUrl && (
+                          <a href={rep.sheetUrl} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-emerald-600 font-bold hover:underline mt-2">
+                            <ExternalLink size={12} /> Open Excel Sheet
+                          </a>
+                        )}
                       </div>
                     ))}
                   </div>

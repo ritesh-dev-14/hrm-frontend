@@ -893,6 +893,11 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
                                   📝 {report.remarks}
                                 </p>
                               )}
+                              {report.sheetUrl && (
+                                <a href={report.sheetUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800">
+                                  <ExternalLink size={13} /> Open Excel Sheet
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>

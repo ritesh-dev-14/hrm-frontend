@@ -20,6 +20,7 @@ const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
   const [clientContactNumber, setClientContactNumber] = useState("");
   const [rankingNo, setRankingNo] = useState("");
   const [checkDate, setCheckDate] = useState("");
+  const [sheetUrl, setSheetUrl] = useState("");
   const [remarks, setRemarks] = useState("");
   const [screenshot, setScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
@@ -69,6 +70,15 @@ const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
       setError("Please select a check date.");
       return;
     }
+    try {
+      const parsedSheetUrl = new URL(sheetUrl);
+      if (!["http:", "https:"].includes(parsedSheetUrl.protocol)) {
+        throw new Error("Unsupported URL protocol");
+      }
+    } catch {
+      setError("Please enter a valid online spreadsheet link.");
+      return;
+    }
     if (!screenshot) {
       setError("Please upload a screenshot.");
       return;
@@ -81,6 +91,7 @@ const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
       formData.append("keywords", JSON.stringify(cleanKeywords));
       formData.append("rankingNo", rankingNo);
       formData.append("checkDate", checkDate);
+      formData.append("sheetUrl", sheetUrl.trim());
       if (remarks) formData.append("remarks", remarks);
       if (clientContactNumber) formData.append("clientContactNumber", clientContactNumber);
       formData.append("screenshot", screenshot);
@@ -249,6 +260,23 @@ const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <FileText size={12} />
+                Online Excel Sheet Link
+                <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="url"
+                value={sheetUrl}
+                onChange={(e) => setSheetUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition placeholder-slate-400"
+                required
+              />
+              <p className="mt-1 text-xs text-slate-400">Paste a shareable link to the online Excel sheet.</p>
             </div>
 
             {/* Screenshot upload */}

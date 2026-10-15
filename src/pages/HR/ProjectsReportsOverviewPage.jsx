@@ -970,6 +970,16 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
                                   </p>
                                 </div>
                               </div>
+                              {lr.sheetUrl && (
+                                <a
+                                  href={lr.sheetUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                                >
+                                  <ExternalLink size={14} /> Open Excel Sheet
+                                </a>
+                              )}
                             </div>
                           )}
 
@@ -1007,18 +1017,31 @@ function SeoTab({ data, search, selectedProject, setSelectedProject }) {
                                           {r.managerName || "Unknown"}
                                         </td>
                                         <td className="px-4 py-3">
-                                          {r.screenshotUrl ? (
-                                            <a
-                                              href={r.screenshotUrl}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-xs font-semibold transition-colors"
-                                            >
-                                              <ExternalLink size={13} /> View File
-                                            </a>
-                                          ) : (
-                                            <span className="text-slate-400 text-xs">—</span>
-                                          )}
+                                          <div className="flex flex-col items-start gap-1">
+                                            {r.screenshotUrl && (
+                                              <a
+                                                href={r.screenshotUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-xs font-semibold transition-colors"
+                                              >
+                                                <ExternalLink size={13} /> View Screenshot
+                                              </a>
+                                            )}
+                                            {r.sheetUrl && (
+                                              <a
+                                                href={r.sheetUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 text-xs font-semibold transition-colors"
+                                              >
+                                                <ExternalLink size={13} /> Open Excel Sheet
+                                              </a>
+                                            )}
+                                            {!r.screenshotUrl && !r.sheetUrl && (
+                                              <span className="text-slate-400 text-xs">—</span>
+                                            )}
+                                          </div>
                                         </td>
                                       </tr>
                                     ))

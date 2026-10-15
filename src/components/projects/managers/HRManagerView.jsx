@@ -852,6 +852,11 @@ const HRManagerView = ({ projectId }) => {
                             {report.remarks && (
                               <p className="text-xs text-slate-500 italic mt-2">"{report.remarks}"</p>
                             )}
+                            {report.sheetUrl && (
+                              <a href={report.sheetUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800">
+                                <LinkIcon size={14} /> Open Excel Sheet
+                              </a>
+                            )}
                           </div>
                           {report.screenshotUrl && (
                             <a href={report.screenshotUrl} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors w-fit bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">

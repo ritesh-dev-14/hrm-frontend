@@ -410,6 +410,16 @@ const DailyDepartmentReportPage = () => {
                               View Screenshot
                             </a>
                           )}
+                          {project.report.sheetUrl && (
+                            <a
+                              href={project.report.sheetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-center mt-2 bg-green-50 text-green-700 py-2 rounded-md hover:bg-green-100 transition-colors"
+                            >
+                              Open Excel Sheet
+                            </a>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-gray-400 italic mt-4">
