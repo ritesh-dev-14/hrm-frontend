@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { BarChart2, CheckCircle2, ClipboardList, Eye, X, FolderOpen, Filter, Clock3 } from "lucide-react";
+import { BarChart2, CheckCircle2, ClipboardList, Eye, X, FolderOpen, Filter, Clock3, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ProfessionalLoader from "../../components/ProfessionalLoader";
@@ -27,13 +27,52 @@ const finalEaTaskStatuses = new Set(["VERIFIED", "COMPLETED"]);
 const today = getLocalDateString();
 
 const pendingCategories = [
-  { id: "ea", label: "Pending Tasks by EA/Coordinator", icon: ClipboardList, color: "indigo" },
-  { id: "metaAds", label: "Pending Meta Ads", icon: BarChart2, color: "orange" },
-  { id: "seo", label: "Pending SEO", icon: BarChart2, color: "emerald" },
-  { id: "socialMedia", label: "Pending Social Media", icon: BarChart2, color: "pink" },
-  { id: "webDevelopment", label: "Pending Web Development", icon: BarChart2, color: "sky" },
-  { id: "uploads", label: "Pending Uploads", icon: FolderOpen, color: "purple" },
+  { id: "ea", label: "Tasks by EA", fullLabel: "Pending Tasks by EA/Coordinator", icon: ClipboardList, color: "indigo" },
+  { id: "metaAds", label: "Meta Ads", fullLabel: "Pending Meta Ads", icon: BarChart2, color: "orange" },
+  { id: "seo", label: "SEO", fullLabel: "Pending SEO", icon: BarChart2, color: "emerald" },
+  { id: "socialMedia", label: "Social Media", fullLabel: "Pending Social Media", icon: BarChart2, color: "pink" },
+  { id: "webDevelopment", label: "Web Dev", fullLabel: "Pending Web Development", icon: BarChart2, color: "sky" },
+  { id: "voiceReports", label: "Weekly Voice", fullLabel: "Pending Weekly Reports", icon: Mic, color: "blue" },
+  { id: "uploads", label: "Uploads", fullLabel: "Pending Uploads", icon: FolderOpen, color: "purple" },
 ];
+
+const categoryStyles = {
+  indigo: {
+    iconBg: "bg-indigo-100 text-indigo-600",
+    activeCard: "border-indigo-500 bg-indigo-50/70 ring-2 ring-indigo-500/20 shadow-md",
+    badge: "bg-indigo-100 text-indigo-700 font-bold",
+  },
+  orange: {
+    iconBg: "bg-orange-100 text-orange-600",
+    activeCard: "border-orange-500 bg-orange-50/70 ring-2 ring-orange-500/20 shadow-md",
+    badge: "bg-orange-100 text-orange-800 font-bold",
+  },
+  emerald: {
+    iconBg: "bg-emerald-100 text-emerald-600",
+    activeCard: "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 shadow-md",
+    badge: "bg-emerald-100 text-emerald-800 font-bold",
+  },
+  pink: {
+    iconBg: "bg-pink-100 text-pink-600",
+    activeCard: "border-pink-500 bg-pink-50/70 ring-2 ring-pink-500/20 shadow-md",
+    badge: "bg-pink-100 text-pink-800 font-bold",
+  },
+  sky: {
+    iconBg: "bg-sky-100 text-sky-600",
+    activeCard: "border-sky-500 bg-sky-50/70 ring-2 ring-sky-500/20 shadow-md",
+    badge: "bg-sky-100 text-sky-800 font-bold",
+  },
+  blue: {
+    iconBg: "bg-blue-100 text-blue-600",
+    activeCard: "border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/20 shadow-md",
+    badge: "bg-blue-100 text-blue-800 font-bold",
+  },
+  purple: {
+    iconBg: "bg-purple-100 text-purple-600",
+    activeCard: "border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/20 shadow-md",
+    badge: "bg-purple-100 text-purple-800 font-bold",
+  },
+};
 
 const itemDate = (item) => item.completionDate || item.workDate || item.date || item.reportDate || item.dueDate;
 
@@ -275,7 +314,7 @@ export default function ManagerPendingPage() {
   if (loading) return <ProfessionalLoader text="Loading pending obligations..." />;
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
       {/* HEADER SECTION */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -350,25 +389,47 @@ export default function ManagerPendingPage() {
       )}
 
       {/* CATEGORY CARDS */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {pendingCategories.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveCategory(id)}
-            className={`flex min-h-24 flex-col items-start justify-between rounded-2xl border p-4 text-left transition ${
-              activeCategory === id
-                ? "border-indigo-500 bg-indigo-50 shadow-sm"
-                : "border-slate-200 bg-white hover:border-indigo-300"
-            }`}
-          >
-            <span className="flex items-center gap-2 text-sm font-bold text-slate-800">
-              <Icon size={16} className="text-indigo-600" />
-              {label}
-            </span>
-            <span className="text-2xl font-bold text-slate-900">{categoryItems[id].length}</span>
-          </button>
-        ))}
+      <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        {pendingCategories.map(({ id, label, icon: Icon, color }) => {
+          const count = categoryItems[id]?.length || 0;
+          const isActive = activeCategory === id;
+          const style = categoryStyles[color] || categoryStyles.indigo;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveCategory(id)}
+              className={`group flex flex-col justify-between rounded-2xl border p-3.5 text-left transition-all duration-200 cursor-pointer ${
+                isActive
+                  ? style.activeCard
+                  : "border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-sm"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-3">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${style.iconBg} transition-transform group-hover:scale-105`}>
+                  <Icon size={16} />
+                </div>
+                {count > 0 ? (
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full ${style.badge}`}>
+                    {count}
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-slate-400 px-1.5 py-0.5 rounded-md bg-slate-100">
+                    0
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-800 truncate group-hover:text-slate-900" title={label}>
+                  {label}
+                </p>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                  {count === 1 ? "1 pending" : `${count} pending`}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* QUICK PRESET FILTERS STRIP */}
@@ -541,11 +602,11 @@ export default function ManagerPendingPage() {
         ) : (
           <>
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
-                <ActiveIcon size={20} className="text-indigo-600" />
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${(categoryStyles[activeCategoryConfig.color] || categoryStyles.indigo).iconBg}`}>
+                <ActiveIcon size={20} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-900">{activeCategoryConfig.label}</h2>
+                <h2 className="text-lg font-bold text-slate-900">{activeCategoryConfig.fullLabel || activeCategoryConfig.label}</h2>
                 <p className="text-xs text-slate-500">
                   {pendingFilter === "today"
                     ? "Today's actionable work"
@@ -584,6 +645,7 @@ export default function ManagerPendingPage() {
                   const id = item.assignmentId || item.id || item.projectId || index;
                   const isEaTask = activeCategory === "ea";
                   const isMetaAds = activeCategory === "metaAds";
+                  const isVoiceReport = activeCategory === "voiceReports";
                   const submitted = itemStatus(item) === "SUBMITTED";
                   return (
                     <div
@@ -591,7 +653,14 @@ export default function ManagerPendingPage() {
                       className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
                     >
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">{isEaTask ? taskName(item) : itemTitle(item)}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-slate-900">{isEaTask ? taskName(item) : itemTitle(item)}</p>
+                          {item.department && (
+                            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                              {item.department}
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-1 text-sm text-slate-600">
                           {isEaTask ? `Assigned by: ${assignedBy(item)}` : `Client: ${item.clientName || "—"}`}
                         </p>
@@ -600,7 +669,16 @@ export default function ManagerPendingPage() {
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center justify-end gap-2">
-                        {isEaTask ? (
+                        {isVoiceReport ? (
+                          <button
+                            type="button"
+                            onClick={() => navigate("/manager/weekly-voice-report")}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-700 shadow-sm transition"
+                          >
+                            <Mic size={14} />
+                            Submit Weekly Report
+                          </button>
+                        ) : isEaTask ? (
                           <>
                             <button
                               type="button"

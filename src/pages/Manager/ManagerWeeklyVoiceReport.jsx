@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import {
@@ -20,12 +20,84 @@ import {
   AlertTriangle,
   Clock,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  BarChart2,
+  Share2,
+  Calendar,
+  CalendarDays
 } from "lucide-react";
 
+const DEPARTMENT_TABS = [
+  { id: "Marketing", label: "Meta Ads", icon: TrendingUp, activeColor: "from-orange-500 to-amber-600", activeRing: "ring-orange-400" },
+  { id: "SEO", label: "SEO", icon: BarChart2, activeColor: "from-emerald-500 to-teal-600", activeRing: "ring-emerald-400" },
+  { id: "Social Media", label: "Social Media", icon: Share2, activeColor: "from-pink-500 to-rose-600", activeRing: "ring-pink-400" },
+  { id: "ALL", label: "All Projects", icon: Briefcase, activeColor: "from-blue-600 to-indigo-600", activeRing: "ring-blue-400" },
+];
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const getDepartmentCategory = (client) => {
+  const deptName = (client?.department?.name || client?.department || "").toLowerCase().trim();
+  if (deptName.includes("seo")) return "SEO";
+  if (deptName.includes("social") || deptName.includes("smm")) return "Social Media";
+  return "Marketing"; // Meta Ads / Marketing
+};
+
+const getMonthWeeks = (year, monthIndex) => {
+  const startOfYear = new Date(year, 0, 1);
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+  const getWeekNum = (day) => {
+    const date = new Date(year, monthIndex, day);
+    const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+    return Math.max(1, Math.ceil(days / 7));
+  };
+
+  const chunks = [
+    { weekIndex: 0, label: "Week 1", startDay: 1, endDay: 7 },
+    { weekIndex: 1, label: "Week 2", startDay: 8, endDay: 14 },
+    { weekIndex: 2, label: "Week 3", startDay: 15, endDay: 21 },
+    { weekIndex: 3, label: "Week 4", startDay: 22, endDay: 28 },
+  ];
+  if (daysInMonth > 28) {
+    chunks.push({ weekIndex: 4, label: "Week 5", startDay: 29, endDay: daysInMonth });
+  }
+
+  const now = new Date();
+  const isCurrentMonth = now.getFullYear() === year && now.getMonth() === monthIndex;
+  const currentDay = now.getDate();
+
+  return chunks.map((c) => {
+    const sampleDay = Math.min(c.startDay + 3, daysInMonth);
+    const weekNumber = getWeekNum(sampleDay);
+    const isCurrent = isCurrentMonth && currentDay >= c.startDay && currentDay <= c.endDay;
+    return {
+      ...c,
+      weekNumber,
+      isCurrent,
+      dateRange: `${c.startDay} - ${c.endDay} ${MONTH_NAMES[monthIndex].slice(0, 3)}`,
+    };
+  });
+};
+
 export default function ManagerWeeklyVoiceReport() {
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(() => {
+    const weeks = getMonthWeeks(now.getFullYear(), now.getMonth());
+    const currIdx = weeks.findIndex((w) => w.isCurrent);
+    return currIdx !== -1 ? currIdx : 0;
+  });
+
   const [activeClients, setActiveClients] = useState([]);
+  const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDeptTab, setSelectedDeptTab] = useState("Marketing");
 
   // Per-client submission mode: { [clientId]: 'VOICE' | 'SCREENSHOTS' | 'UNABLE_TO_SUBMIT' }
   const [clientModes, setClientModes] = useState({});
@@ -38,12 +110,6 @@ export default function ManagerWeeklyVoiceReport() {
 
   // Reason text per client for inability to submit: { [clientId]: string }
   const [clientReasons, setClientReasons] = useState({});
-
-  // Track which clients have been submitted: Set of clientIds
-  const [submittedClients, setSubmittedClients] = useState(new Set());
-
-  // Track submission details for completed clients: { [clientId]: { reportId, reportType, status, reason, audioUrl, screenshots, qaStatus, qaFeedback, createdAt } }
-  const [submittedDetails, setSubmittedDetails] = useState({});
 
   // Track which clients are currently in editing/updating mode
   const [editingClients, setEditingClients] = useState({});
@@ -59,87 +125,92 @@ export default function ManagerWeeklyVoiceReport() {
     clientTitle: ""
   });
 
-  const getWeekAndYear = () => {
-    const now = new Date();
-    const startDate = new Date(now.getFullYear(), 0, 1);
-    const days = Math.floor((now - startDate) / (24 * 60 * 60 * 1000));
-    const weekNumber = Math.ceil(days / 7);
-    const year = now.getFullYear();
-    return { weekNumber, year };
-  };
+  // Calculate weeks for current selected month
+  const monthWeeks = useMemo(() => {
+    return getMonthWeeks(selectedYear, selectedMonth);
+  }, [selectedYear, selectedMonth]);
+
+  // Ensure selectedWeekIndex is within valid range when month changes
+  useEffect(() => {
+    if (selectedWeekIndex >= monthWeeks.length) {
+      setSelectedWeekIndex(0);
+    }
+  }, [monthWeeks.length, selectedWeekIndex]);
+
+  const activeWeek = monthWeeks[selectedWeekIndex] || monthWeeks[0] || { weekNumber: 1, label: "Week 1", dateRange: "" };
 
   useEffect(() => {
     fetchActiveClientsAndSubmissions();
-  }, []);
+  }, [selectedYear]);
 
   const fetchActiveClientsAndSubmissions = async () => {
     try {
       setLoading(true);
-      const { weekNumber, year } = getWeekAndYear();
-
       const [clientsRes, reportsRes] = await Promise.all([
         API.get("/api/weekly-voice-reports/active-clients"),
         API.get("/api/weekly-voice-reports/my-reports", {
-          params: { weekNumber, year }
+          params: { year: selectedYear }
         }).catch(() => ({ data: { data: [] } }))
       ]);
 
       const clients = clientsRes.data?.data || [];
       setActiveClients(clients);
-
-      // Parse already submitted reports for this week
-      const submittedSet = new Set();
-      const detailsMap = {};
-
-      const myReports = reportsRes.data?.data || [];
-      // Backend returns reports sorted by createdAt desc (newest first)
-      myReports.forEach((report) => {
-        const clientList = Array.isArray(report.clients)
-          ? report.clients
-          : typeof report.clients === "string"
-          ? JSON.parse(report.clients)
-          : [];
-
-        clientList.forEach((c) => {
-          if (c?.id && !detailsMap[c.id]) {
-            submittedSet.add(c.id);
-            detailsMap[c.id] = {
-              reportId: report.id,
-              reportType:
-                report.reportType ||
-                (report.status === "Unable to Submit"
-                  ? "UNABLE_TO_SUBMIT"
-                  : report.audioUrl
-                  ? "VOICE"
-                  : report.screenshots?.length > 0
-                  ? "SCREENSHOTS"
-                  : "VOICE"),
-              audioUrl: report.audioUrl,
-              screenshots: report.screenshots || [],
-              status: report.status,
-              reason:
-                c.reason ||
-                (report.reportType === "UNABLE_TO_SUBMIT" || report.status === "Unable to Submit"
-                  ? report.status
-                  : null),
-              qaStatus: report.qaStatus || "PENDING",
-              qaFeedback: report.qaFeedback || null,
-              createdAt: report.createdAt,
-              updatedAt: report.updatedAt
-            };
-          }
-        });
-      });
-
-      setSubmittedClients(submittedSet);
-      setSubmittedDetails(detailsMap);
+      setAllReports(reportsRes.data?.data || []);
     } catch (error) {
-      toast.error("Failed to load active clients");
+      toast.error("Failed to load active clients and reports");
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Map allReports by [weekNumber][clientId]
+  const reportsByWeek = useMemo(() => {
+    const map = {};
+    allReports.forEach((report) => {
+      const w = report.weekNumber;
+      if (!map[w]) map[w] = {};
+      const clientList = Array.isArray(report.clients)
+        ? report.clients
+        : typeof report.clients === "string"
+        ? JSON.parse(report.clients)
+        : [];
+
+      clientList.forEach((c) => {
+        if (c?.id && !map[w][c.id]) {
+          map[w][c.id] = {
+            reportId: report.id,
+            reportType:
+              report.reportType ||
+              (report.status === "Unable to Submit"
+                ? "UNABLE_TO_SUBMIT"
+                : report.audioUrl
+                ? "VOICE"
+                : report.screenshots?.length > 0
+                ? "SCREENSHOTS"
+                : "VOICE"),
+            audioUrl: report.audioUrl,
+            screenshots: report.screenshots || [],
+            status: report.status,
+            reason:
+              c.reason ||
+              (report.reportType === "UNABLE_TO_SUBMIT" || report.status === "Unable to Submit"
+                ? report.status
+                : null),
+            qaStatus: report.qaStatus || "PENDING",
+            qaFeedback: report.qaFeedback || null,
+            createdAt: report.createdAt,
+            updatedAt: report.updatedAt
+          };
+        }
+      });
+    });
+    return map;
+  }, [allReports]);
+
+  // Submitted details for the selected active week
+  const submittedDetails = reportsByWeek[activeWeek.weekNumber] || {};
+  const submittedClients = useMemo(() => new Set(Object.keys(submittedDetails)), [submittedDetails]);
 
   const handleModeChange = (clientId, mode) => {
     setClientModes((prev) => ({ ...prev, [clientId]: mode }));
@@ -203,8 +274,10 @@ export default function ManagerWeeklyVoiceReport() {
   // Submit / Re-Submit Single Client Report
   const handleSubmitSingle = async (client) => {
     const mode = clientModes[client.id] || "VOICE";
-    const { weekNumber, year } = getWeekAndYear();
-    const department = "Marketing"; // Default fallback
+    const weekNumber = activeWeek.weekNumber;
+    const year = selectedYear;
+    const deptCategory = getDepartmentCategory(client);
+    const department = client.department?.name || deptCategory;
 
     const formData = new FormData();
     formData.append("department", department);
@@ -266,24 +339,12 @@ export default function ManagerWeeklyVoiceReport() {
       const reportData = res.data?.data;
       const isRevision = submittedDetails[client.id]?.qaStatus === "REJECTED";
 
-      setSubmittedClients((prev) => new Set([...prev, client.id]));
-      setSubmittedDetails((prev) => ({
-        ...prev,
-        [client.id]: {
-          reportId: reportData?.id,
-          reportType: mode,
-          audioUrl: reportData?.audioUrl,
-          screenshots: reportData?.screenshots || [],
-          status:
-            reportData?.status ||
-            (mode === "UNABLE_TO_SUBMIT" ? "Unable to Submit" : "Submitted"),
-          reason: mode === "UNABLE_TO_SUBMIT" ? clientReasons[client.id]?.trim() : null,
-          qaStatus: "PENDING",
-          qaFeedback: null,
-          createdAt: reportData?.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      }));
+      if (reportData) {
+        setAllReports((prev) => {
+          const filtered = prev.filter((r) => r.id !== reportData.id);
+          return [reportData, ...filtered];
+        });
+      }
 
       // Exit editing mode
       setEditingClients((prev) => ({ ...prev, [client.id]: false }));
@@ -304,14 +365,14 @@ export default function ManagerWeeklyVoiceReport() {
         isRevision
           ? `Revision re-submitted for ${
               client.projectName || client.clientName
-            }! Quality Control (QA) will review it.`
+            } (${activeWeek.label})! Quality Control (QA) will review it.`
           : mode === "UNABLE_TO_SUBMIT"
           ? `Reason recorded for ${
               client.projectName || client.clientName
-            }. Sent to Quality Control (QA).`
+            } (${activeWeek.label}). Sent to Quality Control (QA).`
           : `${mode === "VOICE" ? "Voice recording" : "Screenshots"} submitted for ${
               client.projectName || client.clientName
-            }!`
+            } (${activeWeek.label})!`
       );
     } catch (error) {
       toast.error(
@@ -352,25 +413,61 @@ export default function ManagerWeeklyVoiceReport() {
     }));
   };
 
-  // Only consider all submitted if every active client has a non-rejected submission
-  const allSubmitted =
-    activeClients.length > 0 &&
-    activeClients.every((c) => {
+  const getDeptStats = (deptId) => {
+    const clients = deptId === "ALL"
+      ? activeClients
+      : activeClients.filter((c) => getDepartmentCategory(c) === deptId);
+    const completed = clients.filter((c) => {
+      const details = submittedDetails[c.id];
+      return details && details.qaStatus !== "REJECTED";
+    }).length;
+    const revision = clients.filter((c) => {
+      return submittedDetails[c.id]?.qaStatus === "REJECTED";
+    }).length;
+    return { total: clients.length, completed, revision };
+  };
+
+  const getWeekStats = (weekNum) => {
+    const weekMap = reportsByWeek[weekNum] || {};
+    const completed = activeClients.filter((c) => {
+      const details = weekMap[c.id];
+      return details && details.qaStatus !== "REJECTED";
+    }).length;
+    const revision = activeClients.filter((c) => {
+      return weekMap[c.id]?.qaStatus === "REJECTED";
+    }).length;
+    return {
+      total: activeClients.length,
+      completed,
+      revision,
+      isAllCompleted: activeClients.length > 0 && completed === activeClients.length,
+    };
+  };
+
+  const handleJumpToCurrentWeek = () => {
+    const today = new Date();
+    setSelectedYear(today.getFullYear());
+    setSelectedMonth(today.getMonth());
+    const weeks = getMonthWeeks(today.getFullYear(), today.getMonth());
+    const idx = weeks.findIndex((w) => w.isCurrent);
+    setSelectedWeekIndex(idx !== -1 ? idx : 0);
+  };
+
+  const filteredClients = useMemo(() => {
+    if (selectedDeptTab === "ALL") return activeClients;
+    return activeClients.filter((c) => getDepartmentCategory(c) === selectedDeptTab);
+  }, [activeClients, selectedDeptTab]);
+
+  const currentTabStats = getDeptStats(selectedDeptTab);
+  const allSubmittedCurrentTab =
+    filteredClients.length > 0 &&
+    filteredClients.every((c) => {
       const details = submittedDetails[c.id];
       return details && details.qaStatus !== "REJECTED";
     });
 
-  const completedCount = activeClients.filter((c) => {
-    const details = submittedDetails[c.id];
-    return details && details.qaStatus !== "REJECTED";
-  }).length;
-
-  const revisionCount = activeClients.filter((c) => {
-    return submittedDetails[c.id]?.qaStatus === "REJECTED";
-  }).length;
-
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6 animate-fade-in">
       {/* Header Section */}
       <div className="bg-[#0B1120] rounded-3xl p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[80px] opacity-40 pointer-events-none"></div>
@@ -379,14 +476,14 @@ export default function ManagerWeeklyVoiceReport() {
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-blue-500/20 text-blue-300 text-xs font-bold px-3 py-1 rounded-full border border-blue-400/30 flex items-center gap-1.5">
-              <Mic className="w-3.5 h-3.5" /> Voice, Screenshots, or Reason
+              <Mic className="w-3.5 h-3.5" /> 1 Report Per Week (Voice, Screenshots, or Reason)
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
             Weekly Client Reports
           </h1>
           <p className="text-blue-100/80 text-sm md:text-base max-w-2xl leading-relaxed">
-            Submit your weekly client update by uploading a voice recording, conversation screenshots, or provide a reason if unable to submit.
+            Track and submit weekly voice notes, conversation screenshots, or reasons once a week for all your projects across Meta Ads, SEO, and Social Media.
           </p>
         </div>
 
@@ -395,58 +492,248 @@ export default function ManagerWeeklyVoiceReport() {
         </div>
       </div>
 
-      {allSubmitted ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-100 shadow-xl m-6 animate-fade-in">
-          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle className="w-12 h-12 text-green-500 drop-shadow-sm" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">All Client Reports Submitted!</h2>
-          <p className="text-gray-500 text-base max-w-md mb-6">
-            Thank you for completing this week's reports for all assigned clients.
-          </p>
-          <div className="flex items-center gap-2 text-xs font-bold text-green-700 bg-green-100/60 px-4 py-2 rounded-xl border border-green-200">
-            <CheckCircle className="w-4 h-4" /> All {activeClients.length} clients are up to date
+      {/* ─── 1. MONTH & YEAR SELECTOR ────────────────────────────────── */}
+      <div className="bg-white p-3.5 md:p-4 rounded-3xl border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col lg:flex-row items-center justify-between gap-3">
+        {/* Month Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
+          {MONTH_NAMES.map((monthName, idx) => {
+            const isSelected = selectedMonth === idx;
+            const isCurrentMonth = now.getFullYear() === selectedYear && now.getMonth() === idx;
+            return (
+              <button
+                key={monthName}
+                type="button"
+                onClick={() => setSelectedMonth(idx)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  isSelected
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : isCurrentMonth
+                    ? "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                {monthName.slice(0, 3)}
+                {isCurrentMonth && !isSelected && (
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 ml-1.5 align-middle" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Year Controls & Jump to Current Week */}
+        <div className="flex items-center gap-2 shrink-0 w-full lg:w-auto justify-end">
+          <button
+            type="button"
+            onClick={handleJumpToCurrentWeek}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition cursor-pointer"
+          >
+            <Calendar size={13} />
+            Current Week
+          </button>
+
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => setSelectedYear((y) => y - 1)}
+              className="p-1 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer"
+              title="Previous Year"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs font-bold px-2 text-slate-800">{selectedYear}</span>
+            <button
+              type="button"
+              onClick={() => setSelectedYear((y) => y + 1)}
+              className="p-1 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer"
+              title="Next Year"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-gray-100">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Your Active Clients</h2>
-              <p className="text-gray-500 text-sm mt-1">
-                Choose <span className="font-semibold text-gray-700">Voice Note</span>,{" "}
-                <span className="font-semibold text-gray-700">Conversation Screenshots</span>, or{" "}
-                <span className="font-semibold text-gray-700">State Reason</span> for each client.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {revisionCount > 0 && (
-                <div className="bg-rose-50 text-rose-700 px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border border-rose-200 animate-pulse">
-                  <AlertTriangle className="w-4 h-4 text-rose-600" />
-                  {revisionCount} Needs Revision
+      </div>
+
+      {/* ─── 2. WEEKLY DIVISION TABS ─────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            {MONTH_NAMES[selectedMonth]} {selectedYear} · Select Week
+          </p>
+          <span className="text-xs font-semibold text-slate-500">
+            Active: <strong className="text-blue-600 font-extrabold">{activeWeek.label}</strong> ({activeWeek.dateRange})
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {monthWeeks.map((week, idx) => {
+            const isSelected = selectedWeekIndex === idx;
+            const stats = getWeekStats(week.weekNumber);
+            return (
+              <button
+                key={week.weekNumber}
+                type="button"
+                onClick={() => setSelectedWeekIndex(idx)}
+                className={`group flex flex-col justify-between p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? "bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg ring-2 ring-blue-500/30 scale-[1.01]"
+                    : "bg-white border-slate-200/90 hover:border-blue-300 hover:shadow-sm text-slate-800"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-2">
+                  <span className={`text-xs font-bold tracking-wide uppercase ${isSelected ? "text-blue-100" : "text-slate-500"}`}>
+                    {week.label}
+                  </span>
+                  {week.isCurrent && (
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-blue-100 text-blue-700 animate-pulse"
+                    }`}>
+                      Current
+                    </span>
+                  )}
                 </div>
-              )}
-              <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
-                <Briefcase className="w-4 h-4" />
-                {completedCount} / {activeClients.length} Completed
+
+                <div className="my-1">
+                  <p className={`text-sm md:text-base font-extrabold ${isSelected ? "text-white" : "text-slate-900"}`}>
+                    {week.dateRange}
+                  </p>
+                </div>
+
+                <div className="mt-2 pt-2 border-t border-current/10 flex items-center justify-between">
+                  <span className={`text-xs font-semibold ${isSelected ? "text-blue-100" : "text-slate-500"}`}>
+                    {stats.isAllCompleted
+                      ? "All Done"
+                      : `${stats.completed}/${stats.total} Submitted`}
+                  </span>
+                  {stats.isAllCompleted ? (
+                    <CheckCircle size={15} className={isSelected ? "text-emerald-300" : "text-emerald-500"} />
+                  ) : stats.revision > 0 ? (
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" title={`${stats.revision} needs revision`} />
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── 3. DEPARTMENT TABS STRIP ─────────────────────────────────── */}
+      <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {DEPARTMENT_TABS.map((tab) => {
+            const stats = getDeptStats(tab.id);
+            const TabIcon = tab.icon;
+            const isActive = selectedDeptTab === tab.id;
+            const isComplete = stats.total > 0 && stats.completed === stats.total;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedDeptTab(tab.id)}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? `bg-gradient-to-r ${tab.activeColor} text-white shadow-md ring-2 ${tab.activeRing}/30`
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-200/60"
+                }`}
+              >
+                <TabIcon className="w-4 h-4 shrink-0" />
+                <span>{tab.label}</span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full font-extrabold ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : isComplete
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-gray-200/80 text-gray-700"
+                  }`}
+                >
+                  {stats.completed}/{stats.total}
+                </span>
+                {stats.revision > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" title={`${stats.revision} needs revision`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="text-xs text-gray-500 font-semibold px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100 hidden sm:flex items-center gap-1.5">
+          <span>{activeWeek.label} Active:</span>
+          <strong className="text-gray-800">{DEPARTMENT_TABS.find((t) => t.id === selectedDeptTab)?.label}</strong>
+        </div>
+      </div>
+
+      {/* ─── 4. CLIENT CARDS SECTION ─────────────────────────────────── */}
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-gray-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {selectedDeptTab === "ALL" ? "All Active Clients" : `${DEPARTMENT_TABS.find((t) => t.id === selectedDeptTab)?.label} Clients`}
+              </h2>
+              <span className="text-sm font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+                {activeWeek.label} · {activeWeek.dateRange}
+              </span>
+            </div>
+            <p className="text-gray-500 text-sm mt-1">
+              Submit your 1 weekly update (<span className="font-semibold text-gray-700">Voice Note</span>,{" "}
+              <span className="font-semibold text-gray-700">Screenshots</span>, or{" "}
+              <span className="font-semibold text-gray-700">Reason</span>) for {activeWeek.label}.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {currentTabStats.revision > 0 && (
+              <div className="bg-rose-50 text-rose-700 px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border border-rose-200 animate-pulse">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                {currentTabStats.revision} Needs Revision
               </div>
+            )}
+            <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+              <Briefcase className="w-4 h-4" />
+              {currentTabStats.completed} / {filteredClients.length} Completed for {activeWeek.label}
             </div>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-72 bg-gray-50 rounded-2xl animate-pulse"></div>
-              ))}
+        {allSubmittedCurrentTab && filteredClients.length > 0 && (
+          <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-emerald-900">
+                  All {selectedDeptTab === "ALL" ? "Client" : DEPARTMENT_TABS.find((t) => t.id === selectedDeptTab)?.label} Reports Submitted for {activeWeek.label}!
+                </p>
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  Great job! All {filteredClients.length} clients in this department are completed for {activeWeek.label} ({activeWeek.dateRange}).
+                </p>
+              </div>
             </div>
-          ) : activeClients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <CheckCircle className="w-16 h-16 text-gray-200 mb-4" />
-              <p className="text-lg font-medium">No active clients assigned to you right now.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {activeClients.map((client) => {
+            <span className="text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg bg-emerald-200/80 text-emerald-900">
+              100% Complete
+            </span>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-72 bg-gray-50 rounded-2xl animate-pulse"></div>
+            ))}
+          </div>
+        ) : filteredClients.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+            <CheckCircle className="w-16 h-16 text-gray-200 mb-4" />
+            <p className="text-lg font-medium">
+              No active {selectedDeptTab === "ALL" ? "" : DEPARTMENT_TABS.find((t) => t.id === selectedDeptTab)?.label} clients assigned to you right now.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredClients.map((client) => {
                 const isSubmitted = submittedClients.has(client.id);
                 const submittedInfo = submittedDetails[client.id];
                 const needsRevision = submittedInfo?.qaStatus === "REJECTED";
@@ -495,9 +782,22 @@ export default function ManagerWeeklyVoiceReport() {
                       }`}
                     >
                       <div className="truncate pr-2">
-                        <h3 className="font-bold text-gray-800 truncate text-base">
-                          {client.projectName || client.clientName}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-gray-800 truncate text-base">
+                            {client.projectName || client.clientName}
+                          </h3>
+                          <span
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full tracking-wider uppercase shrink-0 ${
+                              getDepartmentCategory(client) === "SEO"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : getDepartmentCategory(client) === "Social Media"
+                                ? "bg-pink-100 text-pink-800 border border-pink-200"
+                                : "bg-orange-100 text-orange-800 border border-orange-200"
+                            }`}
+                          >
+                            {getDepartmentCategory(client) === "Marketing" ? "Meta Ads" : getDepartmentCategory(client)}
+                          </span>
+                        </div>
                         <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mt-0.5">
                           {client.status || "Active"}
                         </p>
@@ -1069,7 +1369,6 @@ export default function ManagerWeeklyVoiceReport() {
             </div>
           )}
         </div>
-      )}
 
       {/* Lightbox Modal for Screenshots */}
       {lightbox.isOpen && (

@@ -140,6 +140,7 @@ export default function AdminWeeklyVoiceReports() {
           <option value="">All Departments</option>
           <option value="Marketing">Marketing (Meta Ads)</option>
           <option value="SEO">SEO</option>
+          <option value="Social Media">Social Media</option>
         </select>
 
         <select

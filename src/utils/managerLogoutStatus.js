@@ -41,6 +41,9 @@ export const getManagerPendingCategories = (status = {}) => ({
     status.pendingWeb,
     status.webDevelopmentProjects,
   ),
+  voiceReports: firstArray(
+    status.pendingWeeklyVoiceReports,
+  ),
 });
 
 export const getManagerAssignedTasks = async (managerId) => {
@@ -142,6 +145,7 @@ export const refreshManagerLogoutStatus = async () => {
     status.pendingSeo = categories.seo;
     status.pendingSocialMedia = categories.socialMedia;
     status.pendingWebDevelopment = categories.webDevelopment;
+    status.pendingWeeklyVoiceReports = categories.voiceReports;
 
     status.canLogout = status.canLogout
       && Object.values(getManagerPendingCategories(status)).every((items) => items.length === 0)
