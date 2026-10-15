@@ -11,6 +11,18 @@ let managerStatusPromise = null;
 let managerStatusCache = null;
 let managerStatusCachedAt = 0;
 
+export const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const isMonday = (date) => {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay() === 1;
+};
+
 export const getManagerPendingCategories = (status = {}) => ({
   ea: firstArray(status.pendingEaTasks, status.assignedActions),
   metaAds: firstArray(
@@ -60,7 +72,9 @@ export const submitMarketingUnableReason = async ({ projectId, clientName, reaso
   return response?.data?.data || response?.data;
 };
 
-export const getManagerPendingSeoProjects = async (date) => {
+export const getManagerPendingSeoProjects = async (date = getLocalDateString()) => {
+  if (!isMonday(date)) return [];
+
   const [projectsResponse, reportResponse] = await Promise.all([
     API.get("/api/projects/assigned"),
     API.get("/api/daily-report", { params: { date, department: "seo" } }),
@@ -107,7 +121,7 @@ export const refreshManagerLogoutStatus = async () => {
     try {
     const [response, pendingSeo] = await Promise.all([
       API.get("/api/manager/logout-status"),
-      getManagerPendingSeoProjects(new Date().toISOString().slice(0, 10)),
+      getManagerPendingSeoProjects(getLocalDateString()),
     ]);
     const payload = response?.data?.data || {};
 

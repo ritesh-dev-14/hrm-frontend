@@ -8,6 +8,7 @@ import HrUploads from "../HR/HrUploads";
 import {
   getManagerAssignment,
   getManagerPendingCategories,
+  getLocalDateString,
   refreshManagerLogoutStatus,
   submitMarketingUnableReason,
   submitManagerTask,
@@ -23,7 +24,7 @@ const taskName = (task) => task.projectName || task.task?.projectName || task.ta
 const assignedBy = (task) => task.assignedBy?.name || task.createdBy?.name || task.task?.createdBy?.name || "EA";
 const finalStatuses = new Set(["SUBMITTED", "VERIFIED", "COMPLETED"]);
 const finalEaTaskStatuses = new Set(["VERIFIED", "COMPLETED"]);
-const today = new Date().toISOString().slice(0, 10);
+const today = getLocalDateString();
 
 const pendingCategories = [
   { id: "ea", label: "Pending Tasks by EA/Coordinator", icon: ClipboardList, color: "indigo" },
