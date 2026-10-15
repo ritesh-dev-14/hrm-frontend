@@ -58,6 +58,7 @@ export default function AssignedActionsPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
+  const [pendingFilter, setPendingFilter] = useState(""); // "", "today", "last3days", "this_week", "this_month"
 
   // Dual View Tracking Mechanism
   const [viewMode, setViewMode] = useState("PERSONAL"); // PERSONAL or DELEGATED
@@ -292,32 +293,107 @@ export default function AssignedActionsPage() {
 
   const hasMoreMessages = messages.length > visibleMessagesCount;
 
+  // Pending Status & Due Date Range Calculation Helpers
+  const pendingStats = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const startOfLast3Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 0, 0, 0, 0);
+
+    const dayOfWeek = now.getDay();
+    const distanceToMonday = (dayOfWeek + 6) % 7;
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - distanceToMonday, 0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    let todayCount = 0;
+    let last3DaysCount = 0;
+    let thisWeekCount = 0;
+    let thisMonthCount = 0;
+
+    actions.forEach((item) => {
+      if (item?.status === "COMPLETED") return;
+      const due = item?.completionDate ? new Date(item.completionDate) : null;
+      if (!due) return;
+
+      if (due >= startOfToday && due <= endOfToday) todayCount++;
+      if (due >= startOfLast3Days && due <= endOfToday) last3DaysCount++;
+      if (due >= startOfWeek && due <= endOfWeek) thisWeekCount++;
+      if (due >= startOfMonth && due <= endOfMonth) thisMonthCount++;
+    });
+
+    return {
+      today: todayCount,
+      last3days: last3DaysCount,
+      this_week: thisWeekCount,
+      this_month: thisMonthCount,
+    };
+  }, [actions]);
+
   // Processed Pipeline Matrix: Custom Filters and Tiered Sorting Configurations
   const filteredActions = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const startOfLast3Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 0, 0, 0, 0);
+
+    const dayOfWeek = now.getDay();
+    const distanceToMonday = (dayOfWeek + 6) % 7;
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - distanceToMonday, 0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
     const underlyingSelection = actions.filter((item) => {
       const title = (item?.task?.projectName || item?.task?.name || "").toLowerCase();
       const matchesSearch = title.includes(search.toLowerCase());
       const matchesTab = activeTab === "ALL" || item?.status === activeTab;
 
+      // 1. Pending quick filter check
+      let matchesPending = true;
+      if (pendingFilter) {
+        if (item?.status === "COMPLETED") {
+          return false;
+        }
+
+        const due = item?.completionDate ? new Date(item.completionDate) : null;
+        if (!due) {
+          return false;
+        }
+
+        if (pendingFilter === "today") {
+          matchesPending = due >= startOfToday && due <= endOfToday;
+        } else if (pendingFilter === "last3days") {
+          matchesPending = due >= startOfLast3Days && due <= endOfToday;
+        } else if (pendingFilter === "this_week") {
+          matchesPending = due >= startOfWeek && due <= endOfWeek;
+        } else if (pendingFilter === "this_month") {
+          matchesPending = due >= startOfMonth && due <= endOfMonth;
+        }
+      }
+
+      // 2. Custom Single Date filter check (dd-mm-yyyy)
       let matchesDate = true;
       if (dateFilter) {
         const due = item?.completionDate ? new Date(item.completionDate) : null;
         if (!due) {
           matchesDate = false;
         } else {
-          // Compare local dates
-          const filterD = new Date(dateFilter);
+          const [fYear, fMonth, fDay] = dateFilter.split("-").map(Number);
           if (
-            due.getFullYear() !== filterD.getFullYear() ||
-            due.getMonth() !== filterD.getMonth() ||
-            due.getDate() !== filterD.getDate()
+            due.getFullYear() !== fYear ||
+            due.getMonth() !== fMonth - 1 ||
+            due.getDate() !== fDay
           ) {
             matchesDate = false;
           }
         }
       }
 
-      return matchesSearch && matchesTab && matchesDate;
+      return matchesSearch && matchesTab && matchesPending && matchesDate;
     });
 
     return [...underlyingSelection].sort((a, b) => {
@@ -339,7 +415,7 @@ export default function AssignedActionsPage() {
 
       return assignedA - assignedB;
     });
-  }, [actions, search, activeTab, dateFilter]);
+  }, [actions, search, activeTab, dateFilter, pendingFilter]);
 
   const stats = useMemo(() => {
     return {
@@ -411,18 +487,56 @@ export default function AssignedActionsPage() {
             />
           </div>
 
+          {/* Quick Pending Filter Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 h-10 shadow-sm">
+            <Clock3 size={14} className="text-slate-400 shrink-0" />
+            <select
+              value={pendingFilter}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPendingFilter(val);
+                if (val) {
+                  setDateFilter("");
+                  if (activeTab === "COMPLETED") setActiveTab("ALL");
+                }
+              }}
+              aria-label="Pending quick filters"
+              className="text-xs font-medium text-slate-700 outline-none bg-transparent cursor-pointer pr-1"
+            >
+              <option value="">Pending Presets</option>
+              <option value="today">Pending Today ({pendingStats.today})</option>
+              <option value="last3days">Pending Last 3 Days ({pendingStats.last3days})</option>
+              <option value="this_week">Pending This Week ({pendingStats.this_week})</option>
+              <option value="this_month">Pending This Month ({pendingStats.this_month})</option>
+            </select>
+            {pendingFilter && (
+              <button
+                type="button"
+                onClick={() => setPendingFilter("")}
+                className="text-slate-400 hover:text-rose-500 transition ml-0.5"
+                title="Clear pending filter"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
           {/* Single Date Filter */}
-          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3 py-1.5 h-10">
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3 py-1.5 h-10 shadow-sm">
             <Filter size={14} className="text-slate-400 shrink-0" />
             <input
               type="date"
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              title="Filter by Due Date"
+              onChange={(e) => {
+                setDateFilter(e.target.value);
+                if (e.target.value) setPendingFilter("");
+              }}
+              title="Filter by Specific Due Date"
               className="text-xs text-slate-700 outline-none bg-transparent w-[110px] cursor-pointer"
             />
             {dateFilter && (
               <button
+                type="button"
                 onClick={() => setDateFilter("")}
                 className="ml-1 text-slate-400 hover:text-rose-500 transition"
                 title="Clear date filter"
@@ -523,6 +637,173 @@ export default function AssignedActionsPage() {
         </div>
       </div>
 
+      {/* QUICK PRESET FILTERS STRIP */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setPendingFilter("");
+              setDateFilter("");
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              !pendingFilter && !dateFilter
+                ? "bg-slate-900 text-white shadow-sm font-semibold"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            All Dates
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPendingFilter((prev) => (prev === "today" ? "" : "today"));
+              setDateFilter("");
+              if (activeTab === "COMPLETED") setActiveTab("ALL");
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 ${
+              pendingFilter === "today"
+                ? "bg-amber-600 text-white shadow-sm font-semibold ring-2 ring-amber-600/20"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-800"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                pendingFilter === "today" ? "bg-white" : "bg-amber-500"
+              }`}
+            />
+            <span>Pending Today</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                pendingFilter === "today"
+                  ? "bg-amber-700 text-white"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {pendingStats.today}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPendingFilter((prev) => (prev === "last3days" ? "" : "last3days"));
+              setDateFilter("");
+              if (activeTab === "COMPLETED") setActiveTab("ALL");
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 ${
+              pendingFilter === "last3days"
+                ? "bg-indigo-600 text-white shadow-sm font-semibold ring-2 ring-indigo-600/20"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-800"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                pendingFilter === "last3days" ? "bg-white" : "bg-indigo-500"
+              }`}
+            />
+            <span>Pending Last 3 Days</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                pendingFilter === "last3days"
+                  ? "bg-indigo-700 text-white"
+                  : "bg-indigo-100 text-indigo-800"
+              }`}
+            >
+              {pendingStats.last3days}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPendingFilter((prev) => (prev === "this_week" ? "" : "this_week"));
+              setDateFilter("");
+              if (activeTab === "COMPLETED") setActiveTab("ALL");
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 ${
+              pendingFilter === "this_week"
+                ? "bg-blue-600 text-white shadow-sm font-semibold ring-2 ring-blue-600/20"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-800"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                pendingFilter === "this_week" ? "bg-white" : "bg-blue-500"
+              }`}
+            />
+            <span>Pending This Week</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                pendingFilter === "this_week"
+                  ? "bg-blue-700 text-white"
+                  : "bg-blue-100 text-blue-800"
+              }`}
+            >
+              {pendingStats.this_week}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPendingFilter((prev) => (prev === "this_month" ? "" : "this_month"));
+              setDateFilter("");
+              if (activeTab === "COMPLETED") setActiveTab("ALL");
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 ${
+              pendingFilter === "this_month"
+                ? "bg-purple-600 text-white shadow-sm font-semibold ring-2 ring-purple-600/20"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-800"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                pendingFilter === "this_month" ? "bg-white" : "bg-purple-500"
+              }`}
+            />
+            <span>Pending This Month</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                pendingFilter === "this_month"
+                  ? "bg-purple-700 text-white"
+                  : "bg-purple-100 text-purple-800"
+              }`}
+            >
+              {pendingStats.this_month}
+            </span>
+          </button>
+        </div>
+
+        {/* ACTIVE FILTER STATUS / RESET */}
+        {(pendingFilter || dateFilter) && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500">
+              Filtered by:{" "}
+              <strong className="text-slate-800">
+                {pendingFilter === "today" && "Pending Today"}
+                {pendingFilter === "last3days" && "Pending Last 3 Days"}
+                {pendingFilter === "this_week" && "Pending This Week"}
+                {pendingFilter === "this_month" && "Pending This Month"}
+                {dateFilter && `Due Date: ${dateFilter}`}
+              </strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingFilter("");
+                setDateFilter("");
+              }}
+              className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-md transition"
+            >
+              <X size={12} />
+              <span>Reset</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* CORE PIPELINE ACTION MATRIX */}
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
         {loading ? (
@@ -541,6 +822,19 @@ export default function AssignedActionsPage() {
               There are no operational files matching this specific processing
               bucket.
             </p>
+            {(pendingFilter || dateFilter || search) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingFilter("");
+                  setDateFilter("");
+                  setSearch("");
+                }}
+                className="mt-4 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
