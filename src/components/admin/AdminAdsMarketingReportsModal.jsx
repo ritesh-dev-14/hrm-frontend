@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  CalendarDays,
   CheckCircle2,
+  Clock3,
   Image as ImageIcon,
   Loader2,
   Megaphone,
+  MessageSquareText,
   Mic,
   RefreshCw,
   X,
@@ -91,6 +94,11 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose }) => {
   const [submittedProjectsError, setSubmittedProjectsError] = useState("");
   const [draftSubmissionDate, setDraftSubmissionDate] = useState(getToday);
   const [submissionDate, setSubmissionDate] = useState("");
+
+  // Pending items ("Pending from your side") for the selected project
+  const [pendingItems, setPendingItems] = useState([]);
+  const [loadingPendingItems, setLoadingPendingItems] = useState(false);
+  const [pendingItemsError, setPendingItemsError] = useState("");
 
   const runningProjects = useMemo(
     () => projects.filter((project) =>
@@ -214,6 +222,30 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose }) => {
     return () => {
       isCurrentRequest = false;
     };
+  }, [selectedProject]);
+
+  // Fetch "Pending from your side" items whenever selected project changes
+  useEffect(() => {
+    if (!selectedProject) {
+      setPendingItems([]);
+      return undefined;
+    }
+    let active = true;
+    setLoadingPendingItems(true);
+    setPendingItemsError("");
+    setPendingItems([]);
+    const projectId = selectedProject.id || selectedProject._id;
+    API.get(`/api/projects/${projectId}/pending-items`)
+      .then((res) => {
+        if (active) setPendingItems(res.data?.data || []);
+      })
+      .catch((err) => {
+        if (active) setPendingItemsError(err.response?.data?.message || "Could not load pending items.");
+      })
+      .finally(() => {
+        if (active) setLoadingPendingItems(false);
+      });
+    return () => { active = false; };
   }, [selectedProject]);
 
   useEffect(() => {
@@ -476,6 +508,49 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose }) => {
                         </article>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── PENDING FROM YOUR SIDE ── */}
+              <div className="space-y-2 border-t border-slate-100 pt-4">
+                <h4 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
+                  <MessageSquareText size={15} className="text-amber-500" />
+                  Pending from your side
+                  {pendingItems.length > 0 && (
+                    <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                      {pendingItems.length}
+                    </span>
+                  )}
+                </h4>
+                {loadingPendingItems ? (
+                  <div className="flex items-center gap-2 py-4 text-xs text-slate-500">
+                    <Loader2 size={15} className="animate-spin" /> Loading pending items…
+                  </div>
+                ) : pendingItemsError ? (
+                  <p className="rounded-xl bg-rose-50 px-3 py-3 text-xs text-rose-700">{pendingItemsError}</p>
+                ) : pendingItems.length === 0 ? (
+                  <p className="rounded-xl bg-slate-50 px-3 py-4 text-xs text-slate-500">
+                    No pending items have been recorded for this project.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingItems.map((item) => (
+                      <article key={item.id} className="rounded-xl border border-amber-100 bg-amber-50/40 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                            <CalendarDays size={13} />
+                            {new Date(item.dueDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </div>
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                            <Clock3 size={12} />
+                            Added by{" "}
+                            <span className="font-bold text-slate-600">{item.createdBy?.name || "Manager"}</span>
+                          </span>
+                        </div>
+                        <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">{item.note}</p>
+                      </article>
+                    ))}
                   </div>
                 )}
               </div>

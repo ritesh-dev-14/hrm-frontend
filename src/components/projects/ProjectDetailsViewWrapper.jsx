@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
 import ProfessionalLoader from "../ProfessionalLoader";
+import ProjectPendingSection from "./ProjectPendingSection";
+import { getUserRoles } from "../../utils/userRoles";
 
 import HRManagerView from "./managers/HRManagerView";
 import SMMManagerView from "./managers/SMMManagerView";
@@ -18,17 +20,18 @@ const MARKETING_DEPT_KEYS = ["marketing", "performance marketing"];
 const ProjectDetailsWrapper = () => {
   const { id, campaignId } = useParams();
   const { user } = useAuth();
+  const userRoles = useMemo(() => getUserRoles(user), [user]);
+  const hasRole = (...allowedRoles) => allowedRoles.some((allowedRole) => userRoles.includes(allowedRole));
+  const coordinatorOnly = userRoles.includes("COORDINATOR") &&
+    !userRoles.some((role) => ["MANAGER", "HR", "ADMIN", "EA"].includes(role));
 
   const [deptName, setDeptName] = useState(null);
   const [project, setProject] = useState(null);
-  const [loadingDept, setLoadingDept] = useState(true);
+  const [loadingDept, setLoadingDept] = useState(Boolean(id) && !coordinatorOnly);
 
   useEffect(() => {
     // COORDINATOR: no department lookup needed, always HRManagerView
-    if (!id || user?.role === "COORDINATOR") {
-      setLoadingDept(false);
-      return;
-    }
+    if (!id || coordinatorOnly) return;
 
     // All other roles (HR, ADMIN, MANAGER, EA): fetch project department
     const fetchDept = async () => {
@@ -47,11 +50,18 @@ const ProjectDetailsWrapper = () => {
     };
 
     fetchDept();
-  }, [id, user]);
+  }, [id, coordinatorOnly]);
+
+  const withPendingSection = (projectView) => (
+    <>
+      {projectView}
+      <ProjectPendingSection projectId={id} />
+    </>
+  );
 
   // ── COORDINATOR → always HRManagerView ──
-  if (user?.role === "COORDINATOR") {
-    return <HRManagerView projectId={id} />;
+  if (coordinatorOnly) {
+    return withPendingSection(<HRManagerView projectId={id} />);
   }
 
   // ── Wait for department fetch (HR, ADMIN, MANAGER, EA) ──
@@ -65,43 +75,41 @@ const ProjectDetailsWrapper = () => {
 
     // Marketing department → Performance Marketing View (for ALL roles)
     if (MARKETING_DEPT_KEYS.some((key) => normalised.includes(key))) {
-      return <PerformanceMarketingManagerView projectId={id} campaignId={campaignId} initialProject={project} />;
+      return withPendingSection(<PerformanceMarketingManagerView projectId={id} campaignId={campaignId} initialProject={project} />);
     }
 
     // Web Development projects use the dedicated web development workspace for every role.
     if (WEB_DEV_DEPT_KEYS.some((key) => normalised.includes(key))) {
-      return <WebDevManagerView projectId={id} />;
+      return withPendingSection(<WebDevManagerView projectId={id} />);
     }
 
     // HR / ADMIN / EA → HRManagerView for all non-marketing projects
     if (
-      user?.role === "HR" ||
-      user?.role === "ADMIN" ||
-      user?.role === "EA"
+      hasRole("HR", "ADMIN", "EA")
     ) {
-      return <HRManagerView projectId={id} />;
+      return withPendingSection(<HRManagerView projectId={id} />);
     }
 
     // MANAGER: route by department
-    if (user?.role === "MANAGER") {
+    if (hasRole("MANAGER")) {
       // SEO department → clean credential + reports view
       if (SEO_DEPT_KEYS.some((key) => normalised.includes(key))) {
-        return (
+        return withPendingSection(
           <ProjectDetailsView
             projectId={id}
             userRole={user?.role}
             onBack={() => window.history.back()}
-          />
+          />,
         );
       }
 
       // Default: Social Media / all other departments
-      return <SMMManagerView projectId={id} initialProject={project} />;
+      return withPendingSection(<SMMManagerView projectId={id} initialProject={project} />);
     }
   }
 
   // Final fallback
-  return <HRManagerView projectId={id} />;
+  return withPendingSection(<HRManagerView projectId={id} />);
 };
 
 export default ProjectDetailsWrapper;
