@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import {
@@ -53,8 +54,8 @@ const getMonthWeeks = (year, monthIndex) => {
 
   const getWeekNum = (day) => {
     const date = new Date(year, monthIndex, day);
-    const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
-    return Math.max(1, Math.ceil(days / 7));
+    const diffDays = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+    return Math.floor(diffDays / 7) + 1;
   };
 
   const chunks = [
@@ -72,8 +73,7 @@ const getMonthWeeks = (year, monthIndex) => {
   const currentDay = now.getDate();
 
   return chunks.map((c) => {
-    const sampleDay = Math.min(c.startDay + 3, daysInMonth);
-    const weekNumber = getWeekNum(sampleDay);
+    const weekNumber = getWeekNum(c.startDay);
     const isCurrent = isCurrentMonth && currentDay >= c.startDay && currentDay <= c.endDay;
     return {
       ...c,
@@ -97,7 +97,16 @@ export default function ManagerWeeklyVoiceReport() {
   const [activeClients, setActiveClients] = useState([]);
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDeptTab, setSelectedDeptTab] = useState("Marketing");
+  const location = useLocation();
+  const [selectedDeptTab, setSelectedDeptTab] = useState(
+    () => location.state?.department || "Marketing"
+  );
+
+  useEffect(() => {
+    if (location.state?.department) {
+      setSelectedDeptTab(location.state.department);
+    }
+  }, [location.state?.department]);
 
   // Per-client submission mode: { [clientId]: 'VOICE' | 'SCREENSHOTS' | 'UNABLE_TO_SUBMIT' }
   const [clientModes, setClientModes] = useState({});

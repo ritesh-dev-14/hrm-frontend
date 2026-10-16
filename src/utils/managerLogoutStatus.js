@@ -23,28 +23,42 @@ const isMonday = (date) => {
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay() === 1;
 };
 
-export const getManagerPendingCategories = (status = {}) => ({
-  ea: firstArray(status.pendingEaTasks, status.assignedActions),
-  metaAds: firstArray(
-    status.pendingMetaAds,
-    status.pendingMarketingReports,
-    status.metaAdsProjects,
-  ),
-  seo: firstArray(status.pendingSeo, status.pendingSEO, status.seoProjects),
-  socialMedia: firstArray(
-    status.pendingSocialMedia,
-    status.pendingSocial,
-    status.socialMediaProjects,
-  ),
-  webDevelopment: firstArray(
-    status.pendingWebDevelopment,
-    status.pendingWeb,
-    status.webDevelopmentProjects,
-  ),
-  voiceReports: firstArray(
-    status.pendingWeeklyVoiceReports,
-  ),
-});
+export const getManagerPendingCategories = (status = {}) => {
+  const allVoice = firstArray(status.pendingWeeklyVoiceReports);
+  const isMatchDept = (r, keyword) => {
+    const dept = (r.department || r.departmentName || "").toLowerCase();
+    return dept.includes(keyword);
+  };
+
+  return {
+    ea: firstArray(status.pendingEaTasks, status.assignedActions),
+    metaAds: firstArray(
+      status.pendingMetaAds,
+      status.pendingMarketingReports,
+      status.metaAdsProjects,
+    ),
+    seo: firstArray(status.pendingSeo, status.pendingSEO, status.seoProjects),
+    socialMedia: firstArray(
+      status.pendingSocialMedia,
+      status.pendingSocial,
+      status.socialMediaProjects,
+    ),
+    webDevelopment: firstArray(
+      status.pendingWebDevelopment,
+      status.pendingWeb,
+      status.webDevelopmentProjects,
+    ),
+    voiceReports: allVoice,
+    voiceMetaAds: allVoice.filter(
+      (r) =>
+        isMatchDept(r, "market") ||
+        isMatchDept(r, "meta") ||
+        (!isMatchDept(r, "seo") && !isMatchDept(r, "social") && !isMatchDept(r, "smm"))
+    ),
+    voiceSeo: allVoice.filter((r) => isMatchDept(r, "seo")),
+    voiceSocialMedia: allVoice.filter((r) => isMatchDept(r, "social") || isMatchDept(r, "smm")),
+  };
+};
 
 export const getManagerAssignedTasks = async (managerId) => {
   const response = await API.get(`/api/coordinator-assignments/assigned-to/${managerId}`);
@@ -146,6 +160,9 @@ export const refreshManagerLogoutStatus = async () => {
     status.pendingSocialMedia = categories.socialMedia;
     status.pendingWebDevelopment = categories.webDevelopment;
     status.pendingWeeklyVoiceReports = categories.voiceReports;
+    status.pendingVoiceMetaAds = categories.voiceMetaAds;
+    status.pendingVoiceSeo = categories.voiceSeo;
+    status.pendingVoiceSocialMedia = categories.voiceSocialMedia;
 
     status.canLogout = status.canLogout
       && Object.values(getManagerPendingCategories(status)).every((items) => items.length === 0)
