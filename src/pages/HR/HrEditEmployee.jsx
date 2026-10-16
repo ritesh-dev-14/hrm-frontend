@@ -2,6 +2,16 @@ import { useState, useEffect } from "react";
 import { X, Save, Eye, EyeOff, ChevronDown, Check } from "lucide-react";
 import API from "../../services/api";
 import { notifySuccess, notifyError } from "../../utils/toast";
+import { getUserRoles } from "../../utils/userRoles";
+
+const ROLE_OPTIONS = [
+  { value: "EMPLOYEE", label: "Employee" },
+  { value: "MANAGER", label: "Manager" },
+  { value: "QA", label: "Quality Control (QA)" },
+  { value: "EA", label: "Executive Assistant (EA)" },
+  { value: "COORDINATOR", label: "Coordinator" },
+  { value: "HR", label: "HR" },
+];
 
 export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }) {
   const [loading, setLoading] = useState(false);
@@ -22,6 +32,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
     name: "",
     email: "",
     role: "EMPLOYEE",
+    roles: ["EMPLOYEE"],
     department: [], // Array of department names (strings)
     position: "",
     managerIds: [], // Array of manager IDs (UUID strings)
@@ -84,6 +95,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
         name: employeeData.name || "",
         email: employeeData.email || "",
         role: employeeData.role || "EMPLOYEE",
+        roles: getUserRoles(employeeData),
         department: initialDepts,
         position: employeeData.position || "",
         managerIds: initialMgrIds,
@@ -140,6 +152,20 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
     });
   };
 
+  const toggleRoleSelection = (selectedRole) => {
+    setForm((prev) => {
+      const roles = prev.roles.includes(selectedRole)
+        ? prev.roles.filter((role) => role !== selectedRole)
+        : [...prev.roles, selectedRole];
+      if (roles.length === 0) return prev;
+      return {
+        ...prev,
+        roles,
+        role: roles.includes(prev.role) ? prev.role : roles[0],
+      };
+    });
+  };
+
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     if (form.department.length === 0) {
@@ -163,6 +189,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           name: form.name.trim(),
           email: form.email.trim(),
           role: form.role,
+          roles: form.roles,
           department: form.department,
           position: form.position.trim(),
           ...(form.role === "EMPLOYEE" && { managerIds: form.managerIds }),
@@ -175,6 +202,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           name: form.name.trim(),
           email: form.email.trim(),
           role: form.role,
+          roles: form.roles,
           department: form.department,
           position: form.position.trim(),
           ...(form.role === "EMPLOYEE" && { managerIds: form.managerIds }),
@@ -211,7 +239,7 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           <div>
             <h2 className="text-base font-semibold text-slate-900">Edit Profile</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {employeeData.role} — ID: {employeeData.employeeId || employeeData.id?.slice(0, 8)}
+              {form.roles.join(" + ")} — ID: {employeeData.employeeId || employeeData.id?.slice(0, 8)}
             </p>
           </div>
           <button 
@@ -256,20 +284,36 @@ export default function HrEditEmployee({ isOpen, employeeData, onClose, onSave }
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Role</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5 cursor-pointer"
-            >
-              <option value="EMPLOYEE">Employee</option>
-              <option value="MANAGER">Manager</option>
-              <option value="QA">Quality Control (QA)</option>
-              <option value="EA">Executive Assistant (EA)</option>
-              <option value="COORDINATOR">Coordinator</option>
-              <option value="HR">HR</option>
-            </select>
+            <label className="text-xs font-medium text-slate-700">Roles</label>
+            <div className="rounded-lg border border-slate-200 p-3 space-y-2">
+              {ROLE_OPTIONS.map((option) => (
+                <label key={option.value} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.roles.includes(option.value)}
+                    onChange={() => toggleRoleSelection(option.value)}
+                    className="accent-slate-900"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            {form.roles.length > 1 && (
+              <div className="space-y-1 pt-2">
+                <label className="text-xs font-medium text-slate-700">Primary role</label>
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none text-slate-800 focus:border-slate-900 transition-all focus:ring-2 focus:ring-slate-900/5 cursor-pointer"
+                >
+                  {ROLE_OPTIONS.filter((option) => form.roles.includes(option.value)).map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500">The primary role determines the default dashboard; all selected roles grant access.</p>
+              </div>
+            )}
           </div>
 
           {/* DEPARTMENTS SELECTION ELEMENT */}

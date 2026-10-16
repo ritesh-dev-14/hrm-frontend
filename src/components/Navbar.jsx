@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
+import { getUserRoles } from "../utils/userRoles";
 import API, { API_URL } from "../services/api";
 import MainLogo from "../assets/logo.jpeg";
 import { io } from "socket.io-client";
@@ -107,6 +108,11 @@ export default function ProfessionalSidebar({ children }) {
   const [isAttendanceRestricted, setIsAttendanceRestricted] = useState(false);
 
   const { role, user, logout } = useAuth();
+  const userRoles = useMemo(() => getUserRoles(user, role), [user, role]);
+  const hasUserRole = useCallback(
+    (...allowedRoles) => allowedRoles.flat().some((allowedRole) => userRoles.includes(allowedRole)),
+    [userRoles],
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const [assignedActionsCount, setAssignedActionsCount] = useState(0);
@@ -138,7 +144,7 @@ export default function ProfessionalSidebar({ children }) {
   };
 
   useEffect(() => {
-    if (!role || ["ADMIN", "EA", "COORDINATOR"].includes(String(role).toUpperCase())) {
+    if (!role || hasUserRole("ADMIN", "EA", "COORDINATOR")) {
       setIsAttendanceRestricted(false);
       return;
     }
@@ -160,7 +166,7 @@ export default function ProfessionalSidebar({ children }) {
     checkAttendance();
     const interval = setInterval(checkAttendance, 1000);
     return () => clearInterval(interval);
-  }, [role, user]);
+  }, [role, user, userRoles, hasUserRole]);
 
   useEffect(() => {
     if (isAttendanceRestricted) {
@@ -172,7 +178,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [isAttendanceRestricted, location.pathname, navigate]);
 
   useEffect(() => {
-    if (!["EMPLOYEE", "HR"].includes(String(role || "").toUpperCase())) return undefined;
+    if (!hasUserRole("EMPLOYEE", "HR")) return undefined;
     let active = true;
     const refresh = async () => {
       const status = await refreshEmployeeLogoutStatus();
@@ -190,15 +196,15 @@ export default function ProfessionalSidebar({ children }) {
       window.removeEventListener("focus", handleActive);
       document.removeEventListener("visibilitychange", handleActive);
     };
-  }, [role]);
+  }, [role, userRoles, hasUserRole]);
 
   useEffect(() => {
-    if (!["ADMIN", "HR", "MANAGER"].includes(String(role || "").toUpperCase())) return undefined;
+    if (!hasUserRole("ADMIN", "HR", "MANAGER")) return undefined;
 
     let active = true;
     const loadMarketingReportCount = async () => {
       try {
-        if (String(role || "").toUpperCase() === "MANAGER") {
+        if (hasUserRole("MANAGER")) {
           const status = await refreshManagerLogoutStatus();
           if (active) {
             setMarketingReportsCount(status?.pendingMarketingReports?.length || 0);
@@ -228,7 +234,7 @@ export default function ProfessionalSidebar({ children }) {
 
     loadMarketingReportCount();
     const handleManagerStatus = (event) => {
-      if (active && String(role || "").toUpperCase() === "MANAGER") updateManagerPendingCount(event.detail);
+      if (active && hasUserRole("MANAGER")) updateManagerPendingCount(event.detail);
     };
     window.addEventListener("manager-logout-status", handleManagerStatus);
     const interval = setInterval(loadMarketingReportCount, 10000);
@@ -237,11 +243,11 @@ export default function ProfessionalSidebar({ children }) {
       clearInterval(interval);
       window.removeEventListener("manager-logout-status", handleManagerStatus);
     };
-  }, [role]);
+  }, [role, userRoles, hasUserRole]);
 
   const handleLogoutClick = async () => {
     // MANAGER logout guard
-    if (String(role || '').toUpperCase() === 'MANAGER') {
+    if (hasUserRole("MANAGER")) {
       const status = await refreshManagerLogoutStatus();
       if (status?.error) {
         setPendingWorkStatus(status);
@@ -257,7 +263,7 @@ export default function ProfessionalSidebar({ children }) {
     }
 
     // EMPLOYEE / HR logout guard
-    if (!["EMPLOYEE", "HR"].includes(String(role || "").toUpperCase())) {
+    if (!hasUserRole("EMPLOYEE", "HR")) {
       await logout();
       navigate('/login');
       return;
@@ -400,7 +406,7 @@ export default function ProfessionalSidebar({ children }) {
         targetPath: data.projectId ? `/project/${data.projectId}` : "/projects",
       });
 
-      if (role === "EMPLOYEE") {
+      if (hasUserRole("EMPLOYEE")) {
         await refreshEmployeeLogoutStatus();
       }
     };
@@ -429,7 +435,7 @@ export default function ProfessionalSidebar({ children }) {
       socketInstance.emit("leave-user", { userId: user.id });
       socketInstance.disconnect();
     };
-  }, [user?.id]);
+  }, [user?.id, userRoles, hasUserRole]);
 
   useEffect(() => {
     const checkUserDepartment = async () => {
@@ -455,7 +461,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [role, user]);
 
   useEffect(() => {
-    if (!["EMPLOYEE", "MANAGER", "HR", "ADMIN"].includes(role)) return;
+    if (!hasUserRole("EMPLOYEE", "MANAGER", "HR", "ADMIN")) return;
     if (!user?.id) return;
 
     const fetchAssignedActionsCount = async () => {
@@ -469,7 +475,7 @@ export default function ProfessionalSidebar({ children }) {
     fetchAssignedActionsCount();
     const interval = setInterval(fetchAssignedActionsCount, 15000);
     return () => clearInterval(interval);
-  }, [role, user?.id]);
+  }, [role, user?.id, userRoles]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -529,7 +535,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [mobileOpen]);
 
   const allowedNav = useMemo(() => {
-    const isManager = String(role || "").toUpperCase() === "MANAGER";
+    const isManager = hasUserRole("MANAGER");
 
     // All department names this user belongs to (lowercased)
     const userDepartments = Array.isArray(user?.departments) ? user.departments : [];
@@ -560,11 +566,11 @@ export default function ProfessionalSidebar({ children }) {
     const isInSocialMedia = allDepts.some((d) => d.includes("social"));
 
     return NAV_CONFIG.filter((item) => {
-      if (!item.roles.includes(role?.toUpperCase())) return false;
+      if (!item.roles.some((itemRole) => userRoles.includes(itemRole))) return false;
 
       // Handle items with a departments restriction (used for Employee role too)
       if (item.departments) {
-        if (item.id === "shoots" && role?.toUpperCase() === "EMPLOYEE") {
+        if (item.id === "shoots" && hasUserRole("EMPLOYEE")) {
           if (user?.name === "shoot1") return true;
           return allDepts.some((department) =>
             department.includes("social media") ||
@@ -593,7 +599,7 @@ export default function ProfessionalSidebar({ children }) {
       }
       return item;
     });
-  }, [role, departmentName, user]);
+  }, [role, departmentName, user, userRoles, hasUserRole]);
 
   const activeId = useMemo(() => {
     const sortedRoutes = [...allowedNav].sort((a, b) => b.path.length - a.path.length);
@@ -672,7 +678,7 @@ export default function ProfessionalSidebar({ children }) {
           {(!isCollapsed) && (
             <div className="flex flex-col overflow-hidden whitespace-nowrap animate-in fade-in duration-300">
               <p className="text-[15px] font-bold tracking-tight text-slate-100">We-Promote</p>
-              <p className="text-[10px] uppercase tracking-[0.1em] text-indigo-400 font-semibold mt-0.5">{role}</p>
+              <p className="text-[10px] uppercase tracking-[0.1em] text-indigo-400 font-semibold mt-0.5">{userRoles.join(" + ")}</p>
             </div>
           )}
         </div>
@@ -813,7 +819,7 @@ export default function ProfessionalSidebar({ children }) {
         <div className="p-4 border-t border-slate-800/40 relative z-10 bg-[#090C15]">
           <button
             onClick={handleLogoutClick}
-            disabled={["EMPLOYEE", "HR"].includes(String(role || "").toUpperCase()) && employeeLogoutStatus.loading}
+            disabled={hasUserRole("EMPLOYEE", "HR") && employeeLogoutStatus.loading}
             className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors group outline-none"
           >
             <LogOut size={18} strokeWidth={2} className="group-hover:scale-110 transition-transform" />
@@ -908,4 +914,3 @@ export default function ProfessionalSidebar({ children }) {
   );
 
 }
-

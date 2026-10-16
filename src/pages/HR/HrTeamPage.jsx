@@ -17,6 +17,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTeamData } from "./hooks/useTeamData";
 import API from "../../services/api";
 import { motion } from "framer-motion";
+import { getUserRoles } from "../../utils/userRoles";
 
 import HrAddEmployee from "./HrAddEmployee";
 import HrAddManager from "./HrAddManager";
@@ -65,7 +66,7 @@ export default function HrTeamPage() {
     let result = staff || [];
 
     if (roleFilter !== "ALL") {
-      result = result.filter((p) => p.role === roleFilter);
+      result = result.filter((person) => getUserRoles(person).includes(roleFilter));
     }
 
     const term = search.toLowerCase().trim();
@@ -73,7 +74,7 @@ export default function HrTeamPage() {
       result = result.filter(
         (p) =>
           p.name?.toLowerCase().includes(term) ||
-          p.role?.toLowerCase().includes(term) ||
+          getUserRoles(p).join(" ").toLowerCase().includes(term) ||
           (p.department?.name || "General").toLowerCase().includes(term) ||
           p.employeeId?.toLowerCase().includes(term),
       );
@@ -232,7 +233,7 @@ export default function HrTeamPage() {
                 }`}
               >
                 Managers (
-                {staff?.filter((p) => p.role === "MANAGER").length || 0})
+                {staff?.filter((p) => getUserRoles(p).includes("MANAGER")).length || 0})
               </button>
               <button
                 onClick={() => setRoleFilter("EMPLOYEE")}
@@ -243,7 +244,7 @@ export default function HrTeamPage() {
                 }`}
               >
                 Employees (
-                {staff?.filter((p) => p.role === "EMPLOYEE").length || 0})
+                {staff?.filter((p) => getUserRoles(p).includes("EMPLOYEE")).length || 0})
               </button>
               <button
                 onClick={() => setRoleFilter("QA")}
@@ -254,7 +255,7 @@ export default function HrTeamPage() {
                 }`}
               >
                 QA (
-                {staff?.filter((p) => p.role === "QA").length || 0})
+                {staff?.filter((p) => getUserRoles(p).includes("QA")).length || 0})
               </button>
             </div>
           </div>
@@ -377,7 +378,7 @@ export default function HrTeamPage() {
                           ) : (
                             <Users size={12} className="text-slate-400" />
                           )}
-                          {person.role}
+                          {getUserRoles(person).join(" + ")}
                         </span>
                       </div>
 

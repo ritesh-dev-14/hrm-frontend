@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { refreshEmployeeLogoutStatus } from "../utils/employeeLogoutStatus";
+import { getUserRoles } from "../utils/userRoles";
 
 const defaultAuthContext = {
   user: null,
   role: null,
+  roles: [],
   token: null,
   login: () => {},
   logout: async () => ({ allowed: false, error: true }),
@@ -17,12 +19,14 @@ const AuthContext = createContext(defaultAuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [roles, setRoles] = useState([]);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const clearSession = () => {
     setUser(null);
     setRole(null);
+    setRoles([]);
     setToken(null);
 
     localStorage.removeItem("user");
@@ -35,8 +39,10 @@ export const AuthProvider = ({ children }) => {
     const storedToken = localStorage.getItem("token");
 
     if (storedUser && storedToken) {
-      setUser(storedUser);
+      const normalizedUser = { ...storedUser, roles: getUserRoles(storedUser) };
+      setUser(normalizedUser);
       setRole(storedUser.role);
+      setRoles(normalizedUser.roles);
       setToken(storedToken);
     }
 
@@ -45,11 +51,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (userData, token) => {
-    setUser(userData);
+    const normalizedUser = { ...userData, roles: getUserRoles(userData) };
+    setUser(normalizedUser);
     setRole(userData.role);
+    setRoles(normalizedUser.roles);
     setToken(token);
 
-    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
     localStorage.setItem("token", token);
   };
 
@@ -79,7 +87,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, role, token, login, logout, clearSession, isLoading }}
+      value={{ user, role, roles, token, login, logout, clearSession, isLoading }}
     >
       {children}
     </AuthContext.Provider>
