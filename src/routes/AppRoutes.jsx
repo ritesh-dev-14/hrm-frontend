@@ -29,6 +29,7 @@ const ProjectsReportsOverviewPage = lazy(() => import("../pages/HR/ProjectsRepor
 const HrEmployeeProjectReport = lazy(() => import("../pages/HR/HrEmployeeProjectReport"));
 const HrEmployeeDetailedAttendance = lazy(() => import("../pages/HR/HrEmployeeDetailedAttendance"));
 const HrWhatsappMessages = lazy(() => import("../pages/HR/HrWhatsappMessages.jsx"));
+const MessagesPage = lazy(() => import("../pages/MessagesPage.jsx"));
 
 const EmployeeDetails = lazy(() => import("../pages/HR/employeeDetailsHr/EmployeeDetails"));
 const EmployeHomePage = lazy(() => import("../pages/Employee/EmployeeHomePage"));
@@ -113,6 +114,10 @@ export const AppRoutes = () => {
       {/* AUTH ROUTES */}
       {isAuthenticated && userRoles.length > 0 && (
         <>
+          <Route
+            path="/messages"
+            element={hasRole("ADMIN", "HR", "MANAGER") ? <MessagesPage /> : <Navigate to="/dashboard" replace />}
+          />
           {/* HOME */}
           <Route
             path="/dashboard"
