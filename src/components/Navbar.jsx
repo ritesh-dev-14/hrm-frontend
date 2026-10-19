@@ -27,6 +27,7 @@ import {
   Code2,
   Database, ClipboardList, AlertTriangle, Mic,
   MessageSquareText,
+  ListTodo,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -43,6 +44,7 @@ import PendingWorkGuardModal from "./PendingWorkGuardModal";
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
+  { id: "client-pending", label: "Pending from your side", icon: ListTodo, path: "/manager/client-pending", roles: ["MANAGER"] },
   { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
   { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR"] },
   { id: "reports-emp", label: "Reports", icon: FileText, path: "/reports/employee", roles: ["EMPLOYEE"] },

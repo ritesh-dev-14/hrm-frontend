@@ -47,6 +47,7 @@ const ManagerLeave = lazy(() => import("../pages/Manager/ManagerLeave"));
 const ManagerPayslips = lazy(() => import("../pages/Manager/ManagerPayslips"));
 const ManagerSettings = lazy(() => import("../pages/Manager/ManagerSettings"));
 const ManagerPendingPage = lazy(() => import("../pages/Manager/ManagerPendingPage"));
+const ManagerClientPendingPage = lazy(() => import("../pages/Manager/ManagerClientPendingPage.jsx"));
 const ManagerTaskPage = lazy(() => import("../pages/Manager/ManagerTasksPage.jsx"));
 
 // shoots
@@ -159,6 +160,10 @@ export const AppRoutes = () => {
           <Route
             path="/employee-pending"
             element={hasRole("EMPLOYEE", "HR") ? <EmployeePendingPage /> : <Navigate to="/dashboard" replace />}
+          />
+          <Route
+            path="/manager/client-pending"
+            element={hasRole("MANAGER") ? <ManagerClientPendingPage /> : <Navigate to="/dashboard" replace />}
           />
 
           <Route path="/project/:id" element={<ProjectDetailsViewWrapper />} />
