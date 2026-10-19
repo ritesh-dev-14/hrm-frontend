@@ -10,6 +10,7 @@ const Login = lazy(() => import("../auth/login"));
 const AdminHomePage = lazy(() => import("../pages/Admin/AdminHomePage"));
 const AdminCompleteDetailsPage = lazy(() => import("../pages/Admin/AdminCompleteDetailsPage"));
 const AdminWeeklyVoiceReports = lazy(() => import("../pages/Admin/AdminWeeklyVoiceReports"));
+const AdminClientConversationPage = lazy(() => import("../pages/Admin/AdminClientConversationPage"));
 
 // Shared Task Detail
 const ProjectDetailsViewWrapper = lazy(() => import("../components/projects/ProjectDetailsViewWrapper"));
@@ -291,6 +292,17 @@ export const AppRoutes = () => {
             element={
               hasRole("ADMIN", "HR", "EA") ? (
                 <AdminWeeklyVoiceReports />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/admin/client-conversation"
+            element={
+              hasRole("ADMIN") ? (
+                <AdminClientConversationPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

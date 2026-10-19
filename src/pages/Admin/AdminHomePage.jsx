@@ -34,6 +34,7 @@ import {
   Heart,
   Activity,
   MessageCircle,
+  Headphones,
 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
@@ -356,7 +357,7 @@ export default function AdminHomePage() {
         </div>
 
         {/* ── DEPARTMENT DASHBOARDS (ADS, SOCIAL MEDIA, SEO) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
           {/* Ads Dashboard Card */}
           <button
             onClick={() => setIsAdsMarketingModalOpen(true)}
@@ -421,6 +422,26 @@ export default function AdminHomePage() {
                 </h3>
                 <p className="text-emerald-100 text-xs font-medium mt-1">
                   Keyword rankings, backlinks & technical SEO audits.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/admin/client-conversation")}
+            className="group relative overflow-hidden bg-gradient-to-br from-sky-500 to-blue-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-sky-400/50"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+              <Headphones size={80} />
+            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 shadow-inner">
+                <Headphones size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-wide">Client Conversation</h3>
+                <p className="text-sky-100 text-xs font-medium mt-1">
+                  Review project voice recordings and pending client follow-ups together.
                 </p>
               </div>
             </div>
