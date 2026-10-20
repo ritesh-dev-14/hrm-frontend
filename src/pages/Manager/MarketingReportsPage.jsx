@@ -117,6 +117,8 @@ export default function MarketingReportsPage() {
     setForm({
       ...INITIAL_FORM,
       projectId: selectedProject?.id || "",
+      clientName: selectedProject?.clientName || selectedProject?.projectName || "",
+      clientContactNumber: selectedProject?.phone || "",
       date: new Date().toISOString().split("T")[0],
     });
     setShowForm(true);

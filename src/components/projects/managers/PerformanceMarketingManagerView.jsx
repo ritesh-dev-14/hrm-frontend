@@ -128,6 +128,8 @@ export default function PerformanceMarketingManagerView({
     setEditTarget(null);
     setForm({
       ...INITIAL_FORM,
+      clientName: project?.clientName || project?.projectName || "",
+      clientContactNumber: project?.phone || "",
       date: new Date().toISOString().split("T")[0],
     });
     setShowForm(true);

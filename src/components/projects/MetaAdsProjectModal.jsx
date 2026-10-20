@@ -4,7 +4,7 @@ import API from "../../services/api";
 
 const OBJECTIVES = ["LEAD", "AWARENESS", "BOTH"];
 const FUND_SOURCES = ["CLIENT", "HARSH"];
-const EMPTY_FORM = { clientName: "", monthlyBudget: "", objective: "", area: "", fundsAddedBy: "", isRunning: false, assignedToId: "", startDate: "", endDate: "", clientPriority: "" };
+const EMPTY_FORM = { clientName: "", phone: "", monthlyBudget: "", objective: "", area: "", fundsAddedBy: "", isRunning: false, assignedToId: "", startDate: "", endDate: "", clientPriority: "" };
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 disabled:bg-slate-100";
 const labelClass = "mb-1.5 block text-[11px] font-black uppercase tracking-widest text-slate-500";
 
@@ -32,6 +32,7 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
 
       setForm({
         clientName: projectToEdit.clientName || projectToEdit.projectName || "",
+        phone: projectToEdit.phone || "",
         monthlyBudget: projectToEdit.monthlyBudget || "",
         objective: projectToEdit.objective || "",
         area: projectToEdit.area || "",
@@ -83,6 +84,7 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
       const payload = {
         projectName: form.clientName.trim(),
         clientName: form.clientName.trim(),
+        phone: form.phone.trim() || (projectToEdit ? null : undefined),
         monthlyBudget: Number(form.monthlyBudget),
         objective: form.objective,
         area: form.area.trim(),
@@ -128,6 +130,7 @@ export default function MetaAdsProjectModal({ open, onClose, onProjectCreated, p
       </div>
       {success ? <div className="flex flex-col items-center px-6 py-16 text-center"><CheckCircle2 size={42} className="text-emerald-500" /><h3 className="mt-4 font-black">Project {projectToEdit ? 'Updated' : 'Created'}</h3></div> : <form onSubmit={submit} className="grid gap-4 p-6 sm:grid-cols-2">
         <label><span className={labelClass}>Client Name</span><input required value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} className={inputClass} placeholder="Enter client name" disabled={loading || loadingOptions} /></label>
+        <label><span className={labelClass}>Client Number (Optional)</span><input type="tel" autoComplete="tel" maxLength={50} value={form.phone} onChange={(event) => updateField("phone", event.target.value)} className={inputClass} placeholder="Enter client mobile number" disabled={loading || loadingOptions} /></label>
         <label><span className={labelClass}>Monthly Budget</span><input required type="number" min="0.01" step="0.01" value={form.monthlyBudget} onChange={(event) => updateField("monthlyBudget", event.target.value)} className={inputClass} placeholder="Enter monthly budget" disabled={loading || loadingOptions} /></label>
         <label><span className={labelClass}>Objective</span><select required value={form.objective} onChange={(event) => updateField("objective", event.target.value)} className={inputClass} disabled={loading || loadingOptions}><option value="">Select objective</option>{OBJECTIVES.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label><span className={labelClass}>Area</span><input required value={form.area} onChange={(event) => updateField("area", event.target.value)} className={inputClass} placeholder="Enter target area" disabled={loading || loadingOptions} /></label>
