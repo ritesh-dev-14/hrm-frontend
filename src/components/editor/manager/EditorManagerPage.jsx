@@ -654,7 +654,7 @@ const EditorManagerPage = () => {
                       className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-lg shadow-fuchsia-600/20 transition-all flex items-center gap-2"
                     >
                       {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Deploy Workspace
+                      Assign Task
                     </button>
                   </div>
                 </form>
