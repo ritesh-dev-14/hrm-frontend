@@ -92,51 +92,64 @@ export default function AdminControlTower({
   const selectedSocialProject = socialProjects.find(
     (project) => project.id === selectedSocialProjectId,
   );
-  const [selectedSheetId, setSelectedSheetId] = React.useState("");
-
-  const projectSheets = React.useMemo(() => {
-    return uploadCalendarSheets.filter(
-      (sheet) => sheet.projectId === selectedSocialProjectId
-    ).sort((a, b) => {
-      if (b.year !== a.year) return Number(b.year) - Number(a.year);
-      return Number(b.month) - Number(a.month);
-    });
-  }, [uploadCalendarSheets, selectedSocialProjectId]);
-
-  const activeSheet = React.useMemo(() => {
-    if (selectedSheetId) {
-      const found = projectSheets.find(s => s.id === selectedSheetId);
-      if (found) return found;
-    }
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
-    const currentMonthSheet = projectSheets.find(
-      (sheet) => Number(sheet.month) === currentMonth && Number(sheet.year) === currentYear
-    );
-    return currentMonthSheet || projectSheets[0] || null;
-  }, [selectedSheetId, projectSheets]);
-
-  const approvedUploads = (activeSheet?.days || []).reduce(
-    (counts, day) => {
-      if (day.uploadStatus !== "APPROVED") return counts;
-      counts.reels += (day.videoUploadLinks || []).filter((link) => String(link || "").trim()).length;
-      counts.posts += (day.contentUploadLinks || []).filter((link) => String(link || "").trim()).length;
-      return counts;
-    },
-    { reels: 0, posts: 0 },
-  );
-
   const getMonthLabel = (month, year) => {
-    const date = new Date();
-    date.setMonth(Number(month) - 1);
-    date.setFullYear(Number(year));
+    const date = new Date(Number(year), Number(month) - 1, 1);
     return date.toLocaleDateString("en-IN", {
       month: "long",
       year: "numeric",
     });
   };
-  const activeMonthLabel = activeSheet ? getMonthLabel(activeSheet.month, activeSheet.year) : "";
+  const socialProjectIds = React.useMemo(
+    () => new Set(socialProjects.map((project) => project.id)),
+    [socialProjects],
+  );
+  const monthOptions = React.useMemo(() => {
+    const options = new Map();
+    uploadCalendarSheets.forEach((sheet) => {
+      if (!socialProjectIds.has(sheet.projectId)) return;
+      const value = `${sheet.year}-${String(sheet.month).padStart(2, "0")}`;
+      options.set(value, { value, month: sheet.month, year: sheet.year });
+    });
+    return [...options.values()].sort(
+      (a, b) => Number(b.year) - Number(a.year) || Number(b.month) - Number(a.month),
+    );
+  }, [uploadCalendarSheets, socialProjectIds]);
+  const currentMonthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const [selectedSocialMonth, setSelectedSocialMonth] = React.useState(currentMonthValue);
+  const activeMonthOption = monthOptions.find((option) => option.value === selectedSocialMonth)
+    || monthOptions[0];
+  const activeMonthValue = activeMonthOption?.value || selectedSocialMonth;
+  const activeMonthLabel = activeMonthOption
+    ? getMonthLabel(activeMonthOption.month, activeMonthOption.year)
+    : "";
+  const socialProjectRows = React.useMemo(() => socialProjects.map((project) => {
+    const sheet = uploadCalendarSheets.find(
+      (item) => item.projectId === project.id
+        && `${item.year}-${String(item.month).padStart(2, "0")}` === activeMonthValue,
+    );
+    const approvedUploads = (sheet?.days || []).reduce(
+      (counts, day) => {
+        if (day.uploadStatus !== "APPROVED") return counts;
+        counts.reels += (day.videoUploadLinks || []).filter((link) => String(link || "").trim()).length;
+        counts.posts += (day.contentUploadLinks || []).filter((link) => String(link || "").trim()).length;
+        return counts;
+      },
+      { reels: 0, posts: 0 },
+    );
+
+    return {
+      project,
+      sheet,
+      plannedReels: Number(sheet?.totalReels) || 0,
+      approvedReels: approvedUploads.reels,
+      plannedPosts: Number(sheet?.totalPosts) || 0,
+      approvedPosts: approvedUploads.posts,
+    };
+  }), [socialProjects, uploadCalendarSheets, activeMonthValue]);
+  const selectedSocialSheet = uploadCalendarSheets.find(
+    (sheet) => sheet.projectId === selectedSocialProjectId
+      && `${sheet.year}-${String(sheet.month).padStart(2, "0")}` === activeMonthValue,
+  );
 
   const marketingProjects = React.useMemo(() => projects.filter((project) => {
     const departmentName = project.department?.name?.toLowerCase() || "";
@@ -415,90 +428,81 @@ export default function AdminControlTower({
             No Social Media projects are available.
           </p>
         ) : (
-          <div className="space-y-5 p-5">
-            <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
-              {socialProjects.map((project) => (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => setSelectedSocialProjectId(project.id)}
-                  aria-pressed={selectedSocialProjectId === project.id}
-                  className={`group flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition ${
-                    selectedSocialProjectId === project.id
-                      ? "border-violet-400 bg-violet-100 shadow-sm"
-                      : "border-slate-200 bg-white hover:border-violet-300 hover:shadow-sm"
-                  }`}
+          <div className="p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-slate-500">
+                {activeMonthLabel ? `Showing all projects for ${activeMonthLabel}` : "No monthly content calendars are available yet."}
+              </p>
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                Month
+                <select
+                  value={activeMonthValue}
+                  onChange={(event) => setSelectedSocialMonth(event.target.value)}
+                  disabled={monthOptions.length === 0}
+                  className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-700 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-100"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-violet-600">
-                    {project.logo ? (
-                      <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
-                    ) : (
-                      <FolderOpen size={17} />
-                    )}
-                  </div>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-bold text-slate-900">{project.projectName}</span>
-                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{project.clientName || project.department?.name}</span>
-                  </span>
-                </button>
-              ))}
+                  {monthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {getMonthLabel(option.month, option.year)}
+                    </option>
+                  ))}
+                  {monthOptions.length === 0 && <option value={currentMonthValue}>No months available</option>}
+                </select>
+              </label>
             </div>
 
-            {selectedSocialProject ? (
-              <div className="rounded-2xl border border-violet-100 bg-white p-4 md:p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <p className="text-sm font-extrabold text-slate-900">{selectedSocialProject.projectName}</p>
-                    <p className="text-xs text-slate-500">{selectedSocialProject.clientName || "Social Media Project"}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {projectSheets.length > 0 && (
-                      <select
-                        value={activeSheet?.id || ""}
-                        onChange={(e) => setSelectedSheetId(e.target.value)}
-                        className="rounded-lg border border-violet-200 bg-white px-2 py-1 text-xs font-bold text-violet-700 outline-none transition focus:border-violet-400 focus:ring-1 focus:ring-violet-100 uppercase tracking-wide"
-                      >
-                        {projectSheets.map(sheet => (
-                          <option key={sheet.id} value={sheet.id}>
-                            {getMonthLabel(sheet.month, sheet.year)}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <button
-                      onClick={() => setShowCalendarModal(true)}
-                      className="px-3 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-[11px] font-bold uppercase tracking-wide hover:bg-violet-200 transition"
-                      disabled={!activeSheet}
-                    >
-                      View Calendar
-                    </button>
-                  </div>
-                </div>
-                {activeSheet ? (
-                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    {[
-                      { label: "Planned Reels", value: Number(activeSheet.totalReels) || 0, tone: "text-violet-700 bg-violet-50 border-violet-100" },
-                      { label: "Approved Reel Uploads", value: approvedUploads.reels, tone: "text-emerald-700 bg-emerald-50 border-emerald-100" },
-                      { label: "Planned Posts", value: Number(activeSheet.totalPosts) || 0, tone: "text-indigo-700 bg-indigo-50 border-indigo-100" },
-                      { label: "Approved Post Uploads", value: approvedUploads.posts, tone: "text-emerald-700 bg-emerald-50 border-emerald-100" },
-                    ].map((stat) => (
-                      <div key={stat.label} className={`rounded-xl border p-3 ${stat.tone}`}>
-                        <p className="text-2xl font-black">{stat.value}</p>
-                        <p className="mt-1 text-[9px] font-bold uppercase tracking-wide opacity-80">{stat.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500">
-                    No content calendar is available for this project.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="rounded-xl border border-dashed border-violet-200 bg-white/70 p-4 text-center text-sm font-medium text-slate-500">
-                Select a Social Media project to view this month’s planned and approved upload counts.
-              </p>
-            )}
+            <div className="overflow-x-auto rounded-xl border border-violet-100 bg-white">
+              <table className="w-full min-w-[850px] text-left">
+                <thead className="bg-violet-50/70">
+                  <tr className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3">Project</th>
+                    <th className="px-4 py-3 text-center">Planned Reels</th>
+                    <th className="px-4 py-3 text-center">Approved Reels</th>
+                    <th className="px-4 py-3 text-center">Planned Posts</th>
+                    <th className="px-4 py-3 text-center">Approved Posts</th>
+                    <th className="px-4 py-3 text-right">Calendar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {socialProjectRows.map((row) => (
+                    <tr key={row.project.id} className="hover:bg-violet-50/30">
+                      <td className="px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-violet-600">
+                            {row.project.logo ? (
+                              <img src={row.project.logo} alt="" className="h-full w-full object-contain p-1" />
+                            ) : (
+                              <FolderOpen size={16} />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-slate-900">{row.project.projectName}</p>
+                            <p className="truncate text-[10px] text-slate-500">{row.project.clientName || row.project.department?.name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm font-extrabold text-violet-700">{row.plannedReels}</td>
+                      <td className="px-4 py-3 text-center text-sm font-extrabold text-emerald-700">{row.approvedReels}</td>
+                      <td className="px-4 py-3 text-center text-sm font-extrabold text-indigo-700">{row.plannedPosts}</td>
+                      <td className="px-4 py-3 text-center text-sm font-extrabold text-emerald-700">{row.approvedPosts}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSocialProjectId(row.project.id);
+                            setShowCalendarModal(true);
+                          }}
+                          disabled={!row.sheet}
+                          className="rounded-lg bg-violet-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-violet-700 transition hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
@@ -914,7 +918,7 @@ export default function AdminControlTower({
       )}
 
       {/* Calendar Modal */}
-      {showCalendarModal && activeSheet && (
+      {showCalendarModal && selectedSocialSheet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-5xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -946,7 +950,7 @@ export default function AdminControlTower({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {(activeSheet.days || []).map((day, idx) => (
+                      {(selectedSocialSheet.days || []).map((day, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50 transition">
                           <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
                             {new Date(day.date).toLocaleDateString()}
@@ -978,7 +982,7 @@ export default function AdminControlTower({
                           </td>
                         </tr>
                       ))}
-                      {(!activeSheet.days || activeSheet.days.length === 0) && (
+                      {(!selectedSocialSheet.days || selectedSocialSheet.days.length === 0) && (
                         <tr>
                           <td colSpan="4" className="px-4 py-8 text-center text-slate-500">
                             No planned days in this calendar yet.
