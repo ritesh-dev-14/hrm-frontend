@@ -1,10 +1,7 @@
-import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Clock, AlertTriangle, CheckCircle2, FileText, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { X, Clock, FileText } from "lucide-react";
 
 export default function ManagerTasksModal({ isOpen, onClose, title, icon: Icon, color, bg, tasks = [] }) {
-  const navigate = useNavigate();
   if (!isOpen) return null;
 
   return (
@@ -55,8 +52,7 @@ export default function ManagerTasksModal({ isOpen, onClose, title, icon: Icon, 
                 {tasks.map((task, idx) => (
                   <div
                     key={idx}
-                    className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4 group hover:border-indigo-200 transition-colors cursor-pointer"
-                    onClick={() => navigate('/projects')}
+                    className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4"
                   >
                     <div>
                       <div className="flex items-center gap-2 mb-2">
@@ -81,9 +77,6 @@ export default function ManagerTasksModal({ isOpen, onClose, title, icon: Icon, 
                       </p>
                     </div>
                     
-                    <button className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors shrink-0">
-                      <ChevronRight size={16} />
-                    </button>
                   </div>
                 ))}
               </div>

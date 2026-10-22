@@ -226,6 +226,31 @@ const ManagerHomePage = () => {
     ];
   }, [dashboard, projectsCount, workingHours]);
 
+  const getAssignmentsForStat = useCallback((title) => {
+    const allAssignments = dashboard?.employees?.flatMap(
+      (employee) => employee.assignments || [],
+    ) || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isDone = (assignment) => (
+      ["COMPLETED", "VERIFIED"].includes(assignment.status)
+      || ["COMPLETED", "VERIFIED"].includes(assignment.taskItem?.status)
+    );
+
+    if (title === "Total Tasks Assigned") return allAssignments;
+    if (title === "Tasks Completed") return allAssignments.filter(isDone);
+    if (title !== "Overdue Tasks" && title !== "Due Today") return [];
+
+    return allAssignments.filter((assignment) => {
+      if (isDone(assignment) || !assignment.taskItem?.dueDate) return false;
+      const dueDate = new Date(assignment.taskItem.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return title === "Overdue Tasks"
+        ? dueDate.getTime() < today.getTime()
+        : dueDate.getTime() === today.getTime();
+    });
+  }, [dashboard]);
+
   const handleStatCardClick = (item) => {
     if (item.title === "Total Projects") {
       navigate("/projects");
@@ -235,51 +260,13 @@ const ManagerHomePage = () => {
       return;
     }
 
-    let allAssignments = [];
-    if (dashboard?.employees) {
-      dashboard.employees.forEach((emp) => {
-        if (emp.assignments) {
-          allAssignments = [...allAssignments, ...emp.assignments];
-        }
-      });
-    }
-
-    let filtered = [];
-    if (item.title === "Total Tasks Assigned") {
-      filtered = allAssignments;
-    } else if (item.title === "Tasks Completed") {
-      filtered = allAssignments.filter(a => ['COMPLETED', 'VERIFIED'].includes(a.status));
-    } else if (item.title === "Overdue Tasks") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      filtered = allAssignments.filter(a => {
-        if (['COMPLETED', 'VERIFIED'].includes(a.status)
-          || ['COMPLETED', 'VERIFIED'].includes(a.taskItem?.status)) return false;
-        if (!a.taskItem?.dueDate) return false;
-        const due = new Date(a.taskItem.dueDate);
-        due.setHours(0, 0, 0, 0);
-        return due.getTime() < today.getTime();
-      });
-    } else if (item.title === "Due Today") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      filtered = allAssignments.filter(a => {
-        if (['COMPLETED', 'VERIFIED'].includes(a.status)
-          || ['COMPLETED', 'VERIFIED'].includes(a.taskItem?.status)) return false;
-        if (!a.taskItem?.dueDate) return false;
-        const due = new Date(a.taskItem.dueDate);
-        due.setHours(0, 0, 0, 0);
-        return due.getTime() === today.getTime();
-      });
-    }
-
     setModalState({
       isOpen: true,
       title: item.title,
       icon: item.icon,
       color: item.color,
       bg: item.bg,
-      tasks: filtered,
+      tasks: getAssignmentsForStat(item.title),
     });
   };
 
@@ -519,7 +506,7 @@ const ManagerHomePage = () => {
           icon={modalState.icon}
           color={modalState.color}
           bg={modalState.bg}
-          tasks={modalState.tasks}
+          tasks={getAssignmentsForStat(modalState.title)}
         />
       )}
 
