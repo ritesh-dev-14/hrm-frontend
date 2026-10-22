@@ -120,9 +120,57 @@ const ManagerHomePage = () => {
     await Promise.all([dashboardRequest, projectsRequest, attendanceRequest]);
   }, []);
 
+  const refreshDashboardStats = useCallback(async () => {
+    try {
+      const response = await API.get("/api/manager/dashboard");
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "Failed to refresh manager dashboard.");
+      }
+
+      const dashboardData = response.data.data;
+      setDashboard(dashboardData);
+      const totalOverdue = dashboardData.employees?.reduce(
+        (sum, employee) => sum + (employee.overdueTasksCount || 0),
+        0,
+      ) || 0;
+      const totalDueToday = dashboardData.employees?.reduce(
+        (sum, employee) => sum + (employee.dueTodayTasksCount || 0),
+        0,
+      ) || 0;
+
+      if (totalOverdue === 0 && totalDueToday === 0) {
+        setAlertConfig((current) => (
+          current.title === "CRITICAL: Team Overdue Tasks"
+            || current.title === "Team Deadline Warning"
+            ? { ...current, isOpen: false }
+            : current
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to refresh manager dashboard stats:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshDashboardStats();
+      }
+    };
+    const interval = window.setInterval(refreshWhenVisible, 30000);
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshDashboardStats]);
 
   const stats = useMemo(() => {
     if (!dashboard) return [];
@@ -205,7 +253,8 @@ const ManagerHomePage = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       filtered = allAssignments.filter(a => {
-        if (['COMPLETED', 'VERIFIED'].includes(a.status)) return false;
+        if (['COMPLETED', 'VERIFIED'].includes(a.status)
+          || ['COMPLETED', 'VERIFIED'].includes(a.taskItem?.status)) return false;
         if (!a.taskItem?.dueDate) return false;
         const due = new Date(a.taskItem.dueDate);
         due.setHours(0, 0, 0, 0);
@@ -215,7 +264,8 @@ const ManagerHomePage = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       filtered = allAssignments.filter(a => {
-        if (['COMPLETED', 'VERIFIED'].includes(a.status)) return false;
+        if (['COMPLETED', 'VERIFIED'].includes(a.status)
+          || ['COMPLETED', 'VERIFIED'].includes(a.taskItem?.status)) return false;
         if (!a.taskItem?.dueDate) return false;
         const due = new Date(a.taskItem.dueDate);
         due.setHours(0, 0, 0, 0);
