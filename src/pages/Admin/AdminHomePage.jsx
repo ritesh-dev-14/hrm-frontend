@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FolderOpen,
   Search,
@@ -110,35 +110,17 @@ export default function AdminHomePage() {
   }, []);
 
   const fetchInitialData = async () => {
-    try {
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
-      const [projRes, deptRes, managerRes, uploadCalendarRes] = await Promise.allSettled([
-        API.get("/api/projects?limit=100&page=1"),
-        API.get("/api/departments"),
-        API.get("/api/hr/managers"),
-        API.get("/api/monthly-sheets/uploads"),
-      ]);
+    fetchHealthScores();
+    fetchControlTowerStats();
 
-      if (projRes.status === "fulfilled" && projRes.value?.data?.success) {
-        const firstPageProjects = projRes.value.data.data || [];
-        const totalPages = Number(projRes.value.data.pagination?.totalPages) || 1;
-        const remainingPages = await Promise.all(
-          Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
-            API.get(`/api/projects?limit=100&page=${index + 2}`),
-          ),
-        );
-        setProjects([
-          ...firstPageProjects,
-          ...remainingPages.flatMap((response) =>
-            response.data?.success ? response.data.data || [] : [],
-          ),
-        ]);
-      } else {
-        setError("Failed to load projects list.");
-      }
-
+    const ancillaryRequests = Promise.allSettled([
+      API.get("/api/departments"),
+      API.get("/api/hr/managers"),
+      API.get("/api/monthly-sheets/uploads?summary=true"),
+    ]).then(([deptRes, managerRes, uploadCalendarRes]) => {
       if (deptRes.status === "fulfilled" && deptRes.value?.data?.data) {
         setDepartments(deptRes.value.data.data || []);
       }
@@ -162,6 +144,30 @@ export default function AdminHomePage() {
             : "Failed to load content calendar uploads.",
         );
       }
+    });
+
+    try {
+      const projectResponse = await API.get("/api/projects?limit=100&page=1&summary=true");
+      if (projectResponse.data?.success) {
+        const firstPageProjects = projectResponse.data.data || [];
+        setProjects(firstPageProjects);
+        setLoading(false);
+
+        const totalPages = Number(projectResponse.data.pagination?.totalPages) || 1;
+        const remainingPages = await Promise.all(
+          Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+            API.get(`/api/projects?limit=100&page=${index + 2}&summary=true`),
+          ),
+        );
+        setProjects([
+          ...firstPageProjects,
+          ...remainingPages.flatMap((response) =>
+            response.data?.success ? response.data.data || [] : [],
+          ),
+        ]);
+      } else {
+        setError("Failed to load projects list.");
+      }
     } catch (err) {
       console.error("Error loading complete details data:", err);
       setError("An unexpected error occurred while loading projects.");
@@ -169,9 +175,7 @@ export default function AdminHomePage() {
       setLoading(false);
     }
 
-    // Fetch health scores separately so main list loads fast
-    fetchHealthScores();
-    fetchControlTowerStats();
+    await ancillaryRequests;
   };
 
   const fetchControlTowerStats = async () => {
