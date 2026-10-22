@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -114,6 +114,9 @@ const MarketingProjectsPage = () => {
         limit: 15,
         department: "Marketing", // Or Performance Marketing, etc. depending on backend support
       });
+      if (role === "MANAGER") {
+        params.append("summary", "true");
+      }
       if (debouncedSearch) {
         params.append("search", debouncedSearch);
       }
@@ -151,7 +154,7 @@ const MarketingProjectsPage = () => {
 
   useEffect(() => {
     loadData();
-  }, [currentPage, debouncedSearch, runningFilter]);
+  }, [currentPage, debouncedSearch, runningFilter, role]);
 
   const formatDate = (date) => {
     if (!date) return "-";
