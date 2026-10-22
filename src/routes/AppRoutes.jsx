@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getUserRoles } from "../utils/userRoles";
 import { lazy, Suspense } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import ProfessionalLoader from "../components/ProfessionalLoader";
 // Pages
 const Login = lazy(() => import("../auth/login"));
@@ -98,17 +97,7 @@ export const AppRoutes = () => {
   }
 
   return (
-    <Suspense
-      fallback={<ProfessionalLoader text="Opening page..." />}
-    >
-      <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.16, ease: "easeOut" }}
-      >
+    <Suspense fallback={null}>
       <Routes location={location}>
       {/* LOGIN */}
       <Route path="/login" element={<Login />} />
@@ -556,8 +545,6 @@ export const AppRoutes = () => {
       />
 
       </Routes>
-      </motion.div>
-      </AnimatePresence>
     </Suspense>
   );
 };

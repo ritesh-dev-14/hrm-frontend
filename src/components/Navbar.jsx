@@ -241,7 +241,7 @@ export default function ProfessionalSidebar({ children }) {
       if (active && hasUserRole("MANAGER")) updateManagerPendingCount(event.detail);
     };
     window.addEventListener("manager-logout-status", handleManagerStatus);
-    const interval = setInterval(loadMarketingReportCount, 10000);
+    const interval = setInterval(loadMarketingReportCount, 30000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -477,7 +477,7 @@ export default function ProfessionalSidebar({ children }) {
     };
 
     fetchAssignedActionsCount();
-    const interval = setInterval(fetchAssignedActionsCount, 15000);
+    const interval = setInterval(fetchAssignedActionsCount, 30000);
     return () => clearInterval(interval);
   }, [role, user?.id, userRoles]);
 
@@ -521,7 +521,7 @@ export default function ProfessionalSidebar({ children }) {
     };
 
     fetchUnreads();
-    const interval = setInterval(fetchUnreads, 5000);
+    const interval = setInterval(fetchUnreads, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
 
