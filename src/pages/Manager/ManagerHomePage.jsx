@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   CheckCircle2,
   FolderOpen,
-  Users,
   Loader2,
   Clock,
   ChevronDown,
@@ -37,11 +36,8 @@ const ManagerHomePage = () => {
   const [isEmployeesExpanded, setIsEmployeesExpanded] = useState(false);
   const INITIAL_EMP_COUNT = 5;
 
-  const visibleEmployees = useMemo(() => {
-    if (!dashboard?.employees) return [];
-    if (isEmployeesExpanded) return dashboard.employees;
-    return dashboard.employees.slice(0, INITIAL_EMP_COUNT);
-  }, [dashboard?.employees, isEmployeesExpanded]);
+  const employees = dashboard?.employees || [];
+  const visibleEmployees = isEmployeesExpanded ? employees : employees.slice(0, INITIAL_EMP_COUNT);
 
   const user =
     JSON.parse(localStorage.getItem("user")) || {};
@@ -49,72 +45,84 @@ const ManagerHomePage = () => {
   const firstName =
     user?.name?.split(" ")[0] || "Manager";
 
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
+  const fetchDashboard = useCallback(async () => {
+    const dashboardRequest = API.get("/api/manager/dashboard")
+      .then((response) => {
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || "Failed to load manager dashboard.");
+        }
 
-  const fetchDashboard = async () => {
-    try {
-      setLoading(true);
+        const dashboardData = response.data.data;
+        setDashboard(dashboardData);
 
-      const [dashRes, projRes, attRes] = await Promise.allSettled([
-        API.get("/api/manager/dashboard"),
-        API.get("/api/projects/assigned"),
-        API.get("/api/attendance/history"),
-      ]);
+        const totalOverdue = dashboardData.employees?.reduce(
+          (sum, employee) => sum + (employee.overdueTasksCount || 0),
+          0,
+        ) || 0;
+        const totalDueToday = dashboardData.employees?.reduce(
+          (sum, employee) => sum + (employee.dueTodayTasksCount || 0),
+          0,
+        ) || 0;
 
-      if (dashRes.status === "fulfilled" && dashRes.value?.data?.success) {
-        setDashboard(dashRes.value.data.data);
-      }
-
-      if (projRes.status === "fulfilled" && projRes.value?.data?.success) {
-        setProjectsCount(projRes.value.data.data?.length || 0);
-      }
-
-      if (attRes.status === "fulfilled" && attRes.value?.data?.success) {
-        const records = attRes.value.data.data || [];
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-
-        const thisMonthRecords = records.filter((r) => {
-          if (!r.date) return false;
-          const d = new Date(r.date);
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-        });
-
-        const totalHours = thisMonthRecords.reduce((sum, r) => sum + (r.totalHours || 0), 0);
-        setWorkingHours(parseFloat(totalHours.toFixed(1)));
-      }
-      
-      // Toast alerts for deadlines
-      if (dashRes.status === "fulfilled" && dashRes.value?.data?.success) {
-        const dashboardData = dashRes.value.data.data;
-        const totalOverdue = dashboardData.employees?.reduce((sum, emp) => sum + (emp.overdueTasksCount || 0), 0) || 0;
-        const totalDueToday = dashboardData.employees?.reduce((sum, emp) => sum + (emp.dueTodayTasksCount || 0), 0) || 0;
-        
         if (totalOverdue > 0) {
           setAlertConfig({
             isOpen: true,
             title: "CRITICAL: Team Overdue Tasks",
-            message: `Your team currently has ${totalOverdue} overdue ${totalOverdue === 1 ? 'task' : 'tasks'}. Please review the "Overdue Tasks" widget and follow up immediately.`,
-            type: "error"
+            message: `Your team currently has ${totalOverdue} overdue ${totalOverdue === 1 ? "task" : "tasks"}. Please review the "Overdue Tasks" widget and follow up immediately.`,
+            type: "error",
           });
         } else if (totalDueToday > 0) {
           setAlertConfig({
             isOpen: true,
             title: "Team Deadline Warning",
-            message: `Your team has ${totalDueToday} ${totalDueToday === 1 ? 'task' : 'tasks'} due today. Ensure they are monitored closely.`,
-            type: "warning"
+            message: `Your team has ${totalDueToday} ${totalDueToday === 1 ? "task" : "tasks"} due today. Ensure they are monitored closely.`,
+            type: "warning",
           });
         }
-      }
+      })
+      .catch((error) => {
+        console.error("Failed to load manager dashboard:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const projectsRequest = API.get("/api/projects/assigned")
+      .then((response) => {
+        if (response.data?.success) {
+          setProjectsCount(response.data.data?.length || 0);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load assigned project count:", error);
+      });
+
+    const attendanceRequest = API.get("/api/attendance/history")
+      .then((response) => {
+        if (response.data?.success) {
+          const records = response.data.data || [];
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const totalHours = records.reduce((sum, record) => {
+            if (!record.date) return sum;
+            const date = new Date(record.date);
+            return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+              ? sum + (record.totalHours || 0)
+              : sum;
+          }, 0);
+          setWorkingHours(parseFloat(totalHours.toFixed(1)));
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load attendance history:", error);
+      });
+
+    await Promise.all([dashboardRequest, projectsRequest, attendanceRequest]);
+  }, []);
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   const stats = useMemo(() => {
     if (!dashboard) return [];
