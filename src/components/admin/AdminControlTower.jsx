@@ -43,6 +43,8 @@ export default function AdminControlTower({
   const [showClientsIgnoredModal, setShowClientsIgnoredModal] = React.useState(false);
   const [showCalendarModal, setShowCalendarModal] = React.useState(false);
   const [marketingFilter, setMarketingFilter] = React.useState("ALL");
+  const currentMarketingMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const [selectedMarketingMonth, setSelectedMarketingMonth] = React.useState(currentMarketingMonth);
 
   let clientsAtRisk = 0;
   let notContacted7Days = 0;
@@ -162,23 +164,46 @@ export default function AdminControlTower({
     return marketingProjects;
   }, [marketingProjects, marketingFilter]);
 
-  const [selectedMarketingProjectId, setSelectedMarketingProjectId] = React.useState("");
-
-  const selectedMarketingProject = marketingProjects.find(
-    (project) => project.id === selectedMarketingProjectId,
-  );
-
-  const selectedMarketingBudget = React.useMemo(() => {
-    if (!selectedMarketingProjectId || !data?.thisWeek?.budgetBreakdown) return 0;
-    const b = data.thisWeek.budgetBreakdown.find(p => p.projectId === selectedMarketingProjectId);
-    return b ? b.amount : 0;
-  }, [selectedMarketingProjectId, data]);
-
-  const selectedMarketingSpent = React.useMemo(() => {
-    if (!selectedMarketingProjectId || !data?.thisWeek?.spentBreakdown) return 0;
-    const s = data.thisWeek.spentBreakdown.find(p => p.projectId === selectedMarketingProjectId);
-    return s ? s.amount : 0;
-  }, [selectedMarketingProjectId, data]);
+  const marketingMonthOptions = React.useMemo(() => {
+    const options = new Map();
+    (data?.thisWeek?.monthlySpendBreakdown || []).forEach((item) => {
+      const value = `${item.year}-${String(item.month).padStart(2, "0")}`;
+      options.set(value, { value, month: item.month, year: item.year });
+    });
+    const [currentYear, currentMonth] = currentMarketingMonth.split("-").map(Number);
+    options.set(currentMarketingMonth, {
+      value: currentMarketingMonth,
+      month: currentMonth,
+      year: currentYear,
+    });
+    return [...options.values()].sort(
+      (a, b) => Number(b.year) - Number(a.year) || Number(b.month) - Number(a.month),
+    );
+  }, [data, currentMarketingMonth]);
+  const activeMarketingMonth = marketingMonthOptions.find(
+    (option) => option.value === selectedMarketingMonth,
+  ) || marketingMonthOptions[0];
+  const activeMarketingMonthValue = activeMarketingMonth?.value || currentMarketingMonth;
+  const marketingProjectRows = React.useMemo(() => {
+    const budgets = new Map(
+      (data?.thisWeek?.budgetBreakdown || []).map((item) => [item.projectId, item.amount]),
+    );
+    const selectedMonthSpend = new Map();
+    (data?.thisWeek?.monthlySpendBreakdown || []).forEach((item) => {
+      const value = `${item.year}-${String(item.month).padStart(2, "0")}`;
+      if (value === activeMarketingMonthValue) {
+        selectedMonthSpend.set(
+          item.projectId,
+          (selectedMonthSpend.get(item.projectId) || 0) + (Number(item.amount) || 0),
+        );
+      }
+    });
+    return filteredMarketingProjects.map((project) => ({
+      project,
+      budget: Number(budgets.get(project.id)) || 0,
+      spent: Number(selectedMonthSpend.get(project.id)) || 0,
+    }));
+  }, [data, filteredMarketingProjects, activeMarketingMonthValue]);
 
   if (loading) {
     return (
@@ -533,65 +558,74 @@ export default function AdminControlTower({
           </select>
         </div>
 
-        {filteredMarketingProjects.length === 0 ? (
+        {marketingProjectRows.length === 0 ? (
           <p className="p-5 text-center text-sm font-medium text-slate-500">
             No Marketing projects found for this filter.
           </p>
         ) : (
-          <div className="space-y-5 p-5">
-            <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredMarketingProjects.map((project) => (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => setSelectedMarketingProjectId(project.id)}
-                  aria-pressed={selectedMarketingProjectId === project.id}
-                  className={`group flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition ${
-                    selectedMarketingProjectId === project.id
-                      ? "border-blue-400 bg-blue-100 shadow-sm"
-                      : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm"
-                  }`}
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-blue-600">
-                    {project.logo ? (
-                      <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
-                    ) : (
-                      <FolderOpen size={17} />
-                    )}
-                  </div>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-bold text-slate-900">{project.projectName}</span>
-                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{project.clientName || project.department?.name}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {selectedMarketingProject ? (
-              <div className="rounded-2xl border border-blue-100 bg-white p-4 md:p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <p className="text-sm font-extrabold text-slate-900">{selectedMarketingProject.projectName}</p>
-                    <p className="text-xs text-slate-500">{selectedMarketingProject.clientName || "Marketing Project"}</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <div className="rounded-xl border p-3 text-blue-700 bg-blue-50 border-blue-100">
-                    <p className="text-2xl font-black flex items-center gap-1"><IndianRupee size={16} />{selectedMarketingBudget.toLocaleString('en-IN')}</p>
-                    <p className="mt-1 text-[9px] font-bold uppercase tracking-wide opacity-80">Monthly Budget</p>
-                  </div>
-                  <div className="rounded-xl border p-3 text-indigo-700 bg-indigo-50 border-indigo-100">
-                    <p className="text-2xl font-black flex items-center gap-1"><IndianRupee size={16} />{selectedMarketingSpent.toLocaleString('en-IN')}</p>
-                    <p className="mt-1 text-[9px] font-bold uppercase tracking-wide opacity-80">Total Spent (MTD)</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="rounded-xl border border-dashed border-blue-200 bg-white/70 p-4 text-center text-sm font-medium text-slate-500">
-                Select a Marketing project to view its budget and spend.
+          <div className="p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-slate-500">
+                {activeMarketingMonth
+                  ? `Showing all projects for ${new Date(activeMarketingMonth.year, activeMarketingMonth.month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`
+                  : "No monthly spend data is available yet."}
               </p>
-            )}
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                Month
+                <select
+                  value={activeMarketingMonthValue}
+                  onChange={(event) => setSelectedMarketingMonth(event.target.value)}
+                  className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                >
+                  {marketingMonthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {new Date(option.year, option.month - 1, 1).toLocaleDateString("en-IN", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white">
+              <table className="w-full min-w-[620px] text-left">
+                <thead className="bg-blue-50/70">
+                  <tr className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3">Project</th>
+                    <th className="px-4 py-3 text-right">Monthly Budget</th>
+                    <th className="px-4 py-3 text-right">Total Spent</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {marketingProjectRows.map(({ project, budget, spent }) => (
+                    <tr key={project.id} className="hover:bg-blue-50/30">
+                      <td className="px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-blue-600">
+                            {project.logo ? (
+                              <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
+                            ) : (
+                              <FolderOpen size={16} />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-slate-900">{project.projectName}</p>
+                            <p className="truncate text-[10px] text-slate-500">{project.clientName || project.department?.name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-extrabold text-blue-700">
+                        <span className="inline-flex items-center justify-end"><IndianRupee size={13} />{budget.toLocaleString("en-IN")}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-extrabold text-indigo-700">
+                        <span className="inline-flex items-center justify-end"><IndianRupee size={13} />{spent.toLocaleString("en-IN")}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
