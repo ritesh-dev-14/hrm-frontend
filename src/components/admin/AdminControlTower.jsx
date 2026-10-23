@@ -27,6 +27,7 @@ export default function AdminControlTower({
   projects = [],
   managerDirectoryError = "",
   onSelectProject,
+  onSelectMarketingProject,
   uploadCalendarSheets = [],
   uploadCalendarError = "",
 }) {
@@ -599,7 +600,20 @@ export default function AdminControlTower({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {marketingProjectRows.map(({ project, budget, spent }) => (
-                    <tr key={project.id} className="hover:bg-blue-50/30">
+                    <tr
+                      key={project.id}
+                      onClick={() => onSelectMarketingProject?.(project.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onSelectMarketingProject?.(project.id);
+                        }
+                      }}
+                      role={onSelectMarketingProject ? "button" : undefined}
+                      tabIndex={onSelectMarketingProject ? 0 : undefined}
+                      aria-label={onSelectMarketingProject ? `Open reports for ${project.projectName}` : undefined}
+                      className={`hover:bg-blue-50/70 ${onSelectMarketingProject ? "cursor-pointer focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400" : ""}`}
+                    >
                       <td className="px-4 py-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-blue-600">

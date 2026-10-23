@@ -81,8 +81,10 @@ const formatDate = (value) => {
     : date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const AdminAdsMarketingReportsModal = ({ projects, onClose }) => {
-  const [selectedProject, setSelectedProject] = useState(null);
+const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = null }) => {
+  const [selectedProject, setSelectedProject] = useState(() =>
+    projects.find((project) => String(project.id || project._id) === String(initialProjectId)) || null,
+  );
   const [marketingReports, setMarketingReports] = useState([]);
   const [weeklyReports, setWeeklyReports] = useState([]);
   const [loadingProjectReports, setLoadingProjectReports] = useState(false);

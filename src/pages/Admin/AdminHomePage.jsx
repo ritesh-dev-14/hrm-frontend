@@ -65,6 +65,7 @@ export default function AdminHomePage() {
   const [error, setError] = useState("");
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", type: "error" });
   const [isAdsMarketingModalOpen, setIsAdsMarketingModalOpen] = useState(false);
+  const [selectedAdsMarketingProjectId, setSelectedAdsMarketingProjectId] = useState(null);
   const [isSocialMediaModalOpen, setIsSocialMediaModalOpen] = useState(false);
   const [isSocialProjectDetailOpen, setIsSocialProjectDetailOpen] = useState(false);
   const [isSeoModalOpen, setIsSeoModalOpen] = useState(false);
@@ -461,6 +462,10 @@ export default function AdminHomePage() {
           projects={projects}
           managerDirectoryError={managerDirectoryError}
           onSelectProject={handleSelectProject}
+          onSelectMarketingProject={(projectId) => {
+            setSelectedAdsMarketingProjectId(projectId);
+            setIsAdsMarketingModalOpen(true);
+          }}
           uploadCalendarSheets={uploadCalendarSheets}
           uploadCalendarError={uploadCalendarError}
         />
@@ -963,6 +968,7 @@ export default function AdminHomePage() {
       {isAdsMarketingModalOpen && (
         <AdminAdsMarketingReportsModal
           projects={marketingProjects}
+          initialProjectId={selectedAdsMarketingProjectId}
           onClose={() => setIsAdsMarketingModalOpen(false)}
         />
       )}
