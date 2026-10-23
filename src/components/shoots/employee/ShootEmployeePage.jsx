@@ -536,7 +536,7 @@ const ShootEmployeePage = () => {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-sm text-slate-500 font-medium max-w-2xl">{subtask.description}</p>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-2xl whitespace-pre-wrap break-words">{subtask.description}</p>
 
                                 {/* Reference Material Access Links */}
                                 {subtask.referenceLinks?.length > 0 && (
