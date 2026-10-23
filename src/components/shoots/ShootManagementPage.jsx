@@ -43,6 +43,7 @@ const ShootManagementPage = () => {
   const [metricsSaving, setMetricsSaving] = useState(false);
   const [uploadFeed, setUploadFeed] = useState(null);
   const [uploadFeedLoading, setUploadFeedLoading] = useState(false);
+  const [uploadFeedError, setUploadFeedError] = useState("");
   const [taskAction, setTaskAction] = useState({ id: null, type: null });
 
   const fetchSummary = async (monthToFetch = selectedMonth) => {
@@ -98,10 +99,14 @@ const ShootManagementPage = () => {
     const loadUploadFeed = async () => {
       try {
         setUploadFeedLoading(true);
+        setUploadFeedError("");
         const response = await API.get(`/api/shoot-workspaces/${selectedWorkspaceId}/upload-feed`);
         if (!cancelled && response?.data?.success) setUploadFeed(response.data.data || null);
-      } catch {
-        if (!cancelled) setUploadFeed(null);
+      } catch (err) {
+        if (!cancelled) {
+          setUploadFeed(null);
+          setUploadFeedError(err?.response?.data?.message || "Could not load upload details.");
+        }
       } finally {
         if (!cancelled) setUploadFeedLoading(false);
       }
@@ -334,6 +339,8 @@ const ShootManagementPage = () => {
 
           {uploadFeedLoading ? (
             <div className="flex items-center gap-2 py-8 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> Loading upload details...</div>
+          ) : uploadFeedError ? (
+            <p role="alert" className="py-8 text-sm text-rose-600">{uploadFeedError}</p>
           ) : uploadFeed ? (
             <div className="space-y-5">
               <div className="flex flex-wrap gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
