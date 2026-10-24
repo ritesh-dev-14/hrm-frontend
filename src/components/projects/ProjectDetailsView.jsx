@@ -59,6 +59,7 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
 
   // SEO Report states
   const [showSeoModal, setShowSeoModal] = useState(false);
+  const [editingSeoReport, setEditingSeoReport] = useState(null);
   const [seoReports, setSeoReports] = useState([]);
   const [seoReportsLoading, setSeoReportsLoading] = useState(false);
   const [showSeoPassword, setShowSeoPassword] = useState(false);
@@ -79,6 +80,7 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
 
   // Strict structural role verification
   const isManager = userRole?.toUpperCase() === "MANAGER";
+  const currentUserId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
 
   useEffect(() => {
     fetchProjectDetails();
@@ -898,6 +900,15 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
                                   <ExternalLink size={13} /> Open Excel Sheet
                                 </a>
                               )}
+                              {isManager && report.managerId === currentUserId && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingSeoReport(report)}
+                                  className="mt-2 ml-4 inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:text-indigo-800"
+                                >
+                                  <Edit2 size={13} /> Edit Report
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1169,9 +1180,20 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
       {/* SEO REPORT MODAL */}
       {showSeoModal && (
         <SeoReportModal
+          key="new-seo-report"
           projectId={projectId}
           clientPhone={project?.seoContact || project?.phone || ""}
           onClose={() => setShowSeoModal(false)}
+          onSuccess={() => fetchSeoReports(projectId)}
+        />
+      )}
+      {editingSeoReport && (
+        <SeoReportModal
+          key={editingSeoReport.id}
+          projectId={projectId}
+          clientPhone={project?.seoContact || project?.phone || ""}
+          report={editingSeoReport}
+          onClose={() => setEditingSeoReport(null)}
           onSuccess={() => fetchSeoReports(projectId)}
         />
       )}

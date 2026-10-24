@@ -12,16 +12,17 @@ import {
   FileText,
   Search,
   CheckCircle2,
+  Edit2,
 } from "lucide-react";
 import API from "../../services/api";
 
-const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => {
-  const [keywords, setKeywords] = useState([""]);
-  const [clientContactNumber, setClientContactNumber] = useState(clientPhone);
-  const [rankingNo, setRankingNo] = useState("");
-  const [checkDate, setCheckDate] = useState("");
-  const [sheetUrl, setSheetUrl] = useState("");
-  const [remarks, setRemarks] = useState("");
+const SeoReportModal = ({ projectId, clientPhone = "", report = null, onClose, onSuccess }) => {
+  const [keywords, setKeywords] = useState(report?.keywords?.length ? report.keywords : [""]);
+  const [clientContactNumber, setClientContactNumber] = useState(report?.clientContactNumber || clientPhone);
+  const [rankingNo, setRankingNo] = useState(report?.rankingNo?.toString() || "");
+  const [checkDate, setCheckDate] = useState(report?.checkDate ? new Date(report.checkDate).toISOString().slice(0, 10) : "");
+  const [sheetUrl, setSheetUrl] = useState(report?.sheetUrl || "");
+  const [remarks, setRemarks] = useState(report?.remarks || "");
   const [screenshot, setScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -30,6 +31,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
   const fileRef = useRef(null);
 
   useEffect(() => {
+    if (report) return undefined;
     let isActive = true;
     setClientContactNumber(clientPhone || "");
     if (clientPhone || !projectId) return () => {
@@ -50,7 +52,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
     return () => {
       isActive = false;
     };
-  }, [clientPhone, projectId]);
+  }, [clientPhone, projectId, report]);
 
   // Keyword management
   const handleKeywordChange = (index, value) => {
@@ -102,7 +104,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
       setError("Please enter a valid online spreadsheet link.");
       return;
     }
-    if (!screenshot) {
+    if (!screenshot && !report?.screenshotUrl) {
       setError("Please upload a screenshot.");
       return;
     }
@@ -117,11 +119,16 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
       formData.append("sheetUrl", sheetUrl.trim());
       if (remarks) formData.append("remarks", remarks);
       if (clientContactNumber) formData.append("clientContactNumber", clientContactNumber);
-      formData.append("screenshot", screenshot);
+      if (screenshot) formData.append("screenshot", screenshot);
 
-      await API.post("/api/seo-reports", formData, {
+      const request = report
+        ? API.patch(`/api/seo-reports/${report.id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        : API.post("/api/seo-reports", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      await request;
 
       setSuccess(true);
       setTimeout(() => {
@@ -155,7 +162,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
                 <TrendingUp size={20} />
               </div>
               <div>
-                <h2 className="text-lg font-bold">Submit SEO Report</h2>
+                <h2 className="text-lg font-bold">{report ? "Edit SEO Report" : "Submit SEO Report"}</h2>
                 <p className="text-xs text-emerald-100 mt-0.5">
                   Keyword ranking check
                 </p>
@@ -203,7 +210,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                 <Search size={12} />
                 Keywords
-                <span className="text-red-400">*</span>
+                {!report?.screenshotUrl && <span className="text-red-400">*</span>}
               </label>
               <div className="space-y-2">
                 {keywords.map((kw, idx) => (
@@ -307,7 +314,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                 <ImageIcon size={12} />
                 Screenshot
-                <span className="text-red-400">*</span>
+                {!report?.screenshotUrl && <span className="text-red-400">*</span>}
               </label>
               <input
                 ref={fileRef}
@@ -334,6 +341,12 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
                   >
                     <X size={14} />
                   </button>
+                </div>
+              ) : report?.screenshotUrl ? (
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <img src={report.screenshotUrl} alt="Current SEO report screenshot" className="h-14 w-20 rounded-lg object-cover" />
+                  <span className="text-xs text-slate-500">Current screenshot will be kept unless you upload a replacement.</span>
+                  <button type="button" onClick={() => fileRef.current?.click()} className="ml-auto text-xs font-semibold text-emerald-700">Replace</button>
                 </div>
               ) : (
                 <button
@@ -383,8 +396,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
                 </>
               ) : (
                 <>
-                  <TrendingUp size={16} />
-                  Submit SEO Report
+                  {report ? <><Edit2 size={16} /> Save Changes</> : <><TrendingUp size={16} /> Submit SEO Report</>}
                 </>
               )}
             </button>
