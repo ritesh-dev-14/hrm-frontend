@@ -4,8 +4,23 @@ import API from "../../services/api";
 import { Activity, Camera, CheckCircle2, Edit3, FolderOpen, Link2, Loader2, PencilLine, UploadCloud, Video, Wand2, X } from "lucide-react";
 
 const statCardClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+const mediaLinkCards = {
+  "Extra Reels": { key: "extraReelLinks", title: "Extra Reels" },
+  "Extra Pics": { key: "extraPicLinks", title: "Extra Pics" },
+  "Videos Uploaded": { key: "uploadedVideoLinks", title: "Videos Uploaded" },
+  "Pics Uploaded": { key: "uploadedPicLinks", title: "Pics Uploaded" },
+};
 
 const formatNumber = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+
+const getSafeExternalUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+};
 
 const ShootManagementPage = () => {
   const { user } = useAuth();
@@ -45,6 +60,7 @@ const ShootManagementPage = () => {
   const [uploadFeedLoading, setUploadFeedLoading] = useState(false);
   const [uploadFeedError, setUploadFeedError] = useState("");
   const [taskAction, setTaskAction] = useState({ id: null, type: null });
+  const [activeMediaCard, setActiveMediaCard] = useState("");
 
   const fetchSummary = async (monthToFetch = selectedMonth) => {
     try {
@@ -119,6 +135,30 @@ const ShootManagementPage = () => {
   const workspaceSummaries = Array.isArray(summary.workspaceSummaries) ? summary.workspaceSummaries : [];
   const selectedWorkspace = workspaceSummaries.find((workspace) => workspace.id === selectedWorkspaceId) || workspaceSummaries[0];
   const displayedSummary = selectedWorkspace || summary;
+  const uploadedVideoLinks = (uploadFeed?.editorItems || [])
+    .filter((item) => item.instagramUploaded && item.mediaType === "VIDEO")
+    .flatMap((item) => (item.assignments || [])
+      .filter((assignment) => assignment.submission?.driveLink)
+      .map((assignment) => ({
+        id: assignment.submission.id || assignment.id,
+        title: item.title,
+        shootTitle: item.shoot?.title || "Shoot",
+        submittedBy: assignment.employee?.name || "Editor",
+        submittedAt: assignment.submission.submittedAt,
+        url: assignment.submission.driveLink,
+      })));
+  const uploadedPicLinks = (uploadFeed?.editorItems || [])
+    .filter((item) => item.instagramUploaded && item.mediaType === "PIC")
+    .flatMap((item) => (item.assignments || [])
+      .filter((assignment) => assignment.submission?.driveLink)
+      .map((assignment) => ({
+        id: assignment.submission.id || assignment.id,
+        title: item.title,
+        shootTitle: item.shoot?.title || "Shoot",
+        submittedBy: assignment.employee?.name || "Editor",
+        submittedAt: assignment.submission.submittedAt,
+        url: assignment.submission.driveLink,
+      })));
 
   const openMetricsEditor = () => {
     setMetricsForm({
@@ -185,8 +225,8 @@ const ShootManagementPage = () => {
 
   const cards = useMemo(() => [
     { label: "Total Shoots", value: formatNumber(displayedSummary.shoots?.length || 0), icon: Camera, tone: "indigo" },
-    { label: "Extra Reels", value: formatNumber(displayedSummary.extraReels), icon: Video, tone: "rose" },
-    { label: "Extra Pics", value: formatNumber(displayedSummary.extraPics), icon: Camera, tone: "amber" },
+    { label: "Extra Reels", value: formatNumber(displayedSummary.extraReels), icon: Video, tone: "rose", linkKey: "extraReelLinks" },
+    { label: "Extra Pics", value: formatNumber(displayedSummary.extraPics), icon: Camera, tone: "amber", linkKey: "extraPicLinks" },
     { label: "Reels Approved", value: formatNumber(displayedSummary.reelsApprovedByManager), icon: CheckCircle2, tone: "green" },
     { label: "Pics Approved", value: formatNumber(displayedSummary.picsApprovedByManager), icon: CheckCircle2, tone: "emerald" },
     { label: "Total Videos Available", value: formatNumber(displayedSummary.totalVideosAvailable), icon: Activity, tone: "violet" },
@@ -194,11 +234,19 @@ const ShootManagementPage = () => {
     { label: "Pending Video Edit", value: formatNumber(displayedSummary.pendingForVideoEdit), icon: PencilLine, tone: "orange" },
     { label: "Pending Pic Edit", value: formatNumber(displayedSummary.pendingForPicEdit), icon: PencilLine, tone: "amber" },
     { label: "Pending for Upload", value: formatNumber(displayedSummary.pendingForUpload), icon: UploadCloud, tone: "red" },
-    { label: "Videos Uploaded", value: formatNumber(displayedSummary.videosUploaded), icon: UploadCloud, tone: "indigo" },
+    { label: "Videos Uploaded", value: formatNumber(displayedSummary.videosUploaded), icon: UploadCloud, tone: "indigo", linkKey: "uploadedVideoLinks" },
+    { label: "Pics Uploaded", value: formatNumber(uploadedPicLinks.length), icon: UploadCloud, tone: "cyan", linkKey: "uploadedPicLinks" },
     { label: "Approved by Client", value: formatNumber(uploadFeed?.approvedByClientCount), icon: CheckCircle2, tone: "red" },
     { label: "Videos Edited", value: formatNumber(displayedSummary.videosEdited), icon: Wand2, tone: "teal" },
     { label: "Pics Edited", value: formatNumber(displayedSummary.picsEdited), icon: Wand2, tone: "cyan" },
-  ], [displayedSummary, uploadFeed?.approvedByClientCount]);
+  ], [displayedSummary, uploadFeed?.approvedByClientCount, uploadedPicLinks.length]);
+  const activeMediaLinks = activeMediaCard
+    ? mediaLinkCards[activeMediaCard]?.key === "uploadedVideoLinks"
+      ? uploadedVideoLinks
+      : mediaLinkCards[activeMediaCard]?.key === "uploadedPicLinks"
+        ? uploadedPicLinks
+        : displayedSummary[mediaLinkCards[activeMediaCard]?.key] || []
+    : [];
 
   if (loading) {
     return (
@@ -268,8 +316,20 @@ const ShootManagementPage = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {cards.map(({ label, value, icon: Icon, tone }) => (
-            <div key={label} className={statCardClass}>
+          {cards.map(({ label, value, icon: Icon, tone, linkKey }) => (
+            <div
+              key={label}
+              className={`${statCardClass} ${linkKey ? "cursor-pointer text-left transition hover:border-indigo-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500" : ""}`}
+              role={linkKey ? "button" : undefined}
+              tabIndex={linkKey ? 0 : undefined}
+              onClick={linkKey ? () => setActiveMediaCard(label) : undefined}
+              onKeyDown={linkKey ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setActiveMediaCard(label);
+                }
+              } : undefined}
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.08em] text-slate-500">{label}</p>
@@ -279,6 +339,7 @@ const ShootManagementPage = () => {
                   <Icon className="h-5 w-5" />
                 </div>
               </div>
+              {linkKey && <p className="mt-3 text-xs font-semibold text-indigo-600">Click to view submitted links</p>}
             </div>
           ))}
         </div>
@@ -410,6 +471,84 @@ const ShootManagementPage = () => {
               <button type="submit" disabled={metricsSaving} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{metricsSaving ? "Saving..." : "Save Metrics"}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {activeMediaCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setActiveMediaCard("");
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="media-links-title"
+            className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 id="media-links-title" className="text-lg font-black text-slate-900">
+                  {mediaLinkCards[activeMediaCard]?.title} submitted links
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">{displayedSummary.name || "All workspaces"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveMediaCard("")}
+                aria-label="Close links"
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="max-h-[65vh] overflow-y-auto p-5">
+              {(["Videos Uploaded", "Pics Uploaded"].includes(activeMediaCard) && uploadFeedLoading) ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading uploaded links...
+                </div>
+              ) : (["Videos Uploaded", "Pics Uploaded"].includes(activeMediaCard) && uploadFeedError) ? (
+                <p role="alert" className="rounded-xl bg-rose-50 px-4 py-6 text-center text-sm text-rose-700">
+                  {uploadFeedError}
+                </p>
+              ) : activeMediaLinks.length ? (
+                <ul className="space-y-3">
+                  {activeMediaLinks.map((item, index) => {
+                    const url = getSafeExternalUrl(item.url);
+                    const referenceUrl = getSafeExternalUrl(item.referenceLink);
+                    return (
+                      <li key={item.id || `${item.url}-${index}`} className="rounded-xl border border-slate-200 p-4">
+                        <p className="font-bold text-slate-800">{item.title || `${mediaLinkCards[activeMediaCard]?.title} link ${index + 1}`}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {item.shootTitle || "Shoot"}{item.submittedBy ? ` · Submitted by ${item.submittedBy}` : ""}
+                          {item.submittedAt ? ` · ${new Date(item.submittedAt).toLocaleDateString()}` : ""}
+                        </p>
+                        {url ? (
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="mt-3 flex min-w-0 items-center gap-2 text-sm font-semibold text-indigo-600 underline underline-offset-2 hover:text-indigo-800">
+                            <Link2 className="h-4 w-4 shrink-0" />
+                            <span className="break-all">{item.url}</span>
+                          </a>
+                        ) : (
+                          <p className="mt-3 break-all text-sm text-slate-600">{item.url || "No valid URL was submitted."}</p>
+                        )}
+                        {referenceUrl && (
+                          <a href={referenceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-500 underline underline-offset-2 hover:text-slate-700">
+                            <Link2 className="h-4 w-4 shrink-0" />
+                            <span className="break-all">{item.referenceLink}</span>
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="rounded-xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                  No links have been submitted for this category in this workspace.
+                </p>
+              )}
+            </div>
+          </section>
         </div>
       )}
     </div>
