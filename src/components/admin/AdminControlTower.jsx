@@ -19,7 +19,17 @@ import {
   Calendar,
   Eye,
   Target,
+  Link2,
 } from "lucide-react";
+
+const getSafeExternalUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+};
 
 export default function AdminControlTower({
   data,
@@ -1024,6 +1034,7 @@ export default function AdminControlTower({
                         <th className="px-4 py-3 font-bold text-xs uppercase">Title</th>
                         <th className="px-4 py-3 font-bold text-xs uppercase">Content Type</th>
                         <th className="px-4 py-3 font-bold text-xs uppercase">Upload Status</th>
+                        <th className="px-4 py-3 font-bold text-xs uppercase">Submitted Links</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1057,11 +1068,40 @@ export default function AdminControlTower({
                               {day.uploadStatus || 'NOT UPLOADED'}
                             </span>
                           </td>
+                          <td className="px-4 py-3">
+                            {day.uploadStatus === "APPROVED" ? (
+                              <div className="flex min-w-40 flex-col items-start gap-1.5">
+                                {[
+                                  ...(day.videoUploadLinks || []).map((link) => ({ link, type: "Reel" })),
+                                  ...(day.contentUploadLinks || []).map((link) => ({ link, type: "Post" })),
+                                ].map(({ link, type }, linkIndex) => {
+                                  const safeUrl = getSafeExternalUrl(link);
+                                  return safeUrl ? (
+                                    <a
+                                      key={`${day.id}-${type}-${linkIndex}`}
+                                      href={safeUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex max-w-64 items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                                    >
+                                      <Link2 size={13} className="shrink-0" />
+                                      <span className="truncate">{type} link {linkIndex + 1}</span>
+                                    </a>
+                                  ) : null;
+                                })}
+                                {!(day.videoUploadLinks || []).some((link) => getSafeExternalUrl(link))
+                                  && !(day.contentUploadLinks || []).some((link) => getSafeExternalUrl(link))
+                                  && <span className="text-xs text-slate-400">No links submitted</span>}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">Available after approval</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {(!selectedSocialSheet.days || selectedSocialSheet.days.length === 0) && (
                         <tr>
-                          <td colSpan="4" className="px-4 py-8 text-center text-slate-500">
+                          <td colSpan="5" className="px-4 py-8 text-center text-slate-500">
                             No planned days in this calendar yet.
                           </td>
                         </tr>
