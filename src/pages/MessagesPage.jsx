@@ -126,6 +126,35 @@ export default function MessagesPage() {
                 </div>
 
                 <div className="p-5">
+                  {message.projects?.length > 0 && (
+                    <section className="mb-5 rounded-xl border border-violet-100 bg-violet-50/50 p-4">
+                      <h3 className="mb-3 text-sm font-bold text-violet-900">Social Media Report</h3>
+                      <div className="space-y-3">
+                        {(message.socialMediaReports?.length
+                          ? message.socialMediaReports
+                          : message.projects.map((project) => ({
+                            projectName: project.projectName,
+                            lastContentUploaded: null,
+                            nextExpectedUploadDate: null,
+                          }))
+                        ).map((report) => (
+                          <div key={`${message.groupId}-${report.projectName}`} className="rounded-lg border border-violet-100 bg-white p-3">
+                            <p className="mb-2 text-xs font-bold text-slate-800">{report.projectName}</p>
+                            <dl className="grid gap-2 text-xs sm:grid-cols-2">
+                              <div>
+                                <dt className="font-semibold text-slate-500">Last Content Uploaded</dt>
+                                <dd className="mt-0.5 font-bold text-slate-800">{report.lastContentUploaded || "Date unavailable"}</dd>
+                              </div>
+                              <div>
+                                <dt className="font-semibold text-slate-500">Next Expected Upload Date</dt>
+                                <dd className="mt-0.5 font-bold text-slate-800">{report.nextExpectedUploadDate || "Date unavailable"}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                   <div>
                     <h3 className="mb-2 text-sm font-semibold text-slate-700">Message as the client will see it</h3>
                     <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 font-sans text-sm leading-6 text-slate-700">{message.messageBody}</pre>
