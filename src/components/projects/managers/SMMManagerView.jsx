@@ -42,6 +42,11 @@ const calendarDateKey = (date) => {
     : parsedDate.toISOString().slice(0, 10);
 };
 
+const sortCalendarDays = (days = []) =>
+  [...days].sort((left, right) =>
+    calendarDateKey(left.date).localeCompare(calendarDateKey(right.date)),
+  );
+
 const RESPONSIVE_CSS = `
   .smm-container {
     max-width: 1280px;
@@ -283,7 +288,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       };
     });
 
-    return { ...calendar, days: formattedDays };
+    return { ...calendar, days: sortCalendarDays(formattedDays) };
   };
 
   // Auto-generate empty structural layout for the dynamic creation workspace
@@ -446,7 +451,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   const handleDayFieldChange = (index, fieldName, value) => {
     const updatedDays = [...sheetDays];
     updatedDays[index] = { ...updatedDays[index], [fieldName]: value };
-    setSheetDays(updatedDays);
+    setSheetDays(fieldName === "date" ? sortCalendarDays(updatedDays) : updatedDays);
   };
 
   const handleCreateRowsFromSelectedDates = () => {
@@ -462,11 +467,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
       [typeField]: batchContentType,
     }));
 
-    setSheetDays((previous) =>
-      [...previous, ...newRows].sort((left, right) =>
-        calendarDateKey(left.date).localeCompare(calendarDateKey(right.date)),
-      ),
-    );
+    setSheetDays((previous) => sortCalendarDays([...previous, ...newRows]));
     setSelectedBatchDates([]);
     setIsDateBatchModalOpen(false);
   };
@@ -475,7 +476,10 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     if (!selectedCalendar) return;
     const updatedDays = [...selectedCalendar.days];
     updatedDays[dayIndex] = { ...updatedDays[dayIndex], [fieldName]: value };
-    setSelectedCalendar((prev) => ({ ...prev, days: updatedDays }));
+    setSelectedCalendar((prev) => ({
+      ...prev,
+      days: fieldName === "date" ? sortCalendarDays(updatedDays) : updatedDays,
+    }));
   };
 
   const handleDayDateChange = (index, value) => {
@@ -3059,13 +3063,13 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                 }
                                 setSelectedCalendar((prev) => ({
                                   ...prev,
-                                  days: [
+                                  days: sortCalendarDays([
                                     ...prev.days,
                                     {
                                       ...newDayForm,
                                       date: parsedDate.toISOString(),
                                     },
-                                  ],
+                                  ]),
                                 }));
                                 setIsEditAddDayModalOpen(false);
                               }}
@@ -4104,13 +4108,13 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                   alert("Invalid date selected.");
                                   return;
                                 }
-                                setSheetDays((prev) => [
+                                setSheetDays((prev) => sortCalendarDays([
                                   ...prev,
                                   {
                                     ...newDayForm,
                                     date: parsedDate.toISOString(),
                                   },
-                                ]);
+                                ]));
                                 setIsAddDayModalOpen(false);
                               }}
                               className="px-6 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all"
