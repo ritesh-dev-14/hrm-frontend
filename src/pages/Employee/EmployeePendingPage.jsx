@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, Loader2, RefreshCw } from "lucide-react";
 import API from "../../services/api";
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 
@@ -23,12 +23,45 @@ const isComplete = (task) =>
     : getStatus(task) === "COMPLETED";
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "-";
 
+const matchesDueDateFilter = (task, filter, selectedDate = "") => {
+  if (!filter && !selectedDate) return true;
+  if (!task.dueDate) return filter === "today";
+
+  const dueDate = new Date(task.dueDate);
+  if (Number.isNaN(dueDate.getTime())) return false;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const startOfTomorrow = endOfToday;
+  const endOfNext3Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 4);
+  const dayOfWeek = now.getDay();
+  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((dayOfWeek + 6) % 7));
+  const endOfWeek = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 7);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  if (filter === "today") return dueDate >= startOfToday && dueDate < endOfToday;
+  if (filter === "next3days") return dueDate >= startOfTomorrow && dueDate < endOfNext3Days;
+  if (filter === "this_week") return dueDate >= startOfWeek && dueDate < endOfWeek;
+  if (filter === "this_month") return dueDate >= startOfMonth && dueDate < endOfMonth;
+  if (selectedDate) {
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    return dueDate.getFullYear() === year
+      && dueDate.getMonth() === month - 1
+      && dueDate.getDate() === day;
+  }
+  return true;
+};
+
 export default function EmployeePendingPage() {
   const [tasks, setTasks] = useState([]);
   const [logoutStatus, setLogoutStatus] = useState({ canLogout: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
+  const [pendingFilter, setPendingFilter] = useState("today");
+  const [dateFilter, setDateFilter] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -121,6 +154,16 @@ export default function EmployeePendingPage() {
   };
 
   const pendingTasks = tasks.filter((task) => !isComplete(task));
+  const pendingStats = {
+    today: pendingTasks.filter((task) => matchesDueDateFilter(task, "today")).length,
+    next3days: pendingTasks.filter((task) => matchesDueDateFilter(task, "next3days")).length,
+    this_week: pendingTasks.filter((task) => matchesDueDateFilter(task, "this_week")).length,
+    this_month: pendingTasks.filter((task) => matchesDueDateFilter(task, "this_month")).length,
+  };
+  const filteredTasks = tasks.filter((task) => (
+    (!pendingFilter && !dateFilter)
+    || (!isComplete(task) && matchesDueDateFilter(task, pendingFilter, dateFilter))
+  ));
   // For logout blocking: only today's EA tasks matter; future tasks are informational only
   const todayBlockingPending = tasks.filter(
     (task) => !isComplete(task) && (task.source !== "EA" || task.isDueToday)
@@ -134,7 +177,7 @@ export default function EmployeePendingPage() {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">Employee Tasks</p>
           <h1 className="mt-1 text-3xl font-black text-slate-900">Pending Tasks</h1>
-          <p className="mt-2 text-sm text-slate-500">Manager and EA assignments for today.</p>
+          <p className="mt-2 text-sm text-slate-500">View manager and EA assignments by due date.</p>
         </div>
         <button type="button" onClick={loadData} disabled={loading} aria-label="Refresh" className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600 shadow-sm hover:bg-slate-100 disabled:opacity-50">
           <RefreshCw size={17} className={loading ? "animate-spin" : ""} />
@@ -149,10 +192,64 @@ export default function EmployeePendingPage() {
         </div>
       )}
 
+      {!loading && tasks.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          {[
+            { value: "", label: "All Dates", count: null },
+            { value: "today", label: "Pending Today", count: pendingStats.today },
+            { value: "next3days", label: "Pending Next 3 Days", count: pendingStats.next3days },
+            { value: "this_week", label: "Pending This Week", count: pendingStats.this_week },
+            { value: "this_month", label: "Pending This Month", count: pendingStats.this_month },
+          ].map((filter) => {
+            const selected = pendingFilter === filter.value && !dateFilter;
+            return (
+              <button
+                key={filter.value || "all"}
+                type="button"
+                onClick={() => {
+                  setPendingFilter(filter.value);
+                  setDateFilter("");
+                }}
+                aria-pressed={selected}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                  selected
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50"
+                }`}
+              >
+                {filter.value === "today" ? <Clock3 size={13} /> : null}
+                {filter.value === "this_week" || filter.value === "this_month" ? <CalendarDays size={13} /> : null}
+                {filter.label}
+                {filter.count !== null && (
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                    selected ? "bg-indigo-700 text-white" : "bg-slate-100 text-slate-600"
+                  }`}>
+                    {filter.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <label className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-600">
+            <CalendarDays size={13} />
+            <span className="sr-only">Filter by date</span>
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(event) => {
+                setDateFilter(event.target.value);
+                if (event.target.value) setPendingFilter("");
+              }}
+              className="bg-transparent outline-none"
+            />
+          </label>
+        </div>
+      )}
+
       {/* Body */}
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-indigo-600" /></div>
-      ) : pendingTasks.length === 0 && canLogout ? (
+      ) : pendingTasks.length === 0 && canLogout && pendingFilter === "today" && !dateFilter ? (
         <div className="flex flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 p-10 text-center">
           <CheckCircle2 className="mb-3 text-emerald-600" size={34} />
           <h2 className="font-bold text-slate-900">All today&apos;s tasks are complete</h2>
@@ -166,7 +263,21 @@ export default function EmployeePendingPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {tasks.map((task) => {
+          {filteredTasks.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="text-sm font-semibold text-slate-600">No pending tasks for the selected date filter.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingFilter("");
+                  setDateFilter("");
+                }}
+                className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100"
+              >
+                View all dates
+              </button>
+            </div>
+          ) : filteredTasks.map((task) => {
             const done = isComplete(task);
             const isEa = task.source === "EA";
             const isFuture = isEa && !task.isDueToday;
