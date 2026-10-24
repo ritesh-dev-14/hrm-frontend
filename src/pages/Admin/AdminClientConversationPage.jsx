@@ -3,12 +3,14 @@ import {
   AlertCircle,
   BriefcaseBusiness,
   CalendarDays,
+  CheckCircle2,
   Eye,
   Headphones,
   LoaderCircle,
   MessageSquareText,
   RefreshCw,
   Target,
+  Users,
   UserRound,
   Volume2,
 } from "lucide-react";
@@ -32,6 +34,29 @@ const formatDate = (value) => value
   : "Date unavailable";
 
 const formatCount = (value) => Number(value || 0).toLocaleString("en-IN");
+const REPORT_DEPARTMENT = {
+  marketing: "Marketing",
+  social: "Social Media",
+  seo: "SEO",
+};
+
+const getCurrentWeekNumber = (date) => {
+  const startOfYear = new Date(date.getFullYear(), 0, 1);
+  const dayOfYear = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+  return Math.floor(dayOfYear / 7) + 1;
+};
+
+const getReportClients = (clients) => {
+  if (Array.isArray(clients)) return clients;
+  if (typeof clients !== "string") return [];
+  try {
+    const parsed = JSON.parse(clients);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (parseError) {
+    console.error("Unable to parse clients in weekly voice report:", parseError);
+    return [];
+  }
+};
 
 async function fetchAllProjects() {
   const first = await API.get("/api/projects", { params: { limit: 100, page: 1 } });
@@ -55,6 +80,9 @@ export default function AdminClientConversationPage() {
   const [conversationErrors, setConversationErrors] = useState({});
   const [marketingTotals, setMarketingTotals] = useState(null);
   const [marketingTotalsError, setMarketingTotalsError] = useState("");
+  const [weeklyReportSummary, setWeeklyReportSummary] = useState([]);
+  const [weeklyReportLoadedKey, setWeeklyReportLoadedKey] = useState("");
+  const [weeklyReportError, setWeeklyReportError] = useState("");
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -66,6 +94,12 @@ export default function AdminClientConversationPage() {
   const loadingConversation = departmentProjects.some((project) =>
     !Object.hasOwn(conversations, project.id) && !conversationErrors[project.id],
   );
+  const weeklyReportKey = `${department}-${refreshKey}`;
+  const weeklyReportLoading = Boolean(
+    department && !loadingProjects && weeklyReportLoadedKey !== weeklyReportKey,
+  );
+  const currentYear = new Date().getFullYear();
+  const currentWeekNumber = getCurrentWeekNumber(new Date());
 
   useEffect(() => {
     let active = true;
@@ -110,6 +144,82 @@ export default function AdminClientConversationPage() {
       active = false;
     };
   }, [department, refreshKey]);
+
+  useEffect(() => {
+    if (!department || loadingProjects) return undefined;
+
+    let active = true;
+    const year = currentYear;
+    const weekNumber = currentWeekNumber;
+
+    API.get("/api/weekly-voice-reports", {
+      params: {
+        department: REPORT_DEPARTMENT[department],
+        weekNumber,
+        year,
+      },
+    })
+      .then((response) => {
+        if (!active) return;
+        const reports = response.data?.data || [];
+        const submittedByManager = new Map();
+        reports
+          .filter((report) => report.qaStatus !== "REJECTED")
+          .forEach((report) => {
+            const managerId = String(report.managerId || report.manager?.id || "");
+            if (!managerId) return;
+            const submittedProjectIds = submittedByManager.get(managerId) || new Set();
+            getReportClients(report.clients).forEach((client) => {
+              if (client?.id) submittedProjectIds.add(String(client.id));
+            });
+            submittedByManager.set(managerId, submittedProjectIds);
+          });
+
+        const managers = new Map();
+        departmentProjects
+          .filter((project) => project.isRunning === true || project.status === "ONGOING")
+          .forEach((project) => {
+            (project.assignments || []).forEach((assignment) => {
+              const manager = assignment.manager;
+              if (!manager?.id) return;
+              const key = String(manager.id);
+              const entry = managers.get(key) || {
+                id: key,
+                name: manager.name || "Manager",
+                missingProjects: [],
+                expectedCount: 0,
+              };
+              entry.expectedCount += 1;
+              if (!submittedByManager.get(key)?.has(String(project.id))) {
+                entry.missingProjects.push(project.projectName || project.clientName || "Untitled project");
+              }
+              managers.set(key, entry);
+            });
+          });
+
+        setWeeklyReportSummary(
+          [...managers.values()].sort((left, right) =>
+            right.missingProjects.length - left.missingProjects.length
+            || left.name.localeCompare(right.name),
+          ),
+        );
+        setWeeklyReportLoadedKey(weeklyReportKey);
+      })
+      .catch((requestError) => {
+        console.error("Unable to load weekly voice report status:", requestError);
+        if (active) {
+          setWeeklyReportError(
+            requestError.response?.data?.message || "Could not load weekly report status.",
+          );
+          setWeeklyReportSummary([]);
+          setWeeklyReportLoadedKey(weeklyReportKey);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [department, departmentProjects, loadingProjects, refreshKey, currentWeekNumber, currentYear, weeklyReportKey]);
 
   useEffect(() => {
     if (!department || loadingProjects || !departmentProjects.length) return undefined;
@@ -163,6 +273,9 @@ export default function AdminClientConversationPage() {
     setConversationErrors({});
     setMarketingTotals(null);
     setMarketingTotalsError("");
+    setWeeklyReportSummary([]);
+    setWeeklyReportLoadedKey("");
+    setWeeklyReportError("");
     setError("");
   };
 
@@ -173,6 +286,9 @@ export default function AdminClientConversationPage() {
     setConversationErrors({});
     setMarketingTotals(null);
     setMarketingTotalsError("");
+    setWeeklyReportSummary([]);
+    setWeeklyReportLoadedKey("");
+    setWeeklyReportError("");
     setRefreshKey((current) => current + 1);
   };
 
@@ -242,6 +358,80 @@ export default function AdminClientConversationPage() {
                   </span>
                 )}
               </div>
+              {!loadingProjects && (
+                <section className="mb-5 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 md:p-5">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Users size={18} className="text-amber-700" />
+                      <div>
+                        <h3 className="font-black text-slate-900">Weekly voice report status</h3>
+                        <p className="text-xs text-slate-500">
+                          Week {currentWeekNumber}, {currentYear} · Active assigned projects
+                        </p>
+                      </div>
+                    </div>
+                    {!weeklyReportLoading && !weeklyReportError && weeklyReportSummary.length > 0 && (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
+                        {weeklyReportSummary.reduce((count, manager) => count + manager.missingProjects.length, 0)} reports missing
+                      </span>
+                    )}
+                  </div>
+
+                  {weeklyReportLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+                      <LoaderCircle size={17} className="animate-spin" /> Checking manager submissions...
+                    </div>
+                  ) : weeklyReportError ? (
+                    <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                      <AlertCircle size={17} className="mt-0.5 shrink-0" />
+                      {weeklyReportError}
+                    </div>
+                  ) : weeklyReportSummary.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-amber-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                      No active managers are assigned to projects in this department.
+                    </p>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {weeklyReportSummary.map((manager) => {
+                        const missingCount = manager.missingProjects.length;
+                        return (
+                          <article
+                            key={manager.id}
+                            className={`rounded-xl border p-4 ${
+                              missingCount
+                                ? "border-amber-200 bg-white"
+                                : "border-emerald-200 bg-emerald-50/70"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <UserRound size={17} className={missingCount ? "text-amber-700" : "text-emerald-700"} />
+                                <p className="truncate text-sm font-bold text-slate-900">{manager.name}</p>
+                              </div>
+                              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${
+                                missingCount
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-emerald-100 text-emerald-800"
+                              }`}>
+                                {missingCount} missing / {manager.expectedCount}
+                              </span>
+                            </div>
+                            {missingCount ? (
+                              <p className="mt-2 text-xs leading-5 text-slate-600">
+                                Missing for: {manager.missingProjects.join(", ")}
+                              </p>
+                            ) : (
+                              <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                                <CheckCircle2 size={14} /> All weekly reports submitted
+                              </p>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
               {loadingProjects ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
                   <LoaderCircle size={18} className="animate-spin" /> Loading projects...
