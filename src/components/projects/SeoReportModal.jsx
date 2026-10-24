@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import API from "../../services/api";
 
-const SeoReportModal = ({ projectId, onClose, onSuccess }) => {
+const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => {
   const [keywords, setKeywords] = useState([""]);
-  const [clientContactNumber, setClientContactNumber] = useState("");
+  const [clientContactNumber, setClientContactNumber] = useState(clientPhone);
   const [rankingNo, setRankingNo] = useState("");
   const [checkDate, setCheckDate] = useState("");
   const [sheetUrl, setSheetUrl] = useState("");
