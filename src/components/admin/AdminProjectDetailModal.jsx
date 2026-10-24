@@ -176,15 +176,13 @@ function PriorityEditor({ project, onPriorityUpdate }) {
 }
 
 // ── TAB: Overview ─────────────────────────────────────────────────────────────
-function OverviewTab({ project, monthlySheets, onTierUpdate }) {
+function OverviewTab({ project, onTierUpdate }) {
   const renewal = daysUntil(project?.renewalDate);
   const renewalChip =
     renewal === null ? null :
     renewal < 0 ? { label: `Overdue by ${Math.abs(renewal)} days`, cls: "bg-rose-100 text-rose-700 border-rose-200" } :
     renewal <= 15 ? { label: `Renews in ${renewal} days`, cls: "bg-amber-100 text-amber-700 border-amber-200" } :
     { label: `Renews in ${renewal} days`, cls: "bg-emerald-100 text-emerald-700 border-emerald-200" };
-
-  const latestSheet = monthlySheets?.[0];
 
   return (
     <div className="space-y-5">
@@ -273,38 +271,6 @@ function OverviewTab({ project, monthlySheets, onTierUpdate }) {
         </div>
       )}
 
-      {latestSheet && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-            <Sparkles size={15} className="text-violet-500" /> Latest Content Snapshot — {latestSheet.month}/{latestSheet.year}
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatBox label="Reels Target" value={latestSheet.totalReels} color="violet" />
-            <StatBox label="Reels Live" value={latestSheet.totalReelsUploaded} color="emerald" />
-            <StatBox label="Posts Target" value={latestSheet.totalPosts} color="violet" />
-            <StatBox label="Posts Live" value={latestSheet.totalPostsUploaded} color="emerald" />
-          </div>
-          {latestSheet.totalReels > 0 && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-semibold text-slate-500">
-                <span>Reels Progress</span>
-                <span>{Math.round((latestSheet.totalReelsUploaded / latestSheet.totalReels) * 100)}%</span>
-              </div>
-              <PBar
-                value={(latestSheet.totalReelsUploaded / latestSheet.totalReels) * 100}
-                colorClass={progressColor((latestSheet.totalReelsUploaded / latestSheet.totalReels) * 100)}
-                height="h-3"
-              />
-            </div>
-          )}
-          {latestSheet.moodBoardLink && (
-            <a href={latestSheet.moodBoardLink} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl hover:bg-amber-100 transition">
-              <Sparkles size={13} /> Open Mood Board
-            </a>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -1247,7 +1213,7 @@ export default function AdminProjectDetailModal({
               </div>
             ) : (
               <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                {activeTab === "overview" && <OverviewTab project={project} monthlySheets={monthlySheets} onTierUpdate={(updated) => setProject(updated)} />}
+                {activeTab === "overview" && <OverviewTab project={project} onTierUpdate={(updated) => setProject(updated)} />}
                 {activeTab === "social" && <SocialMediaTab project={project} monthlySheets={monthlySheets} shootWorkspaces={shootWorkspaces} />}
                 {activeTab === "ads" && <MetaAdsTab metaAdsTasks={metaAdsTasks} />}
                 {activeTab === "seo" && <SEOTab project={project} seoReports={seoReports} seoTasks={seoTasks} />}
