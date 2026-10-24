@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   X,
   Plus,
@@ -28,6 +28,10 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    setClientContactNumber(clientPhone || "");
+  }, [clientPhone]);
 
   // Keyword management
   const handleKeywordChange = (index, value) => {

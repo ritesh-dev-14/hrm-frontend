@@ -1170,7 +1170,7 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
       {showSeoModal && (
         <SeoReportModal
           projectId={projectId}
-          clientPhone={project?.phone || ""}
+          clientPhone={project?.seoContact || project?.phone || ""}
           onClose={() => setShowSeoModal(false)}
           onSuccess={() => fetchSeoReports(projectId)}
         />
