@@ -59,14 +59,13 @@ export default function MessagesPage() {
       .toLowerCase()
       .includes(search.trim().toLowerCase())
   ));
-  const isHandaBanglesTestRecipient = (message) =>
-    String(message.clientPhone || "").replace(/\D/g, "").slice(-10) === "9729105240" &&
+  const isHandaBanglesTestReport = (message) =>
     message.projectNames.some((name) => /handa\s*bangles/i.test(name));
 
   const sendHandaBanglesTest = async (message) => {
     const project = message.projects.find((item) => /handa\s*bangles/i.test(item.projectName));
     if (!project || sendingTestFor) return;
-    if (!window.confirm("Send this preview once to +91 9729105240 for testing?")) return;
+    if (!window.confirm("Send this Handa Bangles preview once to +91 8077742337 for testing?")) return;
 
     setSendingTestFor(message.groupId);
     setTestSendStatus((current) => ({ ...current, [message.groupId]: "" }));
@@ -77,7 +76,7 @@ export default function MessagesPage() {
       });
       setTestSendStatus((current) => ({
         ...current,
-        [message.groupId]: "Test report sent to +91 9729105240.",
+        [message.groupId]: "WhatsApp accepted the test report for +91 8077742337.",
       }));
     } catch (requestError) {
       console.error("Unable to send Handa Bangles test report:", requestError);
@@ -158,17 +157,17 @@ export default function MessagesPage() {
                     {message.clientPhone && !message.isClientPhoneValid ? " · Invalid number (message preview only)" : ""}
                     {message.managerNames.length ? ` · Manager: ${message.managerNames.join(", ")}` : ""}
                   </p>
-                  {isAdmin && isHandaBanglesTestRecipient(message) && (
+                  {isAdmin && isHandaBanglesTestReport(message) && (
                     <div className="mt-3">
                       <button
                         type="button"
                         onClick={() => sendHandaBanglesTest(message)}
-                        disabled={Boolean(sendingTestFor || testSendStatus[message.groupId]?.startsWith("Test report sent"))}
+                        disabled={Boolean(sendingTestFor || testSendStatus[message.groupId]?.startsWith("WhatsApp accepted"))}
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {sendingTestFor === message.groupId ? (
                           <LoaderCircle size={14} className="animate-spin" />
-                        ) : testSendStatus[message.groupId]?.startsWith("Test report sent") ? (
+                        ) : testSendStatus[message.groupId]?.startsWith("WhatsApp accepted") ? (
                           <CheckCircle2 size={14} />
                         ) : (
                           <Send size={14} />
@@ -176,13 +175,13 @@ export default function MessagesPage() {
                         {sendingTestFor === message.groupId ? "Sending..." : "Send One-Time Test"}
                       </button>
                       <p className="mt-1 text-[11px] text-slate-500">
-                        Sends only this preview to +91 9729105240. Maximum one successful test today.
+                        Sends this preview once to +91 8077742337. Maximum one successful test today.
                       </p>
                       {testSendStatus[message.groupId] && (
                         <p
                           role="status"
                           className={`mt-1 text-xs font-semibold ${
-                            testSendStatus[message.groupId].startsWith("Test report sent")
+                            testSendStatus[message.groupId].startsWith("WhatsApp accepted")
                               ? "text-emerald-700"
                               : "text-rose-700"
                           }`}
