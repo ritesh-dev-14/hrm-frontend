@@ -17,6 +17,8 @@ import {
   FolderOpen,
   ChevronRight,
   Calendar,
+  Eye,
+  Target,
 } from "lucide-react";
 
 export default function AdminControlTower({
@@ -25,6 +27,9 @@ export default function AdminControlTower({
   healthMap,
   managers = [],
   projects = [],
+  marketingMetrics = {},
+  marketingMetricsLoading = false,
+  marketingMetricsError = "",
   managerDirectoryError = "",
   onSelectProject,
   onSelectMarketingProject,
@@ -559,6 +564,12 @@ export default function AdminControlTower({
           </select>
         </div>
 
+        {marketingMetricsError && (
+          <p role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-sm text-rose-700">
+            {marketingMetricsError}
+          </p>
+        )}
+
         {marketingProjectRows.length === 0 ? (
           <p className="p-5 text-center text-sm font-medium text-slate-500">
             No Marketing projects found for this filter.
@@ -590,12 +601,18 @@ export default function AdminControlTower({
               </label>
             </div>
             <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white">
-              <table className="w-full min-w-[620px] text-left">
+              <table className="w-full min-w-[900px] text-left">
                 <thead className="bg-blue-50/70">
                   <tr className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                     <th className="px-4 py-3">Project</th>
                     <th className="px-4 py-3 text-right">Monthly Budget</th>
                     <th className="px-4 py-3 text-right">Total Spent</th>
+                    <th className="px-4 py-3 text-right">
+                      <span className="inline-flex items-center justify-end gap-1"><Eye size={12} /> Total Reach</span>
+                    </th>
+                    <th className="px-4 py-3 text-right">
+                      <span className="inline-flex items-center justify-end gap-1"><Target size={12} /> Leads Obtained</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -634,6 +651,18 @@ export default function AdminControlTower({
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-extrabold text-indigo-700">
                         <span className="inline-flex items-center justify-end"><IndianRupee size={13} />{spent.toLocaleString("en-IN")}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-extrabold text-sky-700">
+                        {marketingMetricsLoading
+                          ? "Loading..."
+                          : marketingMetricsError ? "Unavailable"
+                          : (Number(marketingMetrics[project.id]?.totalReach) || 0).toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-extrabold text-emerald-700">
+                        {marketingMetricsLoading
+                          ? "Loading..."
+                          : marketingMetricsError ? "Unavailable"
+                          : (Number(marketingMetrics[project.id]?.totalLeads) || 0).toLocaleString("en-IN")}
                       </td>
                     </tr>
                   ))}

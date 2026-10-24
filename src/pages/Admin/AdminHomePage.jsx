@@ -78,6 +78,9 @@ export default function AdminHomePage() {
   // Control Tower state
   const [controlTower, setControlTower] = useState(null);
   const [controlTowerLoading, setControlTowerLoading] = useState(false);
+  const [marketingMetrics, setMarketingMetrics] = useState({});
+  const [marketingMetricsLoading, setMarketingMetricsLoading] = useState(true);
+  const [marketingMetricsError, setMarketingMetricsError] = useState("");
 
   // Filter States
   const [selectedDept, setSelectedDept] = useState("ALL");
@@ -116,6 +119,7 @@ export default function AdminHomePage() {
 
     fetchHealthScores();
     fetchControlTowerStats();
+    fetchMarketingMetrics();
 
     const ancillaryRequests = Promise.allSettled([
       API.get("/api/departments"),
@@ -177,6 +181,27 @@ export default function AdminHomePage() {
     }
 
     await ancillaryRequests;
+  };
+
+  const fetchMarketingMetrics = async () => {
+    try {
+      setMarketingMetricsLoading(true);
+      setMarketingMetricsError("");
+      const response = await API.get("/api/reports/projects-overview", {
+        params: { type: "meta-ads" },
+      });
+      const metrics = Object.fromEntries(
+        (response.data?.data?.metaAds || []).map((project) => [project.projectId, project]),
+      );
+      setMarketingMetrics(metrics);
+    } catch (requestError) {
+      console.error("Unable to load dashboard Meta Ads metrics:", requestError);
+      setMarketingMetricsError(
+        requestError.response?.data?.message || "Could not load Meta Ads reach and leads.",
+      );
+    } finally {
+      setMarketingMetricsLoading(false);
+    }
   };
 
   const fetchControlTowerStats = async () => {
@@ -460,6 +485,9 @@ export default function AdminHomePage() {
           healthMap={healthMap}
           managers={managers}
           projects={projects}
+          marketingMetrics={marketingMetrics}
+          marketingMetricsLoading={marketingMetricsLoading}
+          marketingMetricsError={marketingMetricsError}
           managerDirectoryError={managerDirectoryError}
           onSelectProject={handleSelectProject}
           onSelectMarketingProject={(projectId) => {
