@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
-import { Copy, Loader2, Trash2, Upload, Video, X } from "lucide-react";
+import { Copy, Download, Loader2, Trash2, Upload, Video, X } from "lucide-react";
 import { notifyError, notifySuccess } from "../../../utils/toast";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
@@ -184,6 +184,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSubmittingSheet, setIsSubmittingSheet] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [downloadingAsset, setDownloadingAsset] = useState("");
   const logoInputRef = useRef(null);
   const [isUploadingEndScreen, setIsUploadingEndScreen] = useState(false);
   const endScreenInputRef = useRef(null);
@@ -626,6 +627,37 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
     } finally {
       setIsUploadingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
+
+  const handleDownloadAsset = async (assetUrl, assetType) => {
+    if (!assetUrl || downloadingAsset) return;
+
+    try {
+      setDownloadingAsset(assetType);
+      const response = await fetch(assetUrl);
+      if (!response.ok) {
+        throw new Error(`Download failed with status ${response.status}.`);
+      }
+
+      const blob = await response.blob();
+      const sourceUrl = new URL(assetUrl);
+      const extension = sourceUrl.pathname.match(/\.([a-z0-9]+)$/i)?.[1] ||
+        (blob.type.split("/")[1] || (assetType === "logo" ? "png" : "mp4")).replace("quicktime", "mov");
+      const fileName = `${(project?.projectName || "project").trim().replace(/[^a-z0-9-_]+/gi, "-")}-${assetType}.${extension}`;
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (downloadError) {
+      console.error(`Unable to download project ${assetType}:`, downloadError);
+      notifyError(`Could not download the project ${assetType}. Please try again.`);
+    } finally {
+      setDownloadingAsset("");
     }
   };
 
@@ -1111,10 +1143,11 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-sm border border-slate-100/60 p-8 md:p-10">
               <div className="flex flex-col sm:flex-row items-start gap-8">
-                <div
-                  onClick={handleLogoClick}
-                  className="group relative flex-shrink-0 w-32 h-32 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-400 flex flex-col items-center justify-center overflow-hidden cursor-pointer transition-colors"
-                >
+                <div className="flex flex-col items-center gap-2">
+                  <div
+                    onClick={handleLogoClick}
+                    className="group relative flex-shrink-0 w-32 h-32 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-400 flex flex-col items-center justify-center overflow-hidden cursor-pointer transition-colors"
+                  >
                   {project?.logo ? (
                     <>
                       <img
@@ -1152,6 +1185,22 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
                       <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
+                  )}
+                  </div>
+                  {project?.logo && (
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadAsset(project.logo, "logo")}
+                      disabled={Boolean(downloadingAsset)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {downloadingAsset === "logo" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      Download Logo
+                    </button>
                   )}
                 </div>
                 <div className="flex-1 w-full">
@@ -1194,14 +1243,29 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                 </button>
               </div>
               {project?.endScreenVideoUrl && (
-                <video
-                  key={project.endScreenVideoUrl}
-                  src={project.endScreenVideoUrl}
-                  controls
-                  preload="metadata"
-                  className="mt-5 max-h-64 w-full rounded-xl bg-slate-950 object-contain"
-                  aria-label={`${project.projectName || "Project"} end-screen video`}
-                />
+                <>
+                  <video
+                    key={project.endScreenVideoUrl}
+                    src={project.endScreenVideoUrl}
+                    controls
+                    preload="metadata"
+                    className="mt-5 max-h-64 w-full rounded-xl bg-slate-950 object-contain"
+                    aria-label={`${project.projectName || "Project"} end-screen video`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadAsset(project.endScreenVideoUrl, "end-screen")}
+                    disabled={Boolean(downloadingAsset)}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {downloadingAsset === "end-screen" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    Download End Screen
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -30,8 +30,27 @@ const SeoReportModal = ({ projectId, clientPhone = "", onClose, onSuccess }) => 
   const fileRef = useRef(null);
 
   useEffect(() => {
+    let isActive = true;
     setClientContactNumber(clientPhone || "");
-  }, [clientPhone]);
+    if (clientPhone || !projectId) return () => {
+      isActive = false;
+    };
+
+    API.get(`/api/projects/${projectId}`)
+      .then((response) => {
+        if (!isActive) return;
+        const project = response.data?.data;
+        setClientContactNumber(project?.seoContact || project?.phone || "");
+      })
+      .catch((requestError) => {
+        console.error("Unable to load the SEO contact number:", requestError);
+        if (isActive) setError("Could not load the project contact number.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [clientPhone, projectId]);
 
   // Keyword management
   const handleKeywordChange = (index, value) => {
