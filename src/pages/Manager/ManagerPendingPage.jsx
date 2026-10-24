@@ -81,7 +81,7 @@ const categoryStyles = {
   },
 };
 
-const itemDate = (item) => item.completionDate || item.workDate || item.date || item.reportDate || item.dueDate;
+const itemDate = (item) => item.dueDate || item.completionDate || item.workDate || item.date || item.reportDate;
 
 const matchesDateFilter = (item, pendingFilter, dateFilter) => {
   if (!pendingFilter && !dateFilter) return true;
@@ -95,7 +95,8 @@ const matchesDateFilter = (item, pendingFilter, dateFilter) => {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const startOfLast3Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 0, 0, 0, 0);
+  const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  const endOfNext3Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 23, 59, 59, 999);
 
   const dayOfWeek = now.getDay();
   const distanceToMonday = (dayOfWeek + 6) % 7;
@@ -109,7 +110,7 @@ const matchesDateFilter = (item, pendingFilter, dateFilter) => {
     return d >= startOfToday && d <= endOfToday;
   }
   if (pendingFilter === "last3days") {
-    return d >= startOfLast3Days && d <= endOfToday;
+    return d >= startOfTomorrow && d <= endOfNext3Days;
   }
   if (pendingFilter === "this_week") {
     return d >= startOfWeek && d <= endOfWeek;
@@ -346,7 +347,7 @@ export default function ManagerPendingPage() {
             >
               <option value="">All Dates</option>
               <option value="today">Pending Today ({pendingStats.today})</option>
-              <option value="last3days">Pending Last 3 Days ({pendingStats.last3days})</option>
+              <option value="last3days">Pending Next 3 Days ({pendingStats.last3days})</option>
               <option value="this_week">Pending This Week ({pendingStats.this_week})</option>
               <option value="this_month">Pending This Month ({pendingStats.this_month})</option>
             </select>
@@ -568,7 +569,7 @@ export default function ManagerPendingPage() {
                 pendingFilter === "last3days" ? "bg-white" : "bg-indigo-500"
               }`}
             />
-            <span>Pending Last 3 Days</span>
+            <span>Pending Next 3 Days</span>
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                 pendingFilter === "last3days"
@@ -646,7 +647,7 @@ export default function ManagerPendingPage() {
               Filtered by:{" "}
               <strong className="text-slate-800">
                 {pendingFilter === "today" && "Pending Today"}
-                {pendingFilter === "last3days" && "Pending Last 3 Days"}
+                {pendingFilter === "last3days" && "Pending Next 3 Days"}
                 {pendingFilter === "this_week" && "Pending This Week"}
                 {pendingFilter === "this_month" && "Pending This Month"}
                 {dateFilter && `Date: ${dateFilter}`}
@@ -683,7 +684,7 @@ export default function ManagerPendingPage() {
                   {pendingFilter === "today"
                     ? "Today's actionable work"
                     : pendingFilter === "last3days"
-                    ? "Actionable work from the last 3 days"
+                    ? "Actionable work due in the next 3 days"
                     : pendingFilter === "this_week"
                     ? "This week's actionable work"
                     : pendingFilter === "this_month"
