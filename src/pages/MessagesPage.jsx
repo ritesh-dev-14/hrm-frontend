@@ -126,18 +126,11 @@ export default function MessagesPage() {
                 </div>
 
                 <div className="p-5">
-                  {message.projects?.length > 0 && (
+                  {message.socialMediaReports?.length > 0 && (
                     <section className="mb-5 rounded-xl border border-violet-100 bg-violet-50/50 p-4">
                       <h3 className="mb-3 text-sm font-bold text-violet-900">Social Media Report</h3>
                       <div className="space-y-3">
-                        {(message.socialMediaReports?.length
-                          ? message.socialMediaReports
-                          : message.projects.map((project) => ({
-                            projectName: project.projectName,
-                            lastContentUploaded: null,
-                            nextExpectedUploadDate: null,
-                          }))
-                        ).map((report) => (
+                        {message.socialMediaReports.map((report) => (
                           <div key={`${message.groupId}-${report.projectName}`} className="rounded-lg border border-violet-100 bg-white p-3">
                             <p className="mb-2 text-xs font-bold text-slate-800">{report.projectName}</p>
                             <dl className="grid gap-2 text-xs sm:grid-cols-2">
