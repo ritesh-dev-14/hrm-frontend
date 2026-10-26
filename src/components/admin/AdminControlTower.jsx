@@ -398,9 +398,9 @@ export default function AdminControlTower({
       </div>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 border-b border-blue-100 bg-blue-50/70 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-100 bg-white text-blue-700">
               <User size={18} />
             </div>
             <div>
@@ -493,8 +493,8 @@ export default function AdminControlTower({
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center gap-3 border-b border-slate-200 p-4 sm:p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+        <div className="flex items-center gap-3 border-b border-blue-100 bg-blue-50/70 p-4 sm:p-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-100 bg-white text-blue-700">
             <Camera size={18} />
           </div>
           <div>
@@ -596,8 +596,8 @@ export default function AdminControlTower({
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center gap-3 border-b border-slate-200 p-4 sm:p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+        <div className="flex items-center gap-3 border-b border-blue-100 bg-blue-50/70 p-4 sm:p-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-100 bg-white text-blue-700">
             <DollarSign size={18} />
           </div>
           <div>
