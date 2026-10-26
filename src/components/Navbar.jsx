@@ -93,6 +93,13 @@ const NAV_CONFIG = [
 const WIDE = 260;
 const COLLAPSED = 80;
 
+const getTodayDateKey = () => new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date());
+
 const getDepartmentBadgeKey = (data) => {
   const department = String(
     data?.departmentName || data?.department?.name || data?.department || data?.projectDepartment || "",
@@ -154,7 +161,7 @@ export default function ProfessionalSidebar({ children }) {
     const checkAttendance = () => {
       const attendanceKey = `attendanceData_${user?._id || user?.id}`;
       const savedData = JSON.parse(localStorage.getItem(attendanceKey));
-      const today = new Date().toDateString();
+      const today = getTodayDateKey();
       
       if (savedData && savedData.date === today) {
         if (savedData.status === "working" || savedData.status === "break" || savedData.sidebarAccessStatus === "APPROVED") {
