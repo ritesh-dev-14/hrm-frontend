@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LogIn, LogOut, Coffee, Play, Timer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -15,14 +15,21 @@ import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 import { refreshManagerLogoutStatus } from "../../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "../PendingWorkGuardModal";
 
+const getTodayDateKey = () => new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date());
+
 export default function AttendanceCard({ compact = false }) {
   const [status, setStatus] = useState("idle");
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const [pendingWorkStatus, setPendingWorkStatus] = useState(null);
   const [sidebarAccessStatus, setSidebarAccessStatus] = useState("NONE");
-
-  const today = new Date().toDateString();
+  const [today, setToday] = useState(getTodayDateKey);
+  const handleClockOutRef = useRef(null);
 
   // USER
   const user = JSON.parse(localStorage.getItem("user"));
@@ -31,19 +38,36 @@ export default function AttendanceCard({ compact = false }) {
   const attendanceKey = `attendanceData_${user?._id || user?.id}`;
 
   // GET STORAGE DATA
-  const getAttendanceData = () => {
+  const getAttendanceData = useCallback(() => {
     return JSON.parse(localStorage.getItem(attendanceKey));
-  };
+  }, [attendanceKey]);
 
   // SET STORAGE DATA
-  const setAttendanceData = (data) => {
+  const setAttendanceData = useCallback((data) => {
     localStorage.setItem(attendanceKey, JSON.stringify(data));
-  };
+  }, [attendanceKey]);
 
   // REMOVE STORAGE DATA
-  const removeAttendanceData = () => {
+  const removeAttendanceData = useCallback(() => {
     localStorage.removeItem(attendanceKey);
-  };
+  }, [attendanceKey]);
+
+  const updateTimer = useCallback((savedData) => {
+    const now = Date.now();
+
+    let totalWorked =
+      Math.floor((now - savedData.startTime) / 1000) -
+      (savedData.breakDuration || 0);
+
+    if (savedData.status === "break" && savedData.breakStartedAt) {
+      const currentBreak = Math.floor(
+        (now - savedData.breakStartedAt) / 1000,
+      );
+      totalWorked -= currentBreak;
+    }
+
+    setSeconds(Math.max(totalWorked, 0));
+  }, []);
 
   // RESTORE SESSION FROM BACKEND
   useEffect(() => {
@@ -123,7 +147,30 @@ export default function AttendanceCard({ compact = false }) {
     };
 
     fetchBackendAttendance();
-  }, []);
+  }, [attendanceKey, getAttendanceData, removeAttendanceData, setAttendanceData, today, updateTimer]);
+
+  useEffect(() => {
+    const refreshForNewDay = () => {
+      const currentDate = getTodayDateKey();
+      if (currentDate === today) return;
+
+      removeAttendanceData();
+      setStatus("idle");
+      setSeconds(0);
+      setSidebarAccessStatus("NONE");
+      setToday(currentDate);
+    };
+
+    const interval = window.setInterval(refreshForNewDay, 30_000);
+    window.addEventListener("focus", refreshForNewDay);
+    document.addEventListener("visibilitychange", refreshForNewDay);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshForNewDay);
+      document.removeEventListener("visibilitychange", refreshForNewDay);
+    };
+  }, [removeAttendanceData, today]);
 
   // LIVE TIMER
   useEffect(() => {
@@ -139,7 +186,7 @@ export default function AttendanceCard({ compact = false }) {
         const now = Date.now();
         const twelveHours = 12 * 60 * 60 * 1000;
         if (now - savedData.startTime >= twelveHours) {
-          handleClockOut();
+          handleClockOutRef.current?.();
           return;
         }
 
@@ -147,29 +194,8 @@ export default function AttendanceCard({ compact = false }) {
       }, 1000);
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => clearInterval(interval);
-  }, [status]);
-
-  // UPDATE TIMER
-  const updateTimer = (savedData) => {
-    const now = Date.now();
-
-    let totalWorked =
-      Math.floor((now - savedData.startTime) / 1000) -
-      (savedData.breakDuration || 0);
-
-    // CURRENT BREAK
-    if (savedData.status === "break" && savedData.breakStartedAt) {
-      const currentBreak = Math.floor(
-        (now - savedData.breakStartedAt) / 1000,
-      );
-
-      totalWorked -= currentBreak;
-    }
-
-    setSeconds(Math.max(totalWorked, 0));
-  };
+  }, [getAttendanceData, status, updateTimer]);
 
   // FORMAT TIME
   const formatTime = (t) => {
@@ -245,7 +271,7 @@ export default function AttendanceCard({ compact = false }) {
         }
       }
 
-      await stopAttendance();
+      const stopResponse = await stopAttendance();
 
       // Re-read the server record so the UI reflects the persisted end time.
       const attendanceResponse = await getTodayAttendance();
@@ -257,7 +283,11 @@ export default function AttendanceCard({ compact = false }) {
         ...existing,
         status: "completed",
         clockedOut: true,
-        endTime: attendance?.endTime ? new Date(attendance.endTime).getTime() : Date.now(),
+        endTime: attendance?.endTime
+          ? new Date(attendance.endTime).getTime()
+          : stopResponse.data?.endTime
+            ? new Date(stopResponse.data.endTime).getTime()
+            : existing.endTime,
         finalSeconds: seconds,
       };
 
@@ -291,6 +321,10 @@ export default function AttendanceCard({ compact = false }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    handleClockOutRef.current = handleClockOut;
+  });
 
   // BREAK / RESUME
   const handleBreakToggle = async () => {
