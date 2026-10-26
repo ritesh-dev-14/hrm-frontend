@@ -5,6 +5,28 @@ import { getUserRoles } from "../utils/userRoles";
 
 const fetchPreviews = () => API.get("/api/whatsapp-messages/previews");
 
+const ensureSocialMediaSection = (message) => {
+  const body = String(message.messageBody || "");
+  if (body.includes("📱 SOCIAL MEDIA REPORT")) return message;
+
+  const socialMediaReport = message.socialMediaReports?.[0];
+  const socialMediaSection = [
+    "📱 SOCIAL MEDIA REPORT",
+    "",
+    `Last Content Uploaded: ${socialMediaReport?.lastContentUploaded || "No content uploaded yet"}`,
+    `Next Expected Upload Date: ${socialMediaReport?.nextExpectedUploadDate || "Not scheduled"}`,
+    "━━━━━━━━━━━━━━━━━━━━",
+  ].join("\n");
+  const pendingHeading = "📌 PENDING FROM YOUR SIDE";
+  const pendingHeadingIndex = body.indexOf(pendingHeading);
+  if (pendingHeadingIndex === -1) return message;
+
+  return {
+    ...message,
+    messageBody: `${body.slice(0, pendingHeadingIndex).trimEnd()}\n\n${socialMediaSection}\n\n${body.slice(pendingHeadingIndex)}`,
+  };
+};
+
 export default function MessagesPage() {
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState("");
@@ -20,7 +42,7 @@ export default function MessagesPage() {
     if (!Array.isArray(data)) {
       throw new Error("The server returned an invalid preview list.");
     }
-    setMessages(data);
+    setMessages(data.map(ensureSocialMediaSection));
   }, []);
 
   const loadPreviews = useCallback(async () => {
