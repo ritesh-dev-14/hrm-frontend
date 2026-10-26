@@ -312,7 +312,7 @@ export const AppRoutes = () => {
           <Route
             path="/department-reports"
             element={
-              hasRole("ADMIN", "HR", "EA", "MANAGER") ? (
+              hasRole("HR", "EA", "MANAGER") ? (
                 <DepartmentReportsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -416,7 +416,7 @@ export const AppRoutes = () => {
           <Route
             path="/payslips"
             element={
-              hasRole("HR", "ADMIN", "EA") ? (
+              hasRole("HR", "EA") ? (
                 <HrPayslips />
               ) : hasRole("MANAGER") ? (
                 <ManagerPayslips />
@@ -486,7 +486,6 @@ export const AppRoutes = () => {
               />
               <Route path="/hr/team" element={<HrTeamPage />} />
               <Route path="/reports/hr" element={<HrReports />} />
-              <Route path="/reports/overview" element={<ProjectsReportsOverviewPage />} />
               <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
               <Route path="/hr/whatsapp-messages" element={<HrWhatsappMessages />} />
             </>
@@ -536,7 +535,7 @@ export const AppRoutes = () => {
       <Route
         path="/data/:projectId?"
         element={
-          hasRole("ADMIN", "HR", "EA", "MANAGER") ? (
+          hasRole("HR", "EA", "MANAGER") ? (
             <DataDashboardPage />
           ) : (
             <Navigate to="/dashboard" replace />

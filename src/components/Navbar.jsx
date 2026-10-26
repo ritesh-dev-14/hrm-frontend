@@ -20,7 +20,6 @@ import {
   Keyboard,
   CreditCard,
   FolderOpen,
-  Layers,
   TrendingUp,
   Megaphone,
   BarChart2,
@@ -81,15 +80,14 @@ const NAV_CONFIG = [
   { id: "employee-leaves", label: "Employee Leaves", icon: FileText, path: "/hr/employees-leaves", roles: ["HR"] },
   { id: "team", label: "Team", icon: Users, path: "/hr/team", roles: ["HR", "ADMIN"] },
   { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
-  { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
+  { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA"] },
   { id: "messages", label: "Messages", icon: MessageSquareText, path: "/messages", roles: ["ADMIN", "HR", "MANAGER"] },
-  { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["ADMIN", "HR", "EA"] },
-  { id: "data", label: "Data", icon: Database, path: "/data", roles: ["ADMIN", "HR", "EA"] },
-  { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["ADMIN", "HR"] },
-  { id: "complete-details", label: "Complete Details", icon: Layers, path: "/admin/complete-details", roles: ["ADMIN"] },
+  { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["HR", "EA"] },
+  { id: "data", label: "Data", icon: Database, path: "/data", roles: ["HR", "EA"] },
+  { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["HR"] },
 ];
 
 const WIDE = 260;
