@@ -293,17 +293,19 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = n
   };
 
   const renderProjectList = (title, items, running) => (
-    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white">
-      <header className={`flex items-center justify-between gap-3 border-b px-4 py-3 ${running ? "border-emerald-100 bg-emerald-50/70" : "border-slate-100 bg-slate-50"}`}>
-        <h3 className={`flex items-center gap-2 text-sm font-extrabold ${running ? "text-emerald-800" : "text-slate-700"}`}>
-          {running ? <Activity size={16} /> : <X size={16} />}
+    <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          {running
+            ? <Activity size={15} className="text-emerald-600" />
+            : <Clock3 size={15} className="text-slate-500" />}
           {title}
         </h3>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${running ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
           {items.length}
         </span>
       </header>
-      <div className="max-h-52 divide-y divide-slate-100 overflow-y-auto">
+      <div className="max-h-60 divide-y divide-slate-100 overflow-y-auto">
         {items.length === 0 ? (
           <p className="px-4 py-6 text-center text-xs text-slate-400">No projects in this group.</p>
         ) : items.map((project) => {
@@ -315,15 +317,15 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = n
               type="button"
               onClick={() => selectProject(project)}
               aria-pressed={selected}
-              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${selected ? "bg-indigo-50 text-indigo-900" : "text-slate-700 hover:bg-slate-50"}`}
+              className={`flex w-full items-center justify-between gap-3 border-l-2 px-4 py-3 text-left transition-colors ${selected ? "border-indigo-600 bg-indigo-50/70 text-indigo-900" : "border-transparent text-slate-700 hover:bg-slate-50"}`}
             >
               <span className="min-w-0">
-                <span className="block truncate text-sm font-bold">{project.projectName || project.clientName || "Unnamed project"}</span>
-                <span className="mt-0.5 block truncate text-[11px] text-slate-400">{project.department?.name || "Marketing"}</span>
+                <span className="block truncate text-sm font-medium">{project.projectName || project.clientName || "Unnamed project"}</span>
+                <span className="mt-0.5 block truncate text-xs text-slate-500">{project.department?.name || "Marketing"}</span>
               </span>
               {running
-                ? <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
-                : <span className="shrink-0 text-[10px] font-bold uppercase text-slate-400">Stopped</span>}
+                ? <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700"><CheckCircle2 size={12} /> Running</span>
+                : <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">Not running</span>}
             </button>
           );
         })}
@@ -342,46 +344,46 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = n
         role="dialog"
         aria-modal="true"
         aria-labelledby="ads-marketing-dialog-title"
-        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-slate-50 shadow-2xl"
+        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl"
       >
-        <header className="flex items-start justify-between gap-4 bg-slate-950 px-5 py-4 text-white sm:px-7">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
           <div>
-            <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-300">
-              <Megaphone size={15} /> Admin reports
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-indigo-600">
+              <Megaphone size={14} /> Admin reports
             </div>
-            <h2 id="ads-marketing-dialog-title" className="text-xl font-black sm:text-2xl">Ads &amp; Marketing</h2>
-            <p className="mt-1 text-xs text-slate-300">Choose a project to review its ad activity and manager submissions.</p>
+            <h2 id="ads-marketing-dialog-title" className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Ads &amp; Marketing</h2>
+            <p className="mt-1 text-sm text-slate-500">Review ad activity and manager submissions by project.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close Ads and Marketing reports" className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white">
+          <button type="button" onClick={onClose} aria-label="Close Ads and Marketing reports" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
             <X size={20} />
           </button>
         </header>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
-          <div className="flex flex-col gap-3 rounded-2xl border border-indigo-100 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+          <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-800">Filter by manager report submission date</h3>
-              <p className="mt-1 text-xs text-slate-500">
+              <h3 className="text-sm font-semibold text-slate-900">Filter by submission date</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-500">
                 {submissionDate
                   ? `Showing projects with an Ads & Marketing report submitted on ${formatDate(submissionDate)}.`
                   : "Choose a date and apply the filter to find projects with an Ads & Marketing report submitted that day. Weekly recordings remain available separately."}
               </p>
             </div>
-            <div className="flex flex-wrap items-end gap-2">
-              <label className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            <div className="flex flex-wrap items-end gap-2 sm:flex-nowrap">
+              <label className="text-xs font-medium text-slate-600">
                 Submitted on
                 <input
                   type="date"
                   value={draftSubmissionDate}
                   onChange={(event) => setDraftSubmissionDate(event.target.value)}
-                  className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700"
+                  className="mt-1 block min-h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
               </label>
               <button
                 type="button"
                 onClick={applySubmissionDateFilter}
                 disabled={!draftSubmissionDate || loadingSubmittedProjects}
-                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-10 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Apply Filter
               </button>
@@ -389,7 +391,7 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = n
                 <button
                   type="button"
                   onClick={removeSubmissionDateFilter}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+                  className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                   Remove Filter
                 </button>
@@ -414,12 +416,12 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = n
           </div>
 
           {selectedProject ? (
-            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
               <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Selected project</p>
-                  <h3 className="truncate text-lg font-black text-slate-900">{selectedProject.projectName || selectedProject.clientName}</h3>
-                  <p className="text-xs text-slate-500">{selectedProject.department?.name || "Marketing"}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Selected project</p>
+                  <h3 className="mt-1 truncate text-lg font-semibold text-slate-900">{selectedProject.projectName || selectedProject.clientName}</h3>
+                  <p className="mt-0.5 text-sm text-slate-500">{selectedProject.department?.name || "Marketing"}</p>
                 </div>
               </div>
 
