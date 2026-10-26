@@ -3,11 +3,9 @@ import {
   AlertTriangle,
   Clock,
   Camera,
-  FileText,
   DollarSign,
   Users,
   ShieldAlert,
-  PhoneOff,
   Activity,
   Loader2,
   Building2,
@@ -235,130 +233,179 @@ export default function AdminControlTower({
   if (!data) return null;
 
   return (
-    <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-6">
-      <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-        <div className="bg-slate-900 p-2 rounded-xl text-white">
+    <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm space-y-5">
+    <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+      <div className="bg-slate-900 p-2.5 rounded-xl text-white">
           <Activity size={20} />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900">CEO Control Tower</h2>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Morning Briefing</p>
+        <h2 className="text-lg font-bold tracking-tight text-slate-900">CEO Control Tower</h2>
+        <p className="text-xs font-medium text-slate-500">Morning briefing</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {/* Critical Section */}
-        <div className="bg-rose-50 rounded-3xl p-5 border border-rose-100 space-y-4">
-          <h3 className="text-xs font-black text-rose-800 uppercase tracking-widest flex items-center gap-2">
+      <div className="rounded-xl border border-slate-200 border-t-2 border-t-rose-500 bg-white p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
             <AlertTriangle size={16} /> Urgent Attention
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div 
               onClick={() => setShowUrgentDeliverablesModal(true)}
-              className="bg-white/70 rounded-2xl p-4 border border-rose-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
-            >
-              <p className="text-3xl font-black text-rose-600 group-hover:scale-105 transition">{data.critical.overdueDeliverables}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Deliverables<br/>Overdue</p>
-            </div>
-            <div 
-              onClick={() => setShowUrgentApprovalsModal(true)}
-              className="bg-white/70 rounded-2xl p-4 border border-rose-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
-            >
-              <p className="text-3xl font-black text-rose-600 group-hover:scale-105 transition">{data.critical.oldApprovals}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Approvals<br/>Stuck &gt;3d</p>
-            </div>
+            role="button" tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowUrgentDeliverablesModal(true);
+              }
+            }}
+            className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center cursor-pointer hover:border-rose-200 hover:bg-rose-50/40 transition group"
+          >
+            <p className="text-2xl font-bold text-rose-600">{data.critical.overdueDeliverables}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Overdue deliverables</p>
+          </div>
+          <div 
+            onClick={() => setShowUrgentApprovalsModal(true)}
+            role="button" tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowUrgentApprovalsModal(true);
+              }
+            }}
+            className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center cursor-pointer hover:border-rose-200 hover:bg-rose-50/40 transition group"
+          >
+            <p className="text-2xl font-bold text-rose-600">{data.critical.oldApprovals}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Approvals waiting 3+ days</p>
           </div>
         </div>
+      </div>
 
-        {/* This Week Section */}
-        <div className="bg-indigo-50 rounded-3xl p-5 border border-indigo-100 space-y-4">
-          <h3 className="text-xs font-black text-indigo-800 uppercase tracking-widest flex items-center gap-2">
-            <Clock size={16} /> This Month's Output
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center">
-              <p className="text-xl font-black text-indigo-600">{data.thisWeek.shootsScheduled}</p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Shoots</p>
+      {/* This Week Section */}
+      <div className="rounded-xl border border-slate-200 border-t-2 border-t-indigo-500 bg-white p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+          <Clock size={16} /> This Month's Output
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center">
+            <p className="text-xl font-bold text-indigo-600">{data.thisWeek.shootsScheduled}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Shoots</p>
             </div>
-            <div className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center">
-              <p className="text-xl font-black text-indigo-600">{data.thisWeek.contentPiecesDue}</p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Assets</p>
-            </div>
-            <div 
-              onClick={() => setShowBudgetModal(true)}
-              className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center cursor-pointer hover:bg-white hover:shadow-md transition group"
-            >
-              <p className="text-sm font-black text-indigo-600 flex justify-center items-center group-hover:scale-105 transition">
-                <IndianRupee size={12} />{data.thisWeek.totalMonthlyBudget > 1000 ? (data.thisWeek.totalMonthlyBudget/1000).toFixed(1) + 'k' : data.thisWeek.totalMonthlyBudget}
-              </p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Budget</p>
-            </div>
-            <div 
-              onClick={() => setShowSpendModal(true)}
-              className="bg-white/70 rounded-2xl p-3 border border-indigo-100/50 text-center shadow-sm flex flex-col justify-center cursor-pointer hover:bg-white hover:shadow-md transition group"
-            >
-              <p className="text-sm font-black text-indigo-600 flex justify-center items-center group-hover:scale-105 transition">
-                <IndianRupee size={12} />{data.thisWeek.totalMonthlySpent > 1000 ? (data.thisWeek.totalMonthlySpent/1000).toFixed(1) + 'k' : data.thisWeek.totalMonthlySpent}
-              </p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Spent(MTD)</p>
-            </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center">
+            <p className="text-xl font-bold text-indigo-600">{data.thisWeek.contentPiecesDue}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Assets</p>
+          </div>
+          <div 
+            onClick={() => setShowBudgetModal(true)}
+            role="button" tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowBudgetModal(true);
+              }
+            }}
+            className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center cursor-pointer hover:border-indigo-200 hover:bg-indigo-50/40 transition"
+          >
+            <p className="text-sm font-bold text-indigo-600 flex justify-center items-center">
+              <IndianRupee size={12} />{data.thisWeek.totalMonthlyBudget > 1000 ? (data.thisWeek.totalMonthlyBudget/1000).toFixed(1) + 'k' : data.thisWeek.totalMonthlyBudget}
+            </p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Budget</p>
+          </div>
+          <div 
+            onClick={() => setShowSpendModal(true)}
+            role="button" tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowSpendModal(true);
+              }
+            }}
+            className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center cursor-pointer hover:border-indigo-200 hover:bg-indigo-50/40 transition"
+          >
+            <p className="text-sm font-bold text-indigo-600 flex justify-center items-center">
+              <IndianRupee size={12} />{data.thisWeek.totalMonthlySpent > 1000 ? (data.thisWeek.totalMonthlySpent/1000).toFixed(1) + 'k' : data.thisWeek.totalMonthlySpent}
+            </p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Spent this month</p>
           </div>
         </div>
+      </div>
 
-        {/* People Section */}
-        <div className="bg-amber-50 rounded-3xl p-5 border border-amber-100 space-y-4">
-          <h3 className="text-xs font-black text-amber-800 uppercase tracking-widest flex items-center gap-2">
-            <Users size={16} /> Team Bottlenecks
-          </h3>
-          <div className="grid grid-cols-1 gap-3">
-            <div 
-              onClick={() => setShowTeamModal(true)}
-              className="bg-white/70 rounded-2xl p-4 border border-amber-100/50 flex items-center justify-between shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
-            >
-              <div>
-                <p className="text-2xl font-black text-amber-600 group-hover:scale-105 transition origin-left">{data.people.editorsWithOverdueCount}</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Staff with overdue tasks</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-200 transition">
-                <ShieldAlert size={20} />
-              </div>
+      {/* People Section */}
+      <div className="rounded-xl border border-slate-200 border-t-2 border-t-amber-500 bg-white p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+          <Users size={16} /> Team Bottlenecks
+        </h3>
+        <div className="grid grid-cols-1 gap-3">
+          <div 
+            onClick={() => setShowTeamModal(true)}
+            role="button" tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowTeamModal(true);
+              }
+            }}
+            className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between cursor-pointer hover:border-amber-200 hover:bg-amber-50/40 transition"
+          >
+            <div>
+              <p className="text-2xl font-bold text-amber-600">{data.people.editorsWithOverdueCount}</p>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Staff with overdue tasks</p>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700">
+              <ShieldAlert size={20} />
+            </div>
             </div>
           </div>
         </div>
 
         {/* Clients Section */}
-        <div className="bg-emerald-50 rounded-3xl p-5 border border-emerald-100 space-y-4">
-          <h3 className="text-xs font-black text-emerald-800 uppercase tracking-widest flex items-center gap-2">
+        <div className="rounded-xl border border-slate-200 border-t-2 border-t-emerald-500 bg-white p-4 space-y-3">
+          <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
             <Building2 size={16} /> Client Health
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div 
               onClick={() => setShowClientsAtRiskModal(true)}
-              className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+              role="button" tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setShowClientsAtRiskModal(true);
+                }
+              }}
+              className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center cursor-pointer hover:border-rose-200 hover:bg-rose-50/40 transition"
             >
-              <p className="text-3xl font-black text-rose-500 group-hover:scale-105 transition">{clientsAtRisk}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Clients<br/>At Risk</p>
+              <p className="text-2xl font-bold text-rose-600">{clientsAtRisk}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">Clients at risk</p>
             </div>
             <div 
               onClick={() => setShowClientsIgnoredModal(true)}
-              className="bg-white/70 rounded-2xl p-4 border border-emerald-100/50 text-center shadow-sm cursor-pointer hover:bg-white hover:shadow-md transition group"
+              role="button" tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setShowClientsIgnoredModal(true);
+                }
+              }}
+              className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-center cursor-pointer hover:border-amber-200 hover:bg-amber-50/40 transition"
             >
-              <p className="text-3xl font-black text-amber-500 group-hover:scale-105 transition">{notContacted7Days}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Ignored<br/>&gt; 7 Days</p>
+              <p className="text-2xl font-bold text-amber-600">{notContacted7Days}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">No contact 7+ days</p>
             </div>
           </div>
         </div>
       </div>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/50">
-        <div className="flex flex-col gap-4 border-b border-indigo-100 bg-white/70 p-5 md:flex-row md:items-center md:justify-between">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
               <User size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Manager Projects</h3>
-              <p className="text-xs font-medium text-slate-500">Choose a manager, department, and project to inspect full details.</p>
+              <h3 className="text-sm font-semibold text-slate-900">Manager projects</h3>
+              <p className="text-sm text-slate-500">Choose a manager and project to view details.</p>
             </div>
           </div>
           <label className="w-full md:max-w-sm">
@@ -366,7 +413,7 @@ export default function AdminControlTower({
             <select
               value={selectedManagerId}
               onChange={(event) => handleManagerSelect(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             >
               <option value="">Select a manager</option>
               {managers.map((manager) => (
@@ -379,35 +426,35 @@ export default function AdminControlTower({
         </div>
 
         {managerDirectoryError && (
-          <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700">
+          <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm text-rose-700">
             {managerDirectoryError}
           </p>
         )}
 
         {!selectedManagerId ? (
-          <p className="p-5 text-center text-sm font-medium text-slate-500">
+          <p className="p-8 text-center text-sm text-slate-500">
             Select a manager to view their departments and projects.
           </p>
         ) : managerProjectGroups.length === 0 ? (
-          <p className="p-5 text-center text-sm font-medium text-slate-500">
+          <p className="p-8 text-center text-sm text-slate-500">
             No projects are assigned to this manager.
           </p>
         ) : (
-          <div className="space-y-4 p-5">
+          <div className="space-y-4 p-4 sm:p-5">
             <div className="flex flex-wrap gap-2">
               {managerProjectGroups.map(([departmentName, groupProjects]) => (
                 <button
                   key={departmentName}
                   type="button"
                   onClick={() => setSelectedManagerDepartment(departmentName)}
-                  className={`rounded-xl border px-3.5 py-2 text-xs font-bold transition ${
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                     selectedManagerDepartment === departmentName
-                      ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50"
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
                   {departmentName}
-                  <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] ${
+                  <span className={`ml-2 rounded-full px-1.5 py-0.5 text-xs ${
                     selectedManagerDepartment === departmentName ? "bg-white/20" : "bg-slate-100"
                   }`}>
                     {groupProjects.length}
@@ -424,9 +471,9 @@ export default function AdminControlTower({
                   key={project.id}
                   type="button"
                   onClick={() => onSelectProject?.(project)}
-                  className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-indigo-300 hover:shadow-md"
+                  className="group flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-indigo-300 hover:bg-slate-50"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-indigo-500">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
                     {project.logo ? (
                       <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
                     ) : (
@@ -434,8 +481,8 @@ export default function AdminControlTower({
                     )}
                   </div>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-slate-900">{project.projectName}</span>
-                    <span className="mt-1 block truncate text-xs text-slate-500">{project.clientName || project.department?.name || "Project"}</span>
+                    <span className="block truncate text-sm font-semibold text-slate-900">{project.projectName}</span>
+                    <span className="mt-0.5 block truncate text-xs text-slate-500">{project.clientName || project.department?.name || "Project"}</span>
                   </span>
                   <ChevronRight size={15} className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" />
                 </button>
@@ -445,42 +492,42 @@ export default function AdminControlTower({
         )}
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-violet-100 bg-violet-50/50">
-        <div className="flex items-center gap-3 border-b border-violet-100 bg-white/70 p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center gap-3 border-b border-slate-200 p-4 sm:p-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
             <Camera size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900">Social Media Project Output</h3>
-            <p className="text-xs font-medium text-slate-500">
+            <h3 className="text-sm font-semibold text-slate-900">Social media project output</h3>
+            <p className="text-sm text-slate-500">
               Monthly planned content vs manager-approved uploads from the Uploads page.
             </p>
           </div>
         </div>
 
         {uploadCalendarError ? (
-          <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700">
+          <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm text-rose-700">
             {uploadCalendarError}
           </p>
         ) : null}
 
         {socialProjects.length === 0 ? (
-          <p className="p-5 text-center text-sm font-medium text-slate-500">
+          <p className="p-8 text-center text-sm text-slate-500">
             No Social Media projects are available.
           </p>
         ) : (
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-semibold text-slate-500">
                 {activeMonthLabel ? `Showing all projects for ${activeMonthLabel}` : "No monthly content calendars are available yet."}
               </p>
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 Month
                 <select
                   value={activeMonthValue}
                   onChange={(event) => setSelectedSocialMonth(event.target.value)}
                   disabled={monthOptions.length === 0}
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-700 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 >
                   {monthOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -492,24 +539,24 @@ export default function AdminControlTower({
               </label>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-violet-100 bg-white">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
               <table className="w-full min-w-[850px] text-left">
-                <thead className="bg-violet-50/70">
-                  <tr className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <thead className="bg-slate-50">
+                  <tr className="text-xs font-semibold text-slate-500">
                     <th className="px-4 py-3">Project</th>
-                    <th className="px-4 py-3 text-center">Planned Reels</th>
-                    <th className="px-4 py-3 text-center">Approved Reels</th>
-                    <th className="px-4 py-3 text-center">Planned Posts</th>
-                    <th className="px-4 py-3 text-center">Approved Posts</th>
+                    <th className="px-4 py-3 text-center">Planned reels</th>
+                    <th className="px-4 py-3 text-center">Approved reels</th>
+                    <th className="px-4 py-3 text-center">Planned posts</th>
+                    <th className="px-4 py-3 text-center">Approved posts</th>
                     <th className="px-4 py-3 text-right">Calendar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {socialProjectRows.map((row) => (
-                    <tr key={row.project.id} className="hover:bg-violet-50/30">
+                    <tr key={row.project.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3">
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-violet-600">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
                             {row.project.logo ? (
                               <img src={row.project.logo} alt="" className="h-full w-full object-contain p-1" />
                             ) : (
@@ -517,15 +564,15 @@ export default function AdminControlTower({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-bold text-slate-900">{row.project.projectName}</p>
-                            <p className="truncate text-[10px] text-slate-500">{row.project.clientName || row.project.department?.name}</p>
+                            <p className="truncate text-sm font-medium text-slate-900">{row.project.projectName}</p>
+                            <p className="truncate text-xs text-slate-500">{row.project.clientName || row.project.department?.name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center text-sm font-extrabold text-violet-700">{row.plannedReels}</td>
-                      <td className="px-4 py-3 text-center text-sm font-extrabold text-emerald-700">{row.approvedReels}</td>
-                      <td className="px-4 py-3 text-center text-sm font-extrabold text-indigo-700">{row.plannedPosts}</td>
-                      <td className="px-4 py-3 text-center text-sm font-extrabold text-emerald-700">{row.approvedPosts}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">{row.plannedReels}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.approvedReels}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">{row.plannedPosts}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.approvedPosts}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
@@ -534,7 +581,7 @@ export default function AdminControlTower({
                             setShowCalendarModal(true);
                           }}
                           disabled={!row.sheet}
-                          className="rounded-lg bg-violet-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-violet-700 transition hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           View
                         </button>
@@ -548,25 +595,25 @@ export default function AdminControlTower({
         )}
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/50">
-        <div className="flex items-center gap-3 border-b border-blue-100 bg-white/70 p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center gap-3 border-b border-slate-200 p-4 sm:p-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
             <DollarSign size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900">Performance Marketing & Meta Ads</h3>
-            <p className="text-xs font-medium text-slate-500">
+            <h3 className="text-sm font-semibold text-slate-900">Performance marketing &amp; Meta Ads</h3>
+            <p className="text-sm text-slate-500">
               Monthly budget and total spend for marketing projects.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50/30 px-5 py-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-800">Filter Projects</p>
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+          <p className="text-sm font-medium text-slate-600">Filter projects</p>
           <select
             value={marketingFilter}
             onChange={(e) => setMarketingFilter(e.target.value)}
-            className="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-700 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-100 uppercase tracking-wide"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
           >
             <option value="ALL">All Projects</option>
             <option value="RUNNING">Ads Running</option>
@@ -581,23 +628,23 @@ export default function AdminControlTower({
         )}
 
         {marketingProjectRows.length === 0 ? (
-          <p className="p-5 text-center text-sm font-medium text-slate-500">
+          <p className="p-8 text-center text-sm text-slate-500">
             No Marketing projects found for this filter.
           </p>
         ) : (
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-semibold text-slate-500">
+              <p className="text-sm text-slate-500">
                 {activeMarketingMonth
                   ? `Showing all projects for ${new Date(activeMarketingMonth.year, activeMarketingMonth.month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`
                   : "No monthly spend data is available yet."}
               </p>
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 Month
                 <select
                   value={activeMarketingMonthValue}
                   onChange={(event) => setSelectedMarketingMonth(event.target.value)}
-                  className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 >
                   {marketingMonthOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -610,10 +657,10 @@ export default function AdminControlTower({
                 </select>
               </label>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
               <table className="w-full min-w-[900px] text-left">
-                <thead className="bg-blue-50/70">
-                  <tr className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <thead className="bg-slate-50">
+                  <tr className="text-xs font-semibold text-slate-500">
                     <th className="px-4 py-3">Project</th>
                     <th className="px-4 py-3 text-right">Monthly Budget</th>
                     <th className="px-4 py-3 text-right">Total Spent</th>

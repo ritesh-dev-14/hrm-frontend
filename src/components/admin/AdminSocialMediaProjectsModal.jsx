@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Camera, ChevronRight, Heart, Loader2, Search, X } from "lucide-react";
+import { CalendarDays, Camera, ChevronRight, ClipboardList, Heart, Loader2, Search, X } from "lucide-react";
 import API from "../../services/api";
 
 const getToday = () => {
@@ -150,55 +150,55 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-social-projects-title"
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-slate-50 shadow-2xl"
+        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl"
       >
-        <header className="flex items-start justify-between gap-4 bg-gradient-to-r from-violet-700 to-purple-800 px-5 py-5 text-white sm:px-7">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
           <div>
-            <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-violet-200">
-              <Heart size={15} /> Admin directory
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-indigo-600">
+              <Heart size={14} /> Admin directory
             </div>
-            <h2 id="admin-social-projects-title" className="text-xl font-black sm:text-2xl">
+            <h2 id="admin-social-projects-title" className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               Social Media Projects
             </h2>
-            <p className="mt-1 text-xs text-violet-100">
-              Select a project to review its pending follow-ups and social media details.
+            <p className="mt-1 text-sm text-slate-500">
+              Review project status and pending follow-ups.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close Social Media projects"
-            className="rounded-xl p-2 text-violet-100 transition hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
           >
             <X size={20} />
           </button>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6">
-          <div className="flex flex-col gap-3 rounded-2xl border border-violet-100 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-800">Filter by manager report submission date</h3>
-              <p className="mt-1 text-xs text-slate-500">
+              <h3 className="text-sm font-semibold text-slate-900">Filter by submission date</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-500">
                 {appliedDate
                   ? `Showing projects with a content calendar report submitted on ${formatDate(appliedDate)}.`
                   : "Apply a date to see projects whose manager submitted a content calendar report that day."}
               </p>
             </div>
-            <div className="flex flex-wrap items-end gap-2">
-              <label className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            <div className="flex flex-wrap items-end gap-2 sm:flex-nowrap">
+              <label className="text-xs font-medium text-slate-600">
                 Submitted on
                 <input
                   type="date"
                   value={draftDate}
                   onChange={(event) => setDraftDate(event.target.value)}
-                  className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700"
+                  className="mt-1 block min-h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
               </label>
               <button
                 type="button"
                 onClick={applyDateFilter}
                 disabled={!draftDate || loadingSubmittedProjects || draftDate === appliedDate}
-                className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-10 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Apply Filter
               </button>
@@ -206,7 +206,7 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
                 <button
                   type="button"
                   onClick={removeDateFilter}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+                  className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                   Remove Filter
                 </button>
@@ -215,13 +215,13 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
           </div>
 
           {loadingSubmittedProjects && (
-            <p className="flex items-center gap-2 rounded-xl bg-violet-50 px-4 py-3 text-xs text-violet-700">
+            <p className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
               <Loader2 size={14} className="animate-spin" /> Loading Social Media submissions for{" "}
               {formatDate(appliedDate || draftDate)}…
             </p>
           )}
           {submittedProjectsError && (
-            <p className="rounded-xl bg-rose-50 px-4 py-3 text-xs text-rose-700" role="alert">
+            <p className="rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
               {submittedProjectsError}
             </p>
           )}
@@ -232,16 +232,16 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search Social Media projects..."
-              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+              placeholder="Search projects..."
+              className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
           </label>
 
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+          <div className="flex items-center justify-between text-sm font-medium text-slate-600">
             <span>
               {appliedDate ? `Projects with reports submitted ${formatDate(appliedDate)}` : "All Social Media projects"}
             </span>
-            <span className="rounded-full bg-violet-100 px-2.5 py-1 text-violet-800">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
               {filteredProjects.length}
             </span>
           </div>
@@ -272,17 +272,17 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
                     type="button"
                     onClick={() => setSelectedProject(isSelected ? null : project)}
                     aria-pressed={isSelected}
-                    className={`group flex min-h-28 flex-col justify-between rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                    className={`group flex min-h-28 flex-col justify-between rounded-xl border bg-white p-4 text-left transition ${
                       isSelected
-                        ? "border-violet-400 ring-2 ring-violet-200"
-                        : "border-slate-200 hover:border-violet-300"
+                        ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h3
-                          className={`truncate text-sm font-extrabold text-slate-900 transition ${
-                            isSelected ? "text-violet-700" : "group-hover:text-violet-700"
+                          className={`truncate text-sm font-semibold text-slate-900 transition ${
+                            isSelected ? "text-indigo-700" : "group-hover:text-indigo-700"
                           }`}
                         >
                           {project.projectName || project.clientName || "Unnamed project"}
@@ -292,7 +292,7 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
                         )}
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold uppercase ${
+                        className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-medium ${
                           project.status === "PAUSED"
                             ? "bg-amber-50 text-amber-700"
                             : project.status === "COMPLETED"
@@ -304,12 +304,12 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
                       </span>
                     </div>
                     <div className="mt-4 flex items-center justify-between gap-2">
-                      <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-violet-600">
+                      <span className="truncate text-xs font-medium text-slate-500">
                         {project.department?.name || "Social Media"}
                       </span>
                       <span
                         className={`flex shrink-0 items-center gap-1 text-xs font-bold transition ${
-                          isSelected ? "text-violet-700" : "text-slate-400 group-hover:text-violet-700"
+                          isSelected ? "text-indigo-700" : "text-slate-400 group-hover:text-indigo-700"
                         }`}
                       >
                         {isSelected ? "Selected \u2713" : "Select"} <ChevronRight size={14} />
@@ -323,23 +323,23 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
 
           {/* SELECTED PROJECT INLINE PANEL */}
           {selectedProject && (
-            <section className="space-y-4 rounded-2xl border border-violet-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
               <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-violet-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
                     Selected project
                   </p>
-                  <h3 className="truncate text-lg font-black text-slate-900">
+                  <h3 className="mt-1 truncate text-lg font-semibold text-slate-900">
                     {selectedProject.projectName || selectedProject.clientName}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="mt-0.5 text-sm text-slate-500">
                     {selectedProject.department?.name || "Social Media"}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => onSelectProject(selectedProject.id || selectedProject._id)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700"
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
                 >
                   View Full Details <ChevronRight size={14} />
                 </button>
@@ -347,26 +347,26 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
 
               {/* Pending from your side */}
               <div className="space-y-2">
-                <h4 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
-                  <span className="text-base">📋</span>
+                <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <ClipboardList size={16} className="text-slate-500" />
                   Pending from your side
                   {pendingItems.length > 0 && (
-                    <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                    <span className="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                       {pendingItems.length}
                     </span>
                   )}
                 </h4>
 
                 {loadingPendingItems ? (
-                  <div className="flex items-center gap-2 py-4 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 py-4 text-sm text-slate-500">
                     <Loader2 size={15} className="animate-spin" /> Loading pending items…
                   </div>
                 ) : pendingItemsError ? (
-                  <p className="rounded-xl bg-rose-50 px-3 py-3 text-xs text-rose-700">
+                  <p className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-3 text-sm text-rose-700">
                     {pendingItemsError}
                   </p>
                 ) : pendingItems.length === 0 ? (
-                  <p className="rounded-xl bg-slate-50 px-3 py-4 text-xs text-slate-500">
+                  <p className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">
                     No pending items have been recorded for this project.
                   </p>
                 ) : (
@@ -374,11 +374,11 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
                     {pendingItems.map((item) => (
                       <article
                         key={item.id}
-                        className="rounded-xl border border-amber-100 bg-amber-50/40 p-3"
+                        className="rounded-lg border border-amber-200 bg-amber-50/50 p-3"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
-                            📅{" "}
+                          <div className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                            <CalendarDays size={13} />
                             {formatDateTime(item.dueDate)}
                           </div>
                           <span className="text-[11px] text-slate-400">
@@ -388,7 +388,7 @@ const AdminSocialMediaProjectsModal = ({ projects, onClose, onSelectProject }) =
                             </span>
                           </span>
                         </div>
-                        <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">
+                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5 text-slate-700">
                           {item.note}
                         </p>
                       </article>
