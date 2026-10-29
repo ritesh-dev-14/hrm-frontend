@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CalendarDays, Clock3, LoaderCircle, MessageSquareText, Plus, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  Clock3,
+  LoaderCircle,
+  MessageSquareText,
+  Plus,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import API from "../../services/api";
 
 const DEPARTMENTS = [
@@ -22,13 +31,12 @@ const formatDate = (value) => new Date(value).toLocaleDateString("en-IN", {
 export default function ManagerClientPendingPage() {
   const [department, setDepartment] = useState("");
   const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [dueDate, setDueDate] = useState(getToday);
-  const [note, setNote] = useState("");
   const [loadingProjects, setLoadingProjects] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [projectForms, setProjectForms] = useState({});
+  const [savingProjects, setSavingProjects] = useState({});
+  const [projectErrors, setProjectErrors] = useState({});
+  const [projectSearch, setProjectSearch] = useState("");
 
   useEffect(() => {
     if (!department) return undefined;
@@ -39,16 +47,15 @@ export default function ManagerClientPendingPage() {
         if (!active) return;
         const nextProjects = response.data?.data || [];
         setProjects(nextProjects);
-        setSelectedProjectId((current) =>
-          nextProjects.some((project) => project.id === current) ? current : nextProjects[0]?.id || "",
-        );
+        setProjectForms({});
+        setProjectErrors({});
+        setProjectSearch("");
       })
       .catch((requestError) => {
         console.error("Unable to load assigned client projects:", requestError);
         if (active) {
           setError(requestError.response?.data?.message || "Could not load your projects for this department.");
           setProjects([]);
-          setSelectedProjectId("");
         }
       })
       .finally(() => {
@@ -68,9 +75,8 @@ export default function ManagerClientPendingPage() {
       const response = await API.get("/api/projects/client-pending", { params: { department } });
       const nextProjects = response.data?.data || [];
       setProjects(nextProjects);
-      setSelectedProjectId((current) =>
-        nextProjects.some((project) => project.id === current) ? current : nextProjects[0]?.id || "",
-      );
+      setProjectForms({});
+      setProjectErrors({});
     } catch (requestError) {
       console.error("Unable to refresh assigned client projects:", requestError);
       setError(requestError.response?.data?.message || "Could not refresh your projects.");
@@ -79,39 +85,72 @@ export default function ManagerClientPendingPage() {
     }
   };
 
-  const addPendingItem = async (event) => {
-    event.preventDefault();
-    if (!selectedProjectId || !dueDate || !note.trim()) return;
+  const updateProjectForm = (projectId, field, value) => {
+    setProjectForms((current) => ({
+      ...current,
+      [projectId]: {
+        dueDate: current[projectId]?.dueDate || getToday(),
+        note: current[projectId]?.note || "",
+        ...current[projectId],
+        [field]: value,
+      },
+    }));
+    setProjectErrors((current) => ({ ...current, [projectId]: "" }));
+  };
 
-    setSaving(true);
-    setError("");
-    setSuccess("");
+  const addPendingItem = async (event, project) => {
+    event.preventDefault();
+    const form = projectForms[project.id] || { dueDate: getToday(), note: "" };
+    if (!form.dueDate || !form.note.trim()) return;
+
+    setSavingProjects((current) => ({ ...current, [project.id]: true }));
+    setProjectErrors((current) => ({ ...current, [project.id]: "" }));
     try {
-      const response = await API.post(`/api/projects/${selectedProjectId}/pending-items`, {
-        dueDate,
-        note: note.trim(),
+      const response = await API.post(`/api/projects/${project.id}/pending-items`, {
+        dueDate: form.dueDate,
+        note: form.note.trim(),
       });
-      const newItem = response.data.data;
-      setProjects((current) => current.map((project) => (
-        project.id === selectedProjectId
-          ? { ...project, pendingItems: [...project.pendingItems, newItem].sort(
-            (left, right) => new Date(left.dueDate) - new Date(right.dueDate),
-          ) }
-          : project
+      const newItem = response.data?.data;
+      if (!newItem) {
+        throw new Error("The server did not return the saved pending item.");
+      }
+
+      setProjects((current) => current.map((item) => (
+        item.id === project.id
+          ? {
+            ...item,
+            pendingItems: [...(Array.isArray(item.pendingItems) ? item.pendingItems : []), newItem]
+              .sort((left, right) => new Date(left.dueDate) - new Date(right.dueDate)),
+          }
+          : item
       )));
-      setNote("");
-      setDueDate(getToday());
-      setSuccess("Pending item added. It will appear in the client’s combined message preview.");
+      setProjectForms((current) => ({
+        ...current,
+        [project.id]: { dueDate: getToday(), note: "" },
+      }));
     } catch (requestError) {
-      console.error("Unable to save pending item:", requestError);
-      setError(requestError.response?.data?.message || "Could not save this pending item.");
+      console.error(`Unable to add pending item for project ${project.id}:`, requestError);
+      setProjectErrors((current) => ({
+        ...current,
+        [project.id]: requestError.response?.data?.message
+          || requestError.message
+          || "Could not add this pending item.",
+      }));
     } finally {
-      setSaving(false);
+      setSavingProjects((current) => ({ ...current, [project.id]: false }));
     }
   };
 
-  const selectedProject = projects.find((project) => project.id === selectedProjectId);
-  const totalPendingItems = projects.reduce((total, project) => total + project.pendingItems.length, 0);
+  const filteredProjects = projects.filter((project) => {
+    const search = projectSearch.trim().toLowerCase();
+    if (!search) return true;
+    return [project.projectName, project.clientName]
+      .some((value) => String(value || "").toLowerCase().includes(search));
+  });
+  const filteredPendingItems = filteredProjects.reduce(
+    (total, project) => total + (Array.isArray(project.pendingItems) ? project.pendingItems.length : 0),
+    0,
+  );
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-8">
@@ -123,7 +162,7 @@ export default function ManagerClientPendingPage() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Pending from your side</h1>
-              <p className="mt-1 text-sm text-slate-500">Choose a department to review and manage all its project follow-ups.</p>
+              <p className="mt-1 text-sm text-slate-500">Choose a department to view all projects and add client-side follow-ups.</p>
             </div>
           </div>
           <button
@@ -143,110 +182,56 @@ export default function ManagerClientPendingPage() {
             {error}
           </div>
         )}
-        {success && <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">{success}</p>}
-
-        <section className="mb-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2 md:p-6">
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
           <label className="block">
-            <span className="mb-2 block text-sm font-bold text-slate-700">1. Select department</span>
+            <span className="mb-2 block text-sm font-bold text-slate-700">Select department</span>
             <select
               value={department}
               onChange={(event) => {
                 const selectedDepartment = event.target.value;
                 setDepartment(selectedDepartment);
                 setProjects([]);
-                setSelectedProjectId("");
                 setLoadingProjects(Boolean(selectedDepartment));
                 setError("");
-                setSuccess("");
+                setProjectForms({});
+                setProjectErrors({});
               }}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 md:max-w-xl"
             >
               <option value="">Choose SEO, Meta Ads, or Social Media</option>
               {DEPARTMENTS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-bold text-slate-700">2. Select project</span>
-            <select
-              value={selectedProjectId}
-              onChange={(event) => {
-                setSelectedProjectId(event.target.value);
-                setSuccess("");
-              }}
-              disabled={!department || loadingProjects || projects.length === 0}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50"
-            >
-              <option value="">
-                {loadingProjects ? "Loading projects..." : projects.length ? "Choose a project" : "Select a department first"}
-              </option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.projectName} · {project.clientName || "Client"}
-                </option>
-              ))}
-            </select>
-          </label>
           {department && !loadingProjects && projects.length === 0 && !error && (
-            <p className="text-sm text-slate-500 md:col-span-2">No projects are assigned to you in this department.</p>
+            <p className="mt-3 text-sm text-slate-500">No projects are assigned to you in this department.</p>
           )}
         </section>
 
-        {selectedProject && (
-          <section className="mb-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <div className="mb-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">{selectedProject.department.name}</p>
-              <h2 className="mt-1 text-xl font-black text-slate-900">Add follow-up for {selectedProject.projectName}</h2>
-              <p className="mt-1 text-sm text-slate-500">{selectedProject.clientName || "Client"}</p>
-            </div>
-            <form onSubmit={addPendingItem} className="grid gap-4 md:grid-cols-[190px_minmax(0,1fr)_auto] md:items-end">
-              <label className="block space-y-1.5">
-                <span className="text-sm font-semibold text-slate-700">Date</span>
-                <input
-                  type="date"
-                  required
-                  value={dueDate}
-                  onChange={(event) => setDueDate(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-sm font-semibold text-slate-700">What are we waiting on?</span>
-                <textarea
-                  required
-                  maxLength={2000}
-                  rows={3}
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Write the pending item or follow-up note..."
-                  className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
-                <span className="text-xs text-slate-400">{note.length}/2000</span>
-              </label>
-              <button
-                type="submit"
-                disabled={saving || !note.trim()}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />}
-                Add pending item
-              </button>
-            </form>
-          </section>
-        )}
-
         {department && (
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-lg font-black text-slate-900">
-                  All {DEPARTMENTS.find((item) => item.value === department)?.label} pending items
+                  All {DEPARTMENTS.find((item) => item.value === department)?.label} projects
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Review notes across all your projects in this department.</p>
+                <p className="mt-1 text-sm text-slate-500">Add a follow-up to any project and review its existing pending items.</p>
               </div>
-              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                {projects.length} projects · {totalPendingItems} items
-              </span>
+              <div className="flex flex-col gap-3 sm:items-end">
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                  {filteredProjects.length} of {projects.length} projects · {filteredPendingItems} pending items
+                </span>
+                <label className="relative block w-full sm:w-80">
+                  <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    value={projectSearch}
+                    onChange={(event) => setProjectSearch(event.target.value)}
+                    placeholder="Search project or client..."
+                    aria-label="Search projects"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+              </div>
             </div>
 
             {loadingProjects ? (
@@ -257,44 +242,114 @@ export default function ManagerClientPendingPage() {
               <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-sm text-slate-500">
                 No assigned projects are available for this department.
               </div>
-            ) : totalPendingItems === 0 ? (
+            ) : filteredProjects.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center">
-                <MessageSquareText size={26} className="mx-auto text-slate-300" />
-                <p className="mt-3 text-sm font-semibold text-slate-600">No pending items have been added for these projects yet.</p>
-                <p className="mt-1 text-xs text-slate-400">Choose a project above to add the first follow-up.</p>
+                <Search size={24} className="mx-auto text-slate-300" />
+                <p className="mt-3 text-sm font-semibold text-slate-600">No projects match “{projectSearch}”.</p>
+                <button
+                  type="button"
+                  onClick={() => setProjectSearch("")}
+                  className="mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                >
+                  Clear search
+                </button>
               </div>
             ) : (
               <div className="grid gap-4 lg:grid-cols-2">
-                {projects.filter((project) => project.pendingItems.length > 0).map((project) => (
-                  <article key={project.id} className="rounded-xl border border-slate-200 p-4">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-slate-900">{project.projectName}</h3>
-                        <p className="mt-0.5 text-xs text-slate-500">{project.clientName || "Client"}</p>
-                      </div>
-                      <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
-                        {project.pendingItems.length}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {project.pendingItems.map((item) => (
-                        <div key={item.id} className="rounded-lg bg-slate-50 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">
-                              <CalendarDays size={13} />
-                              {formatDate(item.dueDate)}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
-                              <Clock3 size={12} />
-                              Added {formatDate(item.createdAt)} by {item.createdBy?.name || "Project team"}
-                            </span>
-                          </div>
-                          <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{item.note}</p>
+                {filteredProjects.map((project) => {
+                  const pendingItems = Array.isArray(project.pendingItems) ? project.pendingItems : [];
+                  const form = projectForms[project.id] || { dueDate: getToday(), note: "" };
+                  const isSaving = Boolean(savingProjects[project.id]);
+                  return (
+                    <article
+                      key={project.id}
+                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-white to-indigo-50/60 p-4">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                            {project.department?.name || DEPARTMENTS.find((item) => item.value === department)?.label}
+                          </p>
+                          <h3 className="mt-0.5 truncate font-black text-slate-900">{project.projectName}</h3>
+                          <p className="truncate text-xs text-slate-500">{project.clientName || "Client"}</p>
                         </div>
-                      ))}
-                    </div>
-                  </article>
-                ))}
+                        <span className="shrink-0 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-extrabold text-indigo-700">
+                          {pendingItems.length} {pendingItems.length === 1 ? "pending" : "pending"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-4 p-4">
+                        <form onSubmit={(event) => addPendingItem(event, project)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5">
+                          <p className="mb-3 text-xs font-bold text-slate-700">Add a pending item</p>
+                          <label className="mb-3 block">
+                            <span className="mb-1.5 block text-xs font-semibold text-slate-600">Due date</span>
+                            <input
+                              type="date"
+                              required
+                              value={form.dueDate}
+                              onChange={(event) => updateProjectForm(project.id, "dueDate", event.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1.5 block text-xs font-semibold text-slate-600">What are we waiting on?</span>
+                            <textarea
+                              required
+                              maxLength={2000}
+                              rows={2}
+                              value={form.note}
+                              onChange={(event) => updateProjectForm(project.id, "note", event.target.value)}
+                              placeholder="Write the pending item or follow-up note..."
+                              className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            />
+                          </label>
+                          {projectErrors[project.id] && (
+                            <p role="alert" className="mt-2 text-xs text-rose-700">{projectErrors[project.id]}</p>
+                          )}
+                          <div className="mt-3 flex justify-end">
+                            <button
+                              type="submit"
+                              disabled={isSaving || !form.note.trim()}
+                              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isSaving ? <LoaderCircle size={14} className="animate-spin" /> : <Plus size={14} />}
+                              {isSaving ? "Adding..." : "Add pending item"}
+                            </button>
+                          </div>
+                        </form>
+
+                        <div>
+                          <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                            Existing pending items
+                          </h4>
+                          {pendingItems.length ? (
+                            <div className="space-y-2">
+                              {pendingItems.map((item) => (
+                                <div key={item.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">
+                                      <CalendarDays size={13} />
+                                      {formatDate(item.dueDate)}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                                      <Clock3 size={12} />
+                                      Added {formatDate(item.createdAt)} by {item.createdBy?.name || "Project team"}
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{item.note}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500">
+                              No pending items yet. Add the first one above.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
