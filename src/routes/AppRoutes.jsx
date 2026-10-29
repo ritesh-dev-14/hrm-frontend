@@ -153,7 +153,7 @@ export const AppRoutes = () => {
           />
           <Route
             path="/manager/client-pending"
-            element={hasRole("MANAGER") ? <ManagerClientPendingPage /> : <Navigate to="/dashboard" replace />}
+            element={hasRole("MANAGER", "ADMIN", "HR", "EA") ? <ManagerClientPendingPage /> : <Navigate to="/dashboard" replace />}
           />
 
           <Route path="/project/:id" element={<ProjectDetailsViewWrapper />} />

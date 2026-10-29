@@ -10,6 +10,8 @@ import {
   Search,
 } from "lucide-react";
 import API from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { getUserRoles } from "../../utils/userRoles";
 
 const DEPARTMENTS = [
   { value: "seo", label: "SEO" },
@@ -29,6 +31,9 @@ const formatDate = (value) => new Date(value).toLocaleDateString("en-IN", {
 });
 
 export default function ManagerClientPendingPage() {
+  const { user, role } = useAuth();
+  const userRoles = getUserRoles(user, role);
+  const canAddPendingItems = userRoles.some((userRole) => ["MANAGER", "ADMIN"].includes(userRole));
   const [department, setDepartment] = useState("");
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
@@ -161,8 +166,10 @@ export default function ManagerClientPendingPage() {
               <MessageSquareText size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Pending from your side</h1>
-              <p className="mt-1 text-sm text-slate-500">Choose a department to view all projects and add client-side follow-ups.</p>
+              <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Pending from Client Side</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Choose a department to view {canAddPendingItems ? "all projects and add items waiting on the client." : "all projects and items waiting on the client."}
+              </p>
             </div>
           </div>
           <button
@@ -279,7 +286,8 @@ export default function ManagerClientPendingPage() {
                       </div>
 
                       <div className="space-y-4 p-4">
-                        <form onSubmit={(event) => addPendingItem(event, project)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5">
+                        {canAddPendingItems && (
+                          <form onSubmit={(event) => addPendingItem(event, project)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5">
                           <p className="mb-3 text-xs font-bold text-slate-700">Add a pending item</p>
                           <label className="mb-3 block">
                             <span className="mb-1.5 block text-xs font-semibold text-slate-600">Due date</span>
@@ -316,7 +324,8 @@ export default function ManagerClientPendingPage() {
                               {isSaving ? "Adding..." : "Add pending item"}
                             </button>
                           </div>
-                        </form>
+                          </form>
+                        )}
 
                         <div>
                           <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
