@@ -36,6 +36,30 @@ const DEPARTMENT_TABS = [
   { id: "ALL", label: "All Projects", icon: Briefcase, activeColor: "from-blue-600 to-indigo-600", activeRing: "ring-blue-400" },
 ];
 
+const QUESTION_SCRIPTS = {
+  Marketing: [
+    "Good morning, XYZ. Main XYZ, We Promote se manager bol raha hoon. Pichhle hafte jo ads run hue the, unka feedback aur is hafte ke liye aapke inputs lene ke liye call kiya hai. Aapke feedback ke basis par hum is hafte ki ads ko aur better karenge.",
+    "Pichhle hafte aapka ad spend ₹XYZ tha, reach XYZ rahi aur XYZ leads aayi. Ads ABC locations mein run hue the.",
+    "Sir, leads ki quality kaisi lagi? Kya aapko lagta hai ki ye leads convert ho sakti hain?",
+    "Abhi leads in areas se aa rahi hain: ABC. Kya aap kisi area ko kam ya zyada karna chahenge?",
+    "Done sir, aapke feedback ke according ads update kar deta hoon.",
+  ],
+  SEO: [
+    "Good morning, XYZ. Main XYZ, We Promote se manager bol raha hoon. Pichhle hafte ke SEO work ka feedback aur is hafte ke liye aapke inputs lene ke liye call kiya hai.",
+    "Pichhle hafte humne XYZ keywords par kaam kiya, ABC pages optimize kiye aur XYZ content/technical updates complete kiye. Organic traffic XYZ raha, search impressions XYZ aur clicks XYZ rahe. (Available report ke metrics share karein.)",
+    "Sir, website par aane wale traffic aur inquiries ki quality kaisi lagi? Kya inquiries aapke target customers aur services se relevant hain?",
+    "Kya aapko kisi specific keyword, service ya location par zyada focus chahiye? Koi nayi service, offer ya website update hai jise SEO plan mein include karein?",
+    "Done sir, aapke feedback ke according is hafte ke SEO priorities aur action plan update kar deta hoon.",
+  ],
+  "Social Media": [
+    "Good morning, XYZ. Main XYZ, We Promote se manager bol raha hoon. Pichhle hafte ke social media content ka feedback aur is hafte ke liye aapke inputs lene ke liye call kiya hai.",
+    "Pichhle hafte humne ABC platform par XYZ posts/reels publish kiye. Content ki reach XYZ, engagement XYZ aur profile visits XYZ rahe. XYZ inquiries/messages bhi aaye. (Available report ke metrics share karein.)",
+    "Sir, content aur usse aane wali inquiries ki quality kaisi lagi? Kya posts aapke brand aur target audience ke liye relevant lag rahe hain?",
+    "Kis type ke content, topic ya platform par is hafte zyada focus karein? Koi naya offer, event, product ya update hai jise content mein dikhana chahiye?",
+    "Done sir, aapke feedback ke according is hafte ka social media content plan update kar deta hoon.",
+  ],
+};
+
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -101,10 +125,20 @@ export default function ManagerWeeklyVoiceReport() {
   const [selectedDeptTab, setSelectedDeptTab] = useState(
     () => location.state?.department || "Marketing"
   );
+  const [selectedQuestionTab, setSelectedQuestionTab] = useState(
+    () => location.state?.department === "SEO" || location.state?.department === "Social Media"
+      ? location.state.department
+      : "Marketing"
+  );
 
   useEffect(() => {
     if (location.state?.department) {
       setSelectedDeptTab(location.state.department);
+      if (location.state.department === "SEO" || location.state.department === "Social Media") {
+        setSelectedQuestionTab(location.state.department);
+      } else {
+        setSelectedQuestionTab("Marketing");
+      }
     }
   }, [location.state?.department]);
 
@@ -500,6 +534,53 @@ export default function ManagerWeeklyVoiceReport() {
           <MessageSquare className="text-blue-300 w-8 h-8" />
         </div>
       </div>
+
+      {/* Client feedback call script */}
+      <section className="bg-white rounded-3xl p-5 md:p-7 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">Questions</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Use these prompts to collect client feedback and plan the upcoming week.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {DEPARTMENT_TABS.filter((tab) => tab.id !== "ALL").map((tab) => {
+              const isActive = selectedQuestionTab === tab.id;
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSelectedQuestionTab(tab.id)}
+                  aria-pressed={isActive}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-colors cursor-pointer ${
+                    isActive
+                      ? "bg-slate-900 text-white"
+                      : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+                  }`}
+                >
+                  <TabIcon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <ol className="space-y-3">
+          {QUESTION_SCRIPTS[selectedQuestionTab].map((question, index) => (
+            <li
+              key={`${selectedQuestionTab}-${index}`}
+              className="flex gap-3 rounded-xl bg-slate-50 p-3.5 text-sm md:text-base leading-relaxed text-slate-700"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-extrabold text-blue-700">
+                {index + 1}
+              </span>
+              <p>{question}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {/* ─── 1. MONTH & YEAR SELECTOR ────────────────────────────────── */}
       <div className="bg-white p-3.5 md:p-4 rounded-3xl border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col lg:flex-row items-center justify-between gap-3">
