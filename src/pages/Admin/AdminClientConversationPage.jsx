@@ -4,12 +4,10 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
-  Eye,
   Headphones,
   LoaderCircle,
   MessageSquareText,
   RefreshCw,
-  Target,
   Users,
   UserRound,
   Volume2,
@@ -33,17 +31,45 @@ const formatDate = (value) => value
   ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
   : "Date unavailable";
 
-const formatCount = (value) => Number(value || 0).toLocaleString("en-IN");
 const REPORT_DEPARTMENT = {
   marketing: "Marketing",
   social: "Social Media",
   seo: "SEO",
 };
 
-const getCurrentWeekNumber = (date) => {
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const getWeekNumber = (date) => {
   const startOfYear = new Date(date.getFullYear(), 0, 1);
   const dayOfYear = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
   return Math.floor(dayOfYear / 7) + 1;
+};
+
+const getMonthWeeks = (year, monthIndex) => {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const chunks = [
+    { startDay: 1, endDay: 7 },
+    { startDay: 8, endDay: 14 },
+    { startDay: 15, endDay: 21 },
+    { startDay: 22, endDay: 28 },
+  ];
+  if (daysInMonth > 28) {
+    chunks.push({ startDay: 29, endDay: daysInMonth });
+  }
+
+  return chunks.map((chunk, index) => {
+    const sampleDate = new Date(year, monthIndex, Math.min(chunk.startDay + 3, daysInMonth));
+    return {
+      ...chunk,
+      index,
+      weekNumber: getWeekNumber(sampleDate),
+      label: `Week ${index + 1}`,
+      dateRange: `${chunk.startDay}–${chunk.endDay} ${MONTH_NAMES[monthIndex].slice(0, 3)}`,
+    };
+  });
 };
 
 const getReportClients = (clients) => {
@@ -74,18 +100,26 @@ async function fetchAllProjects() {
 }
 
 export default function AdminClientConversationPage() {
+  const now = new Date();
   const [projects, setProjects] = useState([]);
   const [department, setDepartment] = useState("");
   const [conversations, setConversations] = useState({});
   const [conversationErrors, setConversationErrors] = useState({});
-  const [marketingTotals, setMarketingTotals] = useState(null);
-  const [marketingTotalsError, setMarketingTotalsError] = useState("");
   const [weeklyReportSummary, setWeeklyReportSummary] = useState([]);
   const [weeklyReportLoadedKey, setWeeklyReportLoadedKey] = useState("");
   const [weeklyReportError, setWeeklyReportError] = useState("");
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(() => {
+    const monthWeeks = getMonthWeeks(now.getFullYear(), now.getMonth());
+    const weekIndex = monthWeeks.findIndex(
+      (week) => now.getDate() >= week.startDay && now.getDate() <= week.endDay,
+    );
+    return weekIndex === -1 ? 0 : weekIndex;
+  });
 
   const departmentProjects = useMemo(
     () => projects.filter((project) => matchesDepartment(project, department)),
@@ -94,12 +128,17 @@ export default function AdminClientConversationPage() {
   const loadingConversation = departmentProjects.some((project) =>
     !Object.hasOwn(conversations, project.id) && !conversationErrors[project.id],
   );
-  const weeklyReportKey = `${department}-${refreshKey}`;
+  const monthWeeks = useMemo(
+    () => getMonthWeeks(selectedYear, selectedMonth),
+    [selectedYear, selectedMonth],
+  );
+  const selectedWeek = monthWeeks[selectedWeekIndex] || monthWeeks[0];
+  const selectedWeekNumber = selectedWeek?.weekNumber;
+  const weeklyReportKey = `${department}-${selectedYear}-${selectedMonth}-${selectedWeekNumber}-${refreshKey}`;
   const weeklyReportLoading = Boolean(
     department && !loadingProjects && weeklyReportLoadedKey !== weeklyReportKey,
   );
-  const currentYear = new Date().getFullYear();
-  const currentWeekNumber = getCurrentWeekNumber(new Date());
+  const availableYears = Array.from({ length: 10 }, (_, index) => now.getFullYear() - index);
 
   useEffect(() => {
     let active = true;
@@ -120,43 +159,15 @@ export default function AdminClientConversationPage() {
   }, [refreshKey]);
 
   useEffect(() => {
-    if (department !== "marketing") return undefined;
-
-    let active = true;
-    API.get("/api/reports/projects-overview", { params: { type: "meta-ads" } })
-      .then((response) => {
-        if (!active) return;
-        const projectsById = Object.fromEntries(
-          (response.data?.data?.metaAds || []).map((project) => [project.projectId, project]),
-        );
-        setMarketingTotals(projectsById);
-      })
-      .catch((requestError) => {
-        console.error("Unable to load Meta Ads reach and lead totals:", requestError);
-        if (active) {
-          setMarketingTotalsError(
-            requestError.response?.data?.message || "Could not load Meta Ads reach and lead totals.",
-          );
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [department, refreshKey]);
-
-  useEffect(() => {
     if (!department || loadingProjects) return undefined;
 
     let active = true;
-    const year = currentYear;
-    const weekNumber = currentWeekNumber;
 
     API.get("/api/weekly-voice-reports", {
       params: {
         department: REPORT_DEPARTMENT[department],
-        weekNumber,
-        year,
+        weekNumber: selectedWeekNumber,
+        year: selectedYear,
       },
     })
       .then((response) => {
@@ -219,7 +230,7 @@ export default function AdminClientConversationPage() {
     return () => {
       active = false;
     };
-  }, [department, departmentProjects, loadingProjects, refreshKey, currentWeekNumber, currentYear, weeklyReportKey]);
+  }, [department, departmentProjects, loadingProjects, refreshKey, selectedWeekNumber, selectedYear, weeklyReportKey]);
 
   useEffect(() => {
     if (!department || loadingProjects || !departmentProjects.length) return undefined;
@@ -271,12 +282,33 @@ export default function AdminClientConversationPage() {
     setDepartment(value);
     setConversations({});
     setConversationErrors({});
-    setMarketingTotals(null);
-    setMarketingTotalsError("");
     setWeeklyReportSummary([]);
     setWeeklyReportLoadedKey("");
     setWeeklyReportError("");
     setError("");
+  };
+
+  const selectYear = (value) => {
+    setSelectedYear(Number(value));
+    setSelectedWeekIndex(0);
+    setWeeklyReportSummary([]);
+    setWeeklyReportLoadedKey("");
+    setWeeklyReportError("");
+  };
+
+  const selectMonth = (value) => {
+    setSelectedMonth(Number(value));
+    setSelectedWeekIndex(0);
+    setWeeklyReportSummary([]);
+    setWeeklyReportLoadedKey("");
+    setWeeklyReportError("");
+  };
+
+  const selectWeek = (value) => {
+    setSelectedWeekIndex(Number(value));
+    setWeeklyReportSummary([]);
+    setWeeklyReportLoadedKey("");
+    setWeeklyReportError("");
   };
 
   const refresh = () => {
@@ -284,8 +316,6 @@ export default function AdminClientConversationPage() {
     setLoadingProjects(true);
     setConversations({});
     setConversationErrors({});
-    setMarketingTotals(null);
-    setMarketingTotalsError("");
     setWeeklyReportSummary([]);
     setWeeklyReportLoadedKey("");
     setWeeklyReportError("");
@@ -324,13 +354,6 @@ export default function AdminClientConversationPage() {
           </div>
         )}
 
-        {department === "marketing" && marketingTotalsError && (
-          <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-            <AlertCircle size={18} className="mt-0.5 shrink-0" />
-            {marketingTotalsError}
-          </div>
-        )}
-
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
           <label className="block">
             <span className="mb-2 block text-sm font-bold text-slate-700">1. Select department</span>
@@ -360,13 +383,53 @@ export default function AdminClientConversationPage() {
               </div>
               {!loadingProjects && (
                 <section className="mb-5 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 md:p-5">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="mb-5 grid gap-3 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold text-slate-600">1. Select year</span>
+                    <select
+                      value={selectedYear}
+                      onChange={(event) => selectYear(event.target.value)}
+                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                    >
+                      {availableYears.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold text-slate-600">2. Select month</span>
+                    <select
+                      value={selectedMonth}
+                      onChange={(event) => selectMonth(event.target.value)}
+                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                    >
+                      {MONTH_NAMES.map((month, index) => (
+                        <option key={month} value={index}>{month}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold text-slate-600">3. Select week</span>
+                    <select
+                      value={selectedWeekIndex}
+                      onChange={(event) => selectWeek(event.target.value)}
+                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                    >
+                      {monthWeeks.map((week) => (
+                        <option key={week.index} value={week.index}>
+                          {week.label} · {week.dateRange}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Users size={18} className="text-amber-700" />
                       <div>
                         <h3 className="font-black text-slate-900">Weekly voice report status</h3>
                         <p className="text-xs text-slate-500">
-                          Week {currentWeekNumber}, {currentYear} · Active assigned projects
+                          {selectedWeek?.label} ({selectedWeek?.dateRange}), {selectedYear} · Active assigned projects
                         </p>
                       </div>
                     </div>
@@ -442,7 +505,10 @@ export default function AdminClientConversationPage() {
                     const conversation = conversations[project.id];
                     const projectError = conversationErrors[project.id];
                     const hasConversation = Object.hasOwn(conversations, project.id);
-                    const voiceReports = conversation?.voiceReports || [];
+                    const voiceReports = (conversation?.voiceReports || []).filter(
+                      (report) => Number(report.year) === selectedYear
+                        && Number(report.weekNumber) === selectedWeekNumber,
+                    );
                     const pendingItems = conversation?.pendingItems || [];
                     return (
                       <article
@@ -471,37 +537,6 @@ export default function AdminClientConversationPage() {
                             </div>
                           )}
                         </div>
-
-                        {department === "marketing" && (
-                          <div className="mb-5 grid gap-3 sm:grid-cols-2">
-                            <div className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
-                              <span className="rounded-lg bg-white p-2 text-sky-700">
-                                <Eye size={18} />
-                              </span>
-                              <div>
-                                <p className="text-xs font-semibold text-slate-500">Total Reach</p>
-                                <p className="text-lg font-black text-slate-900">
-                                  {marketingTotals
-                                    ? formatCount(marketingTotals[project.id]?.totalReach)
-                                    : marketingTotalsError ? "Unavailable" : "Loading..."}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
-                              <span className="rounded-lg bg-white p-2 text-emerald-700">
-                                <Target size={18} />
-                              </span>
-                              <div>
-                                <p className="text-xs font-semibold text-slate-500">Leads Obtained</p>
-                                <p className="text-lg font-black text-slate-900">
-                                  {marketingTotals
-                                    ? formatCount(marketingTotals[project.id]?.totalLeads)
-                                    : marketingTotalsError ? "Unavailable" : "Loading..."}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
 
                         {projectError ? (
                           <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
