@@ -2,7 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
-import { Copy, Download, Loader2, Trash2, Upload, Video, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Download,
+  Edit2,
+  Loader2,
+  Trash2,
+  Upload,
+  Video,
+  X,
+} from "lucide-react";
 import { notifyError, notifySuccess } from "../../../utils/toast";
 
 // ---- small helpers for array<->string fields (referenceLinks / submissionLinks) ----
@@ -216,6 +226,9 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
   // UI Control States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditingCredentials, setIsEditingCredentials] = useState(false);
+  const [isEditingTaste, setIsEditingTaste] = useState(false);
+  const [tasteDraft, setTasteDraft] = useState("");
+  const [isSavingTaste, setIsSavingTaste] = useState(false);
 
   // Secure Credentials Form State
   const [formData, setFormData] = useState({
@@ -1042,6 +1055,47 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
 
   const primaryTaste = tasteItems[0] || "No taste direction added yet.";
 
+  const handleOpenTasteEditor = () => {
+    setTasteDraft(tasteItems.join("\n"));
+    setIsEditingTaste(true);
+  };
+
+  const handleSaveTaste = async (e) => {
+    e.preventDefault();
+    const updatedTaste = tasteDraft
+      .split(/[\n,]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    try {
+      setIsSavingTaste(true);
+      const response = await API.patch(`/api/projects/${projectId}`, {
+        taste: updatedTaste,
+      });
+      const resData = response.data ? response.data : response;
+
+      if (!resData?.success) {
+        throw new Error(resData?.message || "Failed to update taste priority.");
+      }
+
+      setProject((current) => ({ ...current, taste: updatedTaste }));
+      setFormData((current) => ({
+        ...current,
+        taste: updatedTaste.join(", "),
+      }));
+      setIsEditingTaste(false);
+      notifySuccess("Important taste priority updated.");
+    } catch (err) {
+      notifyError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update taste priority.",
+      );
+    } finally {
+      setIsSavingTaste(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-hidden pb-12">
       {/* Background ambient glows */}
@@ -1113,24 +1167,82 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
         >
           <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-rose-500 via-orange-500 to-amber-500" />
           <div className="pl-4 md:pl-6">
-            <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.18em] text-rose-700 mb-3">
-              Important Taste Priority
-            </p>
-            <h2 className="text-xl md:text-2xl font-semibold leading-snug text-slate-900 break-words">
-              {primaryTaste}
-            </h2>
-            {tasteItems.length > 1 && (
-              <div className="mt-4 space-y-2">
-                {tasteItems.slice(1).map((item, index) => (
-                  <p
-                    key={`taste-line-${index}`}
-                    className="text-sm md:text-base font-semibold text-slate-700 break-words"
-                  >
-                    {item}
-                  </p>
-                ))}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.18em] text-rose-700 mb-3">
+                  Important Taste Priority
+                </p>
+                {isEditingTaste ? (
+                  <form onSubmit={handleSaveTaste} className="space-y-3">
+                    <textarea
+                      autoFocus
+                      value={tasteDraft}
+                      onChange={(e) => setTasteDraft(e.target.value)}
+                      disabled={isSavingTaste}
+                      rows={Math.max(3, tasteDraft.split("\n").length)}
+                      aria-label="Important taste priority"
+                      className="w-full min-h-24 rounded-xl border border-rose-200 bg-white/80 px-4 py-3 text-sm font-medium leading-relaxed text-slate-800 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-200 disabled:opacity-60"
+                      placeholder="Add taste priorities, one per line..."
+                    />
+                    <p className="text-xs text-slate-500">
+                      Add each priority on a separate line.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingTaste(false)}
+                        disabled={isSavingTaste}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        <X size={15} />
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingTaste}
+                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingTaste ? (
+                          <Loader2 size={15} className="animate-spin" />
+                        ) : (
+                          <Check size={15} />
+                        )}
+                        {isSavingTaste ? "Saving..." : "Save Priority"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <h2 className="text-xl md:text-2xl font-semibold leading-snug text-slate-900 break-words">
+                      {primaryTaste}
+                    </h2>
+                    {tasteItems.length > 1 && (
+                      <div className="mt-4 space-y-2">
+                        {tasteItems.slice(1).map((item, index) => (
+                          <p
+                            key={`taste-line-${index}`}
+                            className="text-sm md:text-base font-semibold text-slate-700 break-words"
+                          >
+                            {item}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            )}
+              {!isEditingTaste && (
+                <button
+                  type="button"
+                  onClick={handleOpenTasteEditor}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-rose-200 bg-white/80 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-white"
+                  aria-label="Edit important taste priority"
+                >
+                  <Edit2 size={15} />
+                  Edit Priority
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
 
