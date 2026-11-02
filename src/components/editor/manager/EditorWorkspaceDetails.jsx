@@ -74,8 +74,8 @@ const EditorWorkspaceDetails = () => {
     description: '',
     status: 'DRAFT',
     mediaType: 'VIDEO',
-    referenceLink: '',
-    rawDataLink: '',
+    referenceLinks: [''],
+    rawDataLinks: [''],
     shootTaskId: '',
   })
 
@@ -98,8 +98,8 @@ const EditorWorkspaceDetails = () => {
     description: '',
     status: 'DRAFT',
     mediaType: 'VIDEO',
-    referenceLink: '',
-    rawDataLink: '',
+    referenceLinks: [''],
+    rawDataLinks: [''],
     shootTaskId: '',
     monthlySheetDayId: '',
     shootSubTaskId: '',
@@ -168,6 +168,26 @@ const EditorWorkspaceDetails = () => {
   const handleFormInputChange = (e) => {
     const { name, value } = e.target
     setSubtaskForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  const normalizeLinkList = (links, legacyLink) => {
+    const values = Array.isArray(links) && links.length
+      ? links
+      : legacyLink
+        ? [legacyLink]
+        : []
+    return values.length ? values : ['']
+  }
+
+  const cleanLinkList = (links) => links.map((link) => link.trim()).filter(Boolean)
+
+  const updateLinkAtIndex = (setForm, field, index, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: previous[field].map((link, linkIndex) =>
+        linkIndex === index ? value : link,
+      ),
+    }))
   }
 
   const resetCalendarPicker = () => {
@@ -288,8 +308,8 @@ const EditorWorkspaceDetails = () => {
       dueDate: formatDateInputValue(selectedSubmission.shoot.date),
       mediaType: submissionType,
       description: selectedSubmission.description || selectedSubmission.shoot.description || '',
-      referenceLink: selectedSubmission.referenceLinks?.find(Boolean) || '',
-      rawDataLink: selectedSubmission.submissionLinks?.find(Boolean) || '',
+      referenceLinks: normalizeLinkList(selectedSubmission.referenceLinks),
+      rawDataLinks: normalizeLinkList(selectedSubmission.submissionLinks),
       shootTaskId: selectedSubmission.shoot.id,
       monthlySheetDayId: '',
       shootSubTaskId: selectedSubmission.id,
@@ -312,8 +332,8 @@ const EditorWorkspaceDetails = () => {
       dueDate: formatDateInputValue(selectedAsset.shoot.date),
       mediaType: selectedAsset.type === 'PIC' ? 'PIC' : 'VIDEO',
       description: selectedAsset.description || '',
-      referenceLink: selectedAsset.referenceLink || '',
-      rawDataLink: selectedAsset.driveLink || '',
+      referenceLinks: normalizeLinkList(selectedAsset.referenceLinks, selectedAsset.referenceLink),
+      rawDataLinks: normalizeLinkList(selectedAsset.rawDataLinks, selectedAsset.driveLink),
       shootTaskId: selectedAsset.shoot.id,
       monthlySheetDayId: '',
       shootSubTaskId: '',
@@ -323,11 +343,11 @@ const EditorWorkspaceDetails = () => {
 
   const handleImportCalendarDay = (selectedDay) => {
     const mediaType = selectedDay.reelType || selectedDay.videoType ? 'VIDEO' : 'PIC'
-    const firstRawDataLink = [
+    const rawDataLinks = [
       ...(selectedDay.videoUploadLinks || []),
       ...(selectedDay.contentUploadLinks || []),
       ...(selectedDay.submissionLinks || []),
-    ].find(Boolean) || ''
+    ].filter(Boolean)
 
     setSubtaskForm((previous) => ({
       ...previous,
@@ -335,8 +355,8 @@ const EditorWorkspaceDetails = () => {
       dueDate: formatDateInputValue(selectedDay.date),
       mediaType,
       description: selectedDay.description || selectedDay.script || '',
-      referenceLink: selectedDay.referenceLinks?.find(Boolean) || '',
-      rawDataLink: firstRawDataLink,
+      referenceLinks: normalizeLinkList(selectedDay.referenceLinks),
+      rawDataLinks: normalizeLinkList(rawDataLinks),
       shootTaskId: '',
       monthlySheetDayId: selectedDay.id,
     }))
@@ -355,8 +375,10 @@ const EditorWorkspaceDetails = () => {
         title: subtaskForm.title.trim(),
         description: subtaskForm.description.trim(),
         dueDate: subtaskForm.dueDate ? new Date(subtaskForm.dueDate).toISOString() : null,
-        referenceLink: subtaskForm.referenceLink.trim() || null,
-        rawDataLink: subtaskForm.rawDataLink.trim() || null,
+        referenceLinks: cleanLinkList(subtaskForm.referenceLinks),
+        rawDataLinks: cleanLinkList(subtaskForm.rawDataLinks),
+        referenceLink: cleanLinkList(subtaskForm.referenceLinks)[0] || null,
+        rawDataLink: cleanLinkList(subtaskForm.rawDataLinks)[0] || null,
         shootTaskId: subtaskForm.shootTaskId || null,
         monthlySheetDayId: subtaskForm.monthlySheetDayId || null,
         shootSubTaskId: subtaskForm.shootSubTaskId || null,
@@ -368,7 +390,7 @@ const EditorWorkspaceDetails = () => {
         setShowAddModal(false)
         setSubtaskForm({
           title: '', employeeId: '', dueDate: '', priority: 'MEDIUM',
-          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLink: '', rawDataLink: '', shootTaskId: '', monthlySheetDayId: '', shootSubTaskId: '', shootExtraContentId: ''
+          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLinks: [''], rawDataLinks: [''], shootTaskId: '', monthlySheetDayId: '', shootSubTaskId: '', shootExtraContentId: ''
         })
         setSelectedShootWorkspaceId('')
         setSelectedShootAssetGroup('')
@@ -446,8 +468,8 @@ const EditorWorkspaceDetails = () => {
       description: item.description || '',
       status: item.status || 'DRAFT',
       mediaType: item.mediaType || 'VIDEO',
-      referenceLink: item.referenceLink || '',
-      rawDataLink: item.rawDataLink || ''
+      referenceLinks: normalizeLinkList(item.referenceLinks, item.referenceLink),
+      rawDataLinks: normalizeLinkList(item.rawDataLinks, item.rawDataLink)
     })
     setShowEditSubtaskModal(true)
   }
@@ -465,8 +487,10 @@ const EditorWorkspaceDetails = () => {
         title: editSubtaskForm.title.trim(),
         description: editSubtaskForm.description.trim(),
         dueDate: editSubtaskForm.dueDate ? new Date(editSubtaskForm.dueDate).toISOString() : null,
-        referenceLink: editSubtaskForm.referenceLink.trim() || null,
-        rawDataLink: editSubtaskForm.rawDataLink.trim() || null
+        referenceLinks: cleanLinkList(editSubtaskForm.referenceLinks),
+        rawDataLinks: cleanLinkList(editSubtaskForm.rawDataLinks),
+        referenceLink: cleanLinkList(editSubtaskForm.referenceLinks)[0] || null,
+        rawDataLink: cleanLinkList(editSubtaskForm.rawDataLinks)[0] || null
       }
 
       const res = await API.patch(`/api/task-items/${editingSubtask.id}`, payload)
@@ -976,25 +1000,87 @@ const EditorWorkspaceDetails = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Layout Reference Cloud Link (Optional)</label>
-                <input 
-                  type="url" name="referenceLink"
-                  placeholder="https://drive.google.com/drive/folders/..."
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 transition"
-                  value={subtaskForm.referenceLink}
-                  onChange={handleFormInputChange}
-                />
+                <div className="flex items-center justify-between gap-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Layout Reference Cloud Links (Optional)</label>
+                  <button
+                    type="button"
+                    onClick={() => setSubtaskForm((previous) => ({
+                      ...previous,
+                      referenceLinks: [...previous.referenceLinks, ''],
+                    }))}
+                    className="inline-flex items-center gap-1 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-100"
+                  >
+                    <Plus size={12} /> Add Link
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {subtaskForm.referenceLinks.map((link, index) => (
+                    <div key={`reference-link-${index}`} className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://drive.google.com/drive/folders/..."
+                        className="min-w-0 flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 transition"
+                        value={link}
+                        onChange={(e) => updateLinkAtIndex(setSubtaskForm, 'referenceLinks', index, e.target.value)}
+                      />
+                      {subtaskForm.referenceLinks.length > 1 && (
+                        <button
+                          type="button"
+                          aria-label={`Remove layout reference ${index + 1}`}
+                          onClick={() => setSubtaskForm((previous) => ({
+                            ...previous,
+                            referenceLinks: previous.referenceLinks.filter((_, linkIndex) => linkIndex !== index),
+                          }))}
+                          className="rounded-lg border border-rose-100 px-2 text-rose-500 hover:bg-rose-50"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Raw Media Directory Datasets Link (Optional)</label>
-                <input 
-                  type="url" name="rawDataLink"
-                  placeholder="https://drive.google.com/drive/folders/..."
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 transition"
-                  value={subtaskForm.rawDataLink}
-                  onChange={handleFormInputChange}
-                />
+                <div className="flex items-center justify-between gap-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Raw Media Directory Dataset Links (Optional)</label>
+                  <button
+                    type="button"
+                    onClick={() => setSubtaskForm((previous) => ({
+                      ...previous,
+                      rawDataLinks: [...previous.rawDataLinks, ''],
+                    }))}
+                    className="inline-flex items-center gap-1 rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-600 hover:bg-violet-100"
+                  >
+                    <Plus size={12} /> Add Link
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {subtaskForm.rawDataLinks.map((link, index) => (
+                    <div key={`raw-data-link-${index}`} className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://drive.google.com/drive/folders/..."
+                        className="min-w-0 flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 transition"
+                        value={link}
+                        onChange={(e) => updateLinkAtIndex(setSubtaskForm, 'rawDataLinks', index, e.target.value)}
+                      />
+                      {subtaskForm.rawDataLinks.length > 1 && (
+                        <button
+                          type="button"
+                          aria-label={`Remove raw media dataset link ${index + 1}`}
+                          onClick={() => setSubtaskForm((previous) => ({
+                            ...previous,
+                            rawDataLinks: previous.rawDataLinks.filter((_, linkIndex) => linkIndex !== index),
+                          }))}
+                          className="rounded-lg border border-rose-100 px-2 text-rose-500 hover:bg-rose-50"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1245,28 +1331,38 @@ const EditorWorkspaceDetails = () => {
                 )}
 
                 {/* Resource Repositories Links Deployment Frame */}
-                {(selectedSubtask.referenceLink || selectedSubtask.rawDataLink) && (
+                {(selectedSubtask.referenceLink || selectedSubtask.rawDataLink || selectedSubtask.referenceLinks?.length || selectedSubtask.rawDataLinks?.length) && (
                   <div className="space-y-2 border-t border-slate-100 pt-4">
                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cloud Data Directories Links Map Vectors</h4>
                     <div className="space-y-2">
-                      {selectedSubtask.referenceLink && (
-                        <a 
-                          href={selectedSubtask.referenceLink} target="_blank" rel="noreferrer"
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-indigo-50/40 hover:bg-indigo-50 border border-indigo-100/50 text-indigo-700 font-bold transition-all group"
-                        >
-                          <span className="flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5 text-indigo-400" /> Asset Reference Directory Location</span>
-                          <ExternalLink className="w-3 h-3 text-indigo-400 group-hover:translate-x-0.5 transition-transform" />
-                        </a>
-                      )}
-                      {selectedSubtask.rawDataLink && (
-                        <a 
-                          href={selectedSubtask.rawDataLink} target="_blank" rel="noreferrer"
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/40 hover:bg-emerald-50 border border-emerald-100/50 text-emerald-700 font-bold transition-all group"
-                        >
-                          <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-emerald-400" /> Raw Media Footage Storage Repository</span>
-                          <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
-                        </a>
-                      )}
+                      {normalizeLinkList(selectedSubtask.referenceLinks, selectedSubtask.referenceLink)
+                        .filter(Boolean)
+                        .map((link, index) => (
+                          <a
+                            key={`subtask-reference-${index}`}
+                            href={link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-indigo-50/40 hover:bg-indigo-50 border border-indigo-100/50 text-indigo-700 font-bold transition-all group"
+                          >
+                            <span className="flex min-w-0 items-center gap-1.5 break-all"><Link2 className="w-3.5 h-3.5 shrink-0 text-indigo-400" /> Layout Reference {index + 1}</span>
+                            <ExternalLink className="w-3 h-3 shrink-0 text-indigo-400 group-hover:translate-x-0.5 transition-transform" />
+                          </a>
+                        ))}
+                      {normalizeLinkList(selectedSubtask.rawDataLinks, selectedSubtask.rawDataLink)
+                        .filter(Boolean)
+                        .map((link, index) => (
+                          <a
+                            key={`subtask-raw-data-${index}`}
+                            href={link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-emerald-50/40 hover:bg-emerald-50 border border-emerald-100/50 text-emerald-700 font-bold transition-all group"
+                          >
+                            <span className="flex min-w-0 items-center gap-1.5 break-all"><Layers className="w-3.5 h-3.5 shrink-0 text-emerald-400" /> Raw Media Dataset {index + 1}</span>
+                            <ExternalLink className="w-3 h-3 shrink-0 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+                          </a>
+                        ))}
                     </div>
                   </div>
                 )}
@@ -1468,25 +1564,87 @@ const EditorWorkspaceDetails = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Reference Link</label>
-                <input
-                  type="url"
-                  value={editSubtaskForm.referenceLink}
-                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, referenceLink: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
-                />
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Layout Reference Links</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditSubtaskForm((previous) => ({
+                      ...previous,
+                      referenceLinks: [...previous.referenceLinks, ''],
+                    }))}
+                    className="inline-flex items-center gap-1 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-100"
+                  >
+                    <Plus size={12} /> Add Link
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {editSubtaskForm.referenceLinks.map((link, index) => (
+                    <div key={`edit-reference-link-${index}`} className="flex gap-2">
+                      <input
+                        type="url"
+                        value={link}
+                        onChange={(e) => updateLinkAtIndex(setEditSubtaskForm, 'referenceLinks', index, e.target.value)}
+                        placeholder="https://..."
+                        className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
+                      />
+                      {editSubtaskForm.referenceLinks.length > 1 && (
+                        <button
+                          type="button"
+                          aria-label={`Remove layout reference ${index + 1}`}
+                          onClick={() => setEditSubtaskForm((previous) => ({
+                            ...previous,
+                            referenceLinks: previous.referenceLinks.filter((_, linkIndex) => linkIndex !== index),
+                          }))}
+                          className="rounded-lg border border-rose-100 px-2 text-rose-500 hover:bg-rose-50"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Raw Data Link</label>
-                <input
-                  type="url"
-                  value={editSubtaskForm.rawDataLink}
-                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, rawDataLink: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
-                />
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Raw Media Directory Dataset Links</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditSubtaskForm((previous) => ({
+                      ...previous,
+                      rawDataLinks: [...previous.rawDataLinks, ''],
+                    }))}
+                    className="inline-flex items-center gap-1 rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-600 hover:bg-violet-100"
+                  >
+                    <Plus size={12} /> Add Link
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {editSubtaskForm.rawDataLinks.map((link, index) => (
+                    <div key={`edit-raw-data-link-${index}`} className="flex gap-2">
+                      <input
+                        type="url"
+                        value={link}
+                        onChange={(e) => updateLinkAtIndex(setEditSubtaskForm, 'rawDataLinks', index, e.target.value)}
+                        placeholder="https://..."
+                        className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
+                      />
+                      {editSubtaskForm.rawDataLinks.length > 1 && (
+                        <button
+                          type="button"
+                          aria-label={`Remove raw media dataset link ${index + 1}`}
+                          onClick={() => setEditSubtaskForm((previous) => ({
+                            ...previous,
+                            rawDataLinks: previous.rawDataLinks.filter((_, linkIndex) => linkIndex !== index),
+                          }))}
+                          className="rounded-lg border border-rose-100 px-2 text-rose-500 hover:bg-rose-50"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">

@@ -611,29 +611,42 @@ const EmployeeTaskPage = () => {
                     </div>
 
                     {/* Resources */}
-                    {(selectedTask.taskItem?.referenceLink || selectedTask.taskItem?.rawDataLink) && (
+                    {(selectedTask.taskItem?.referenceLink ||
+                      selectedTask.taskItem?.rawDataLink ||
+                      selectedTask.taskItem?.referenceLinks?.length ||
+                      selectedTask.taskItem?.rawDataLinks?.length) && (
                       <div className="border border-slate-200/60 rounded-2xl p-6 bg-white shadow-sm space-y-4">
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-2">
                           <Link2 className="w-4 h-4" /> Provided Resources
                         </span>
                         
-                        {selectedTask.taskItem?.referenceLink && (
-                          <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">Reference Material</span>
-                            <a href={selectedTask.taskItem.referenceLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-2 break-all transition">
-                              <ExternalLink className="w-4 h-4 shrink-0" /> {selectedTask.taskItem.referenceLink}
+                        {(selectedTask.taskItem.referenceLinks?.length
+                          ? selectedTask.taskItem.referenceLinks
+                          : [selectedTask.taskItem.referenceLink].filter(Boolean)
+                        ).map((link, index) => (
+                          <div key={`task-reference-${index}`} className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">
+                              Reference Material {index + 1}
+                            </span>
+                            <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-2 break-all transition">
+                              <ExternalLink className="w-4 h-4 shrink-0" /> {link}
                             </a>
                           </div>
-                        )}
+                        ))}
 
-                        {selectedTask.taskItem?.rawDataLink && (
-                          <div className="bg-violet-50/50 p-4 rounded-xl border border-violet-100">
-                            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest block mb-1">Raw Assets</span>
-                            <a href={selectedTask.taskItem.rawDataLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-violet-600 hover:text-violet-800 flex items-center gap-2 break-all transition">
-                              <ExternalLink className="w-4 h-4 shrink-0" /> {selectedTask.taskItem.rawDataLink}
+                        {(selectedTask.taskItem.rawDataLinks?.length
+                          ? selectedTask.taskItem.rawDataLinks
+                          : [selectedTask.taskItem.rawDataLink].filter(Boolean)
+                        ).map((link, index) => (
+                          <div key={`task-raw-data-${index}`} className="bg-violet-50/50 p-4 rounded-xl border border-violet-100">
+                            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest block mb-1">
+                              Raw Assets {index + 1}
+                            </span>
+                            <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-violet-600 hover:text-violet-800 flex items-center gap-2 break-all transition">
+                              <ExternalLink className="w-4 h-4 shrink-0" /> {link}
                             </a>
                           </div>
-                        )}
+                        ))}
                       </div>
                     )}
 
