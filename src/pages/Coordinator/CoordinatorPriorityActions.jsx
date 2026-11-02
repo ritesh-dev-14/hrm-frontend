@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   Plus,
   CalendarDays,
+  Download,
   User2,
   ClipboardList,
   Loader2,
@@ -23,9 +24,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
 
 const CoordinatorPriorityActions = () => {
   const { user } = useAuth();
+  const isHrViewer = user?.role === "HR";
   const [employees, setEmployees] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -103,14 +106,98 @@ const CoordinatorPriorityActions = () => {
     }
   }, []);
 
+  const handleExportAssignments = () => {
+    try {
+      const rows = assignments.map((item) => {
+        const status = item.status || "UNKNOWN";
+        const progressGroup =
+          status === "COMPLETED"
+            ? "Done"
+            : ["IN_PROGRESS", "SUBMITTED"].includes(status)
+              ? "In Progress"
+              : "Not Done";
+
+        return {
+          Task: item.task?.projectName || "",
+          Description: item.task?.description || "",
+          "Assigned To": item.assignedTo?.name || "",
+          Email: item.assignedTo?.email || "",
+          Role: item.assignedTo?.role || "",
+          Originator: item.assignedBy || "",
+          "Issued At": item.assignedTime
+            ? new Date(item.assignedTime).toLocaleString()
+            : "",
+          "Target Milestone": item.completionDate
+            ? new Date(item.completionDate).toLocaleString()
+            : "",
+          Submitted: item.submittedAt
+            ? new Date(item.submittedAt).toLocaleString()
+            : "",
+          Completed: item.completedAt
+            ? new Date(item.completedAt).toLocaleString()
+            : "",
+          "Exception Context": item.reason || "",
+          Status: status.replace(/_/g, " "),
+          "Progress Group": progressGroup,
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, {
+        header: [
+          "Task",
+          "Description",
+          "Assigned To",
+          "Email",
+          "Role",
+          "Originator",
+          "Issued At",
+          "Target Milestone",
+          "Submitted",
+          "Completed",
+          "Exception Context",
+          "Status",
+          "Progress Group",
+        ],
+      });
+      worksheet["!cols"] = [
+        { wch: 36 },
+        { wch: 40 },
+        { wch: 24 },
+        { wch: 32 },
+        { wch: 16 },
+        { wch: 24 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 36 },
+        { wch: 20 },
+        { wch: 18 },
+      ];
+      worksheet["!autofilter"] = {
+        ref: XLSX.utils.encode_range(XLSX.utils.decode_range(worksheet["!ref"])),
+      };
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Task Report");
+      XLSX.writeFile(
+        workbook,
+        `priority-task-report-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      );
+    } catch (error) {
+      console.error("Failed to export priority task report:", error);
+      toast.error("Could not download the task report. Please try again.");
+    }
+  };
+
   useEffect(() => {
-    fetchEmployees();
+    if (!isHrViewer) fetchEmployees();
     fetchAssignments();
     window.addEventListener("focus", fetchAssignments);
     return () => {
       window.removeEventListener("focus", fetchAssignments);
     };
-  }, [fetchAssignments, fetchEmployees]);
+  }, [fetchAssignments, fetchEmployees, isHrViewer]);
 
   // Message Auto-Scroll Execution
   useEffect(() => {
@@ -418,6 +505,7 @@ const CoordinatorPriorityActions = () => {
       </div>
 
       {/* Creation form */}
+      {!isHrViewer && (
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 mb-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -538,6 +626,7 @@ const CoordinatorPriorityActions = () => {
           </div>
         </form>
       </div>
+      )}
 
       {/* All assignments in one list */}
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
@@ -555,6 +644,16 @@ const CoordinatorPriorityActions = () => {
               <span className="text-xs text-slate-500 font-medium bg-slate-200/60 px-2.5 py-1 rounded-md">
                 {filteredAssignments.length} of {assignments.length} {assignments.length === 1 ? "task" : "tasks"}
               </span>
+              <button
+                type="button"
+                onClick={handleExportAssignments}
+                disabled={tableLoading || assignments.length === 0}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Download all tasks and statuses in one Excel sheet"
+              >
+                <Download size={13} />
+                Download Excel
+              </button>
               <button
                 type="button"
                 onClick={fetchAssignments}
@@ -653,16 +752,18 @@ const CoordinatorPriorityActions = () => {
                 <th className="p-4 text-xs font-semibold text-slate-500 tracking-wider uppercase">
                   Status
                 </th>
-                <th className="p-4 text-xs font-semibold text-slate-500 tracking-wider uppercase text-center">
-                  Actions
-                </th>
+                {!isHrViewer && (
+                  <th className="p-4 text-xs font-semibold text-slate-500 tracking-wider uppercase text-center">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-100">
               {tableLoading ? (
                 <tr>
-                  <td colSpan={11} className="py-24 text-center">
+                  <td colSpan={isHrViewer ? 10 : 11} className="py-24 text-center">
                     <div className="flex items-center justify-center">
                       <Loader2
                         className="animate-spin text-slate-400"
@@ -773,7 +874,7 @@ const CoordinatorPriorityActions = () => {
                       </td>
 
                       {/* Actions Column: Edit + Follow-Up + Approve/Reject + Delete */}
-                      <td className="p-4 text-center whitespace-nowrap">
+                      {!isHrViewer && <td className="p-4 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center gap-2">
                           <div className="flex w-full gap-2 justify-center">
                             {/* Edit button */}
@@ -891,12 +992,12 @@ const CoordinatorPriorityActions = () => {
                             </div>
                           )}
                         </div>
-                      </td>
+                      </td>}
                     </tr>
 
                     {activeTaskForFollowUp?.id === item.id && (
                       <tr className="bg-slate-50">
-                        <td colSpan={11} className="p-4">
+                        <td colSpan={isHrViewer ? 10 : 11} className="p-4">
                           <div className="max-w-4xl mx-auto w-full rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
                             {/* Chat Header */}
@@ -1016,7 +1117,7 @@ const CoordinatorPriorityActions = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="py-20 text-center">
+                  <td colSpan={isHrViewer ? 10 : 11} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                       <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-400 mb-4">
                         {filterName || filterStatus ? (

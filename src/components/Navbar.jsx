@@ -71,7 +71,7 @@ const NAV_CONFIG = [
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
   { id: "tasks-cor", label: "My Tasks", icon: BriefcaseBusiness, path: "/tasks", roles: ["COORDINATOR", "EA"] },
-  { id: "priority-actions", label: "Priority Actions", icon: Zap, path: "/priority-actions", roles: ["COORDINATOR", "EA"], notificationCount: 4 },
+  { id: "priority-actions", label: "Priority Actions", icon: Zap, path: "/priority-actions", roles: ["COORDINATOR", "EA", "HR"], notificationCount: 4 },
   { id: "coordinator-task-progress", label: "Task Progress", icon: BarChart2, path: "/coordinator/task-progress", roles: ["COORDINATOR", "EA"] },
   { id: "sidebar-appeals", label: "Sidebar Appeals", icon: ShieldCheck, path: "/sidebar-appeals", roles: ["EA", "ADMIN", "HR", "COORDINATOR"] },
   { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },

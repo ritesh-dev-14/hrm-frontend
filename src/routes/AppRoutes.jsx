@@ -209,7 +209,7 @@ export const AppRoutes = () => {
           <Route
             path="/priority-actions"
             element={
-              hasRole("COORDINATOR", "EA") ? (
+              hasRole("COORDINATOR", "EA", "HR") ? (
                 <CoordinatorPriorityActions />
               ) : (
                 <Navigate to="/dashboard" replace />
