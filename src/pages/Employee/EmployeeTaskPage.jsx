@@ -17,7 +17,6 @@ import {
   ExternalLink,
   ChevronRight,
   RefreshCw,
-  Search,
   Layers,
   Link2,
   Globe,
@@ -49,13 +48,23 @@ const statusConfig = {
   UNABLE_TO_SUBMIT: { color: "text-red-700", bg: "bg-red-50", border: "border-red-200", icon: AlertTriangle, label: "Blocked" },
 };
 
+const toLocalDateInputValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const EmployeeTaskPage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   
-  // Search state
-  const [searchTerm, setSearchTerm] = useState("");
+  const [dueDateFrom, setDueDateFrom] = useState("");
+  const [dueDateTo, setDueDateTo] = useState("");
+  const [submissionFilter, setSubmissionFilter] = useState("ALL");
 
   // Form Fields
   const [progressValue, setProgressValue] = useState(0);
@@ -269,14 +278,26 @@ const EmployeeTaskPage = () => {
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
-    if (!searchTerm.trim()) return tasks;
-    const term = searchTerm.toLowerCase();
-    return tasks.filter((task) => 
-      task.taskItem?.title?.toLowerCase().includes(term) ||
-      task.taskItem?.description?.toLowerCase().includes(term) ||
-      task.taskItem?.task?.projectName?.toLowerCase().includes(term)
-    );
-  }, [tasks, searchTerm]);
+    return tasks.filter((task) => {
+      const dueDate = task.taskItem?.dueDate
+        ? toLocalDateInputValue(task.taskItem.dueDate)
+        : "";
+      if (dueDateFrom && (!dueDate || dueDate < dueDateFrom)) return false;
+      if (dueDateTo && (!dueDate || dueDate > dueDateTo)) return false;
+
+      if (submissionFilter !== "ALL") {
+        const hasSubmitted =
+          Boolean(task.submittedAt || task.submission?.submittedAt) ||
+          ["SUBMITTED", "VERIFIED", "COMPLETED"].includes(task.status);
+        if (submissionFilter === "SUBMITTED" && !hasSubmitted) return false;
+        if (submissionFilter === "NOT_SUBMITTED" && hasSubmitted) return false;
+      }
+
+      return true;
+    });
+  }, [tasks, dueDateFrom, dueDateTo, submissionFilter]);
+
+  const hasActiveFilters = dueDateFrom || dueDateTo || submissionFilter !== "ALL";
 
   const groupedTasks = useMemo(() => {
     const groups = {};
@@ -343,7 +364,7 @@ const EmployeeTaskPage = () => {
           </div>
         </div>
 
-        {/* Stats Grid & Search */}
+        {/* Stats Grid & Filters */}
         <div className="mt-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-4 flex-wrap">
             <StatsRow title="Total Assigned" value={stats.total} icon={FileText} color="indigo" />
@@ -352,17 +373,54 @@ const EmployeeTaskPage = () => {
             <StatsRow title="Rejected" value={stats.rejected} icon={AlertTriangle} color="rose" />
           </div>
 
-          <div className="relative max-w-sm w-full">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="w-5 h-5 text-slate-400" />
+          <div className="flex w-full flex-col gap-3 rounded-2xl border border-slate-200/60 bg-white/60 p-4 shadow-sm xl:max-w-2xl">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex min-w-[145px] flex-1 flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Due date from
+                <input
+                  type="date"
+                  value={dueDateFrom}
+                  max={dueDateTo || undefined}
+                  onChange={(e) => setDueDateFrom(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+                />
+              </label>
+              <label className="flex min-w-[145px] flex-1 flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Due date to
+                <input
+                  type="date"
+                  value={dueDateTo}
+                  min={dueDateFrom || undefined}
+                  onChange={(e) => setDueDateTo(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+                />
+              </label>
+              <label className="flex min-w-[170px] flex-1 flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Submission status
+                <select
+                  value={submissionFilter}
+                  onChange={(e) => setSubmissionFilter(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold normal-case tracking-normal text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+                >
+                  <option value="ALL">All tasks</option>
+                  <option value="SUBMITTED">Submitted</option>
+                  <option value="NOT_SUBMITTED">Not submitted</option>
+                </select>
+              </label>
             </div>
-            <input
-              type="text"
-              className="w-full bg-white/60 backdrop-blur-md border border-slate-200/60 focus:border-indigo-500 rounded-2xl pl-10 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-sm"
-              placeholder="Search by title, project..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDueDateFrom("");
+                  setDueDateTo("");
+                  setSubmissionFilter("ALL");
+                }}
+                className="self-start text-xs font-semibold text-indigo-600 transition hover:text-indigo-800"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -372,10 +430,10 @@ const EmployeeTaskPage = () => {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 max-w-6xl mx-auto bg-white/60 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] shadow-sm relative z-10">
           <Layers className="w-12 h-12 text-indigo-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-slate-900">
-            {searchTerm ? "No tasks matching your search" : "No active tasks right now"}
+            {hasActiveFilters ? "No tasks match these filters" : "No active tasks right now"}
           </h3>
           <p className="text-sm text-slate-500 mt-1 font-medium">
-            {searchTerm ? "Try a different keyword." : "You're all caught up with your project assignments!"}
+            {hasActiveFilters ? "Try changing the due-date range or submission status." : "You're all caught up with your project assignments!"}
           </p>
         </motion.div>
       ) : (
