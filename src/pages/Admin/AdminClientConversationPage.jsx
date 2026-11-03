@@ -8,6 +8,7 @@ import {
   LoaderCircle,
   MessageSquareText,
   RefreshCw,
+  Search,
   Users,
   UserRound,
   Volume2,
@@ -103,6 +104,7 @@ export default function AdminClientConversationPage() {
   const now = new Date();
   const [projects, setProjects] = useState([]);
   const [department, setDepartment] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [conversations, setConversations] = useState({});
   const [conversationErrors, setConversationErrors] = useState({});
   const [weeklyReportSummary, setWeeklyReportSummary] = useState([]);
@@ -122,9 +124,24 @@ export default function AdminClientConversationPage() {
   });
 
   const departmentProjects = useMemo(
-    () => projects.filter((project) => matchesDepartment(project, department)),
+    () => projects.filter((project) => department === "all"
+      ? DEPARTMENTS.some((item) => matchesDepartment(project, item.value))
+      : matchesDepartment(project, department)),
     [projects, department],
   );
+  const filteredProjects = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return departmentProjects;
+    return departmentProjects.filter((project) => {
+      const searchableValues = [
+        project.projectName,
+        project.clientName,
+        project.department?.name,
+        ...(project.assignments || []).map((assignment) => assignment.manager?.name),
+      ];
+      return searchableValues.some((value) => String(value || "").toLowerCase().includes(term));
+    });
+  }, [departmentProjects, searchTerm]);
   const loadingConversation = departmentProjects.some((project) =>
     !Object.hasOwn(conversations, project.id) && !conversationErrors[project.id],
   );
@@ -163,16 +180,20 @@ export default function AdminClientConversationPage() {
 
     let active = true;
 
-    API.get("/api/weekly-voice-reports", {
+    const reportDepartments = department === "all"
+      ? DEPARTMENTS
+      : DEPARTMENTS.filter((item) => item.value === department);
+
+    Promise.all(reportDepartments.map((item) => API.get("/api/weekly-voice-reports", {
       params: {
-        department: REPORT_DEPARTMENT[department],
+        department: REPORT_DEPARTMENT[item.value],
         weekNumber: selectedWeekNumber,
         year: selectedYear,
       },
-    })
-      .then((response) => {
+    })))
+      .then((responses) => {
         if (!active) return;
-        const reports = response.data?.data || [];
+        const reports = responses.flatMap((response) => response.data?.data || []);
         const submittedByManager = new Map();
         reports
           .filter((report) => report.qaStatus !== "REJECTED")
@@ -363,21 +384,37 @@ export default function AdminClientConversationPage() {
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             >
               <option value="">Choose Meta Ads, Social Media, or SEO</option>
+              <option value="all">All departments</option>
               {DEPARTMENTS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </label>
+          {department && (
+            <label className="relative mt-4 block">
+              <span className="mb-2 block text-sm font-bold text-slate-700">Search projects or clients</span>
+              <Search size={18} className="absolute left-3 top-[2.65rem] text-slate-400" />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by project, client, or manager name..."
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+              />
+            </label>
+          )}
           {department && (
             <div className="mt-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-lg font-black text-slate-900">
-                    All {DEPARTMENTS.find((item) => item.value === department)?.label} projects
+                    {department === "all"
+                      ? "Projects across all departments"
+                      : `All ${DEPARTMENTS.find((item) => item.value === department)?.label} projects`}
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">Recordings and follow-ups are shown under each project.</p>
                 </div>
-                {!loadingProjects && departmentProjects.length > 0 && (
+                {!loadingProjects && filteredProjects.length > 0 && (
                   <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
-                    {departmentProjects.length} {departmentProjects.length === 1 ? "project" : "projects"}
+                    {filteredProjects.length} {filteredProjects.length === 1 ? "project" : "projects"}
                   </span>
                 )}
               </div>
@@ -451,7 +488,7 @@ export default function AdminClientConversationPage() {
                     </div>
                   ) : weeklyReportSummary.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-amber-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
-                      No active managers are assigned to projects in this department.
+                      No active managers are assigned to projects in {department === "all" ? "these departments" : "this department"}.
                     </p>
                   ) : (
                     <div className="grid gap-3 md:grid-cols-2">
@@ -499,9 +536,9 @@ export default function AdminClientConversationPage() {
                 <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
                   <LoaderCircle size={18} className="animate-spin" /> Loading projects...
                 </div>
-              ) : departmentProjects.length ? (
+              ) : filteredProjects.length ? (
                 <div className="space-y-5">
-                  {departmentProjects.map((project) => {
+                  {filteredProjects.map((project) => {
                     const conversation = conversations[project.id];
                     const projectError = conversationErrors[project.id];
                     const hasConversation = Object.hasOwn(conversations, project.id);
@@ -618,7 +655,9 @@ export default function AdminClientConversationPage() {
                 </div>
               ) : (
                 <p className="rounded-xl border border-dashed border-slate-200 px-5 py-10 text-center text-sm text-slate-500">
-                  No projects found for this department.
+                  {searchTerm.trim()
+                    ? "No projects match your search."
+                    : "No projects found for this department."}
                 </p>
               )}
             </div>
