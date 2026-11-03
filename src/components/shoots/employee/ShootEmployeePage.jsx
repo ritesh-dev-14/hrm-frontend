@@ -31,6 +31,7 @@ const ShootEmployeePage = () => {
   
   // Search and Filter State
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('')
   const [expandedShootId, setExpandedShootId] = useState(null)
 
   // Modal States
@@ -92,15 +93,28 @@ const ShootEmployeePage = () => {
   )
 
   const filteredShoots = useMemo(() => {
-    if (!searchTerm.trim()) return shoots
     const lowerTerm = searchTerm.toLowerCase()
-    return shoots.filter(shoot => 
-      shoot.title?.toLowerCase().includes(lowerTerm) ||
-      shoot.workspaceName?.toLowerCase().includes(lowerTerm) ||
-      shoot.description?.toLowerCase().includes(lowerTerm) ||
-      shoot.subtasks?.some(subtask => subtask.title?.toLowerCase().includes(lowerTerm))
-    )
-  }, [shoots, searchTerm])
+    return shoots.filter((shoot) => {
+      if (selectedMonth) {
+        const shootDate = shoot.date ? new Date(shoot.date) : null
+        if (
+          !shootDate ||
+          Number.isNaN(shootDate.getTime()) ||
+          `${shootDate.getFullYear()}-${String(shootDate.getMonth() + 1).padStart(2, '0')}` !== selectedMonth
+        ) {
+          return false
+        }
+      }
+
+      if (!lowerTerm.trim()) return true
+      return (
+        shoot.title?.toLowerCase().includes(lowerTerm) ||
+        shoot.workspaceName?.toLowerCase().includes(lowerTerm) ||
+        shoot.description?.toLowerCase().includes(lowerTerm) ||
+        shoot.subtasks?.some((subtask) => subtask.title?.toLowerCase().includes(lowerTerm))
+      )
+    })
+  }, [shoots, searchTerm, selectedMonth])
 
   const toggleExpand = (shootId) => {
     setExpandedShootId(prev => prev === shootId ? null : shootId)
@@ -319,18 +333,30 @@ const ShootEmployeePage = () => {
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative max-w-sm w-full">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="w-5 h-5 text-slate-400" />
+          {/* Month and Search Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-500">
+              Filter by month
+              <input
+                type="month"
+                aria-label="Filter shoots by month"
+                className="w-full sm:w-44 bg-white/60 backdrop-blur-md border border-slate-200/60 focus:border-indigo-500 rounded-2xl px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-sm"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </label>
+            <div className="relative max-w-sm w-full self-end">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="w-5 h-5 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                className="w-full bg-white/60 backdrop-blur-md border border-slate-200/60 focus:border-indigo-500 rounded-2xl pl-10 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-sm"
+                placeholder="Search shoots, tasks, or workspaces..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              className="w-full bg-white/60 backdrop-blur-md border border-slate-200/60 focus:border-indigo-500 rounded-2xl pl-10 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-sm"
-              placeholder="Search shoots, tasks, or workspaces..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
           </div>
         </div>
       </motion.div>
@@ -339,10 +365,10 @@ const ShootEmployeePage = () => {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 max-w-5xl mx-auto bg-white/60 backdrop-blur-xl border border-slate-100/60 rounded-[2rem] shadow-sm relative z-10">
           <Layers className="w-12 h-12 text-indigo-300 mx-auto mb-4" />
           <p className="text-slate-800 font-bold text-lg">
-            {searchTerm ? 'No matching shoots found' : 'No assigned shoots found'}
+            {searchTerm || selectedMonth ? 'No matching shoots found' : 'No assigned shoots found'}
           </p>
           <p className="text-sm text-slate-500 mt-1 font-medium">
-            {searchTerm ? 'Try a different search term.' : "You're completely caught up with your schedule framework."}
+            {searchTerm || selectedMonth ? 'Try a different search term or month.' : "You're completely caught up with your schedule framework."}
           </p>
         </motion.div>
       ) : (
