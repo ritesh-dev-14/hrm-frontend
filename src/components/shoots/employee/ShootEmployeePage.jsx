@@ -391,17 +391,15 @@ const ShootEmployeePage = () => {
                   onClick={() => toggleExpand(currentTaskId)}
                 >
                   <div className="space-y-2 md:col-span-8">
-                    <span className="inline-flex items-center px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">
-                      {shoot.workspaceName || 'Shoot Area'}
-                    </span>
                     <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight pt-1 flex items-center gap-3">
-                      {shoot.title}
+                      {shoot.workspaceName || 'Shoot Area'}
                       {shootNeedingResubmissionCount > 0 && (
                         <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-xs font-bold text-white bg-rose-500 rounded-full shadow-sm" title="Deliverables rejected — resubmission needed">
                           {shootNeedingResubmissionCount}
                         </span>
                       )}
                     </h2>
+                    <p className="text-sm font-semibold text-slate-600">{shoot.title}</p>
                     <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-xl line-clamp-2">{shoot.description}</p>
                     
                     <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 font-medium">
