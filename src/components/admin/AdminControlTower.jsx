@@ -166,6 +166,16 @@ export default function AdminControlTower({
     (sheet) => sheet.projectId === selectedSocialProjectId
       && `${sheet.year}-${String(sheet.month).padStart(2, "0")}` === activeMonthValue,
   );
+  const selectedSocialCalendarDays = React.useMemo(
+    () => [...(selectedSocialSheet?.days || [])].sort((left, right) => {
+      const leftDate = new Date(left.date).getTime();
+      const rightDate = new Date(right.date).getTime();
+      if (Number.isNaN(leftDate)) return Number.isNaN(rightDate) ? 0 : 1;
+      if (Number.isNaN(rightDate)) return -1;
+      return leftDate - rightDate;
+    }),
+    [selectedSocialSheet],
+  );
 
   const marketingProjects = React.useMemo(() => projects.filter((project) => {
     const departmentName = project.department?.name?.toLowerCase() || "";
@@ -1101,7 +1111,7 @@ export default function AdminControlTower({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {(selectedSocialSheet.days || []).map((day, idx) => (
+                      {selectedSocialCalendarDays.map((day, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50 transition">
                           <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
                             {new Date(day.date).toLocaleDateString()}
