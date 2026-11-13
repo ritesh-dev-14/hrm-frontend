@@ -1115,13 +1115,36 @@ export default function AdminControlTower({
               {data.critical.overdueDeliverablesList && data.critical.overdueDeliverablesList.length > 0 ? (
                 <div className="space-y-3">
                   {data.critical.overdueDeliverablesList.map((task, idx) => (
-                    <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-100 transition">
+                    (() => {
+                      const assignees = [
+                        ...(task.assignments || []).map((assignment) => assignment.employee),
+                        ...(task.task?.assignments || []).map((assignment) => assignment.employee),
+                        ...(task.task?.project?.assignments || []).map((assignment) => assignment.manager),
+                      ];
+                      const uniqueAssignees = [...new Map(
+                        assignees
+                          .filter((person) => person?.name)
+                          .map((person) => [person.id || person.name, person]),
+                      ).values()];
+                      const responsibleNames = uniqueAssignees.length
+                        ? uniqueAssignees.map((person) => person.name).join(", ")
+                        : task.task?.createdBy?.name
+                          ? `${task.task.createdBy.name} (task creator)`
+                          : "No responsible person recorded";
+
+                      return (
+                    <div key={task.id || idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-100 transition">
                       <p className="text-sm font-bold text-slate-800">{task.title}</p>
                       <p className="text-xs text-slate-500">{task.task?.project?.projectName} ({task.task?.project?.clientName})</p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        <span className="font-semibold">Responsible:</span> {responsibleNames}
+                      </p>
                       <div className="mt-2 text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-1 rounded w-max">
                         Due: {new Date(task.dueDate).toLocaleDateString()}
                       </div>
                     </div>
+                      );
+                    })()
                   ))}
                 </div>
               ) : (
