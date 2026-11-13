@@ -172,6 +172,10 @@ export const AppRoutes = () => {
 
           {/* SAFE ACCESS GUARD GRID FOR MEDIA SHOOTS */}
           <Route path="/shoot" element={<ShootPage />} />
+          <Route
+            path="/shoot-tasks"
+            element={hasRole("MANAGER") ? <ShootPage view="tasks" /> : <Navigate to="/dashboard" replace />}
+          />
           <Route path="/shoot-management" element={<ShootManagementPage />} />
 
           <Route

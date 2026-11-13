@@ -129,15 +129,18 @@ export default function ShootWorkspaceDetails() {
   const fetchAvailableEmployees = () => {
     if (employeesLoaded) return Promise.resolve(availableEmployees);
     if (!employeeRequestRef.current) {
-      employeeRequestRef.current = API.get("/api/manager/my-employees")
+      employeeRequestRef.current = API.get("/api/manager/shoot-assignees")
         .then((res) => {
           if (!res.data?.success) {
-            throw new Error("No employee list was returned.");
+            throw new Error("No shoot assignee list was returned.");
           }
-          const employees = res.data.data || [];
-          setAvailableEmployees(employees);
+          const assignees = (res.data.data || []).map((assignee) => ({
+            ...assignee,
+            role: assignee.role || "EMPLOYEE",
+          }));
+          setAvailableEmployees(assignees);
           setEmployeesLoaded(true);
-          return employees;
+          return assignees;
         })
         .finally(() => {
           employeeRequestRef.current = null;
@@ -258,14 +261,14 @@ export default function ShootWorkspaceDetails() {
         assignmentTask.id,
         res.data?.data?.assignedEmployees || selectedEmployees,
       );
-      notifySuccess("Shoot employees updated successfully.");
+      notifySuccess("Shoot assignments updated successfully.");
       closeAssignmentModal();
     } catch (err) {
       setAssignmentError(
-        err.response?.data?.message || "Failed to update shoot employees.",
+        err.response?.data?.message || "Failed to update shoot assignments.",
       );
       notifyError(
-        err.response?.data?.message || "Failed to update shoot employees.",
+        err.response?.data?.message || "Failed to update shoot assignments.",
       );
     } finally {
       setAssignmentSaving(false);
@@ -288,13 +291,13 @@ export default function ShootWorkspaceDetails() {
       setSelectedEmployeeIds(nextIds);
       setAssignmentTask((prev) => ({ ...prev, assignedEmployees: updatedEmployees }));
       updateTaskAssignments(assignmentTask.id, updatedEmployees);
-      notifySuccess("Employee removed from this shoot.");
+      notifySuccess("Assignee removed from this shoot.");
     } catch (err) {
       setAssignmentError(
-        err.response?.data?.message || "Failed to remove the employee.",
+        err.response?.data?.message || "Failed to remove the assignee.",
       );
       notifyError(
-        err.response?.data?.message || "Failed to remove the employee.",
+        err.response?.data?.message || "Failed to remove the assignee.",
       );
     } finally {
       setAssignmentSaving(false);
@@ -1022,7 +1025,7 @@ export default function ShootWorkspaceDetails() {
                         <th className="py-3 px-4">Metrics Layout</th>
                         <th className="py-3 px-4">Date </th>
                         <th className="py-3 px-4">Arrival</th>
-                        <th className="py-3 px-4">Assigned Employees</th>
+                        <th className="py-3 px-4">Assigned To</th>
                         <th className="py-3 px-4">Maps Navigation</th>
                         <th className="py-3 px-5 text-right">Actions</th>
                       </tr>
@@ -1181,7 +1184,7 @@ export default function ShootWorkspaceDetails() {
                                   className="inline-flex items-center gap-1 px-2 py-1 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold transition disabled:opacity-50"
                                 >
                                   <Users size={12} />
-                                  Manage Employees
+                                  Manage Assignees
                                 </button>
                                 <button
                                   onClick={(e) =>
@@ -1224,7 +1227,7 @@ export default function ShootWorkspaceDetails() {
               <div className="flex items-center gap-2 text-indigo-600">
                 <Users size={20} />
                 <h3 className="text-base font-bold text-slate-900">
-                  Manage Employees
+                  Manage Assignees
                 </h3>
               </div>
               <button
@@ -1246,7 +1249,7 @@ export default function ShootWorkspaceDetails() {
                     {assignmentTask.title}
                   </p>
                   <p className="text-xs text-slate-400 font-medium mt-1">
-                    Select employees assigned to this shoot only.
+                    Select the manager or employees assigned to this shoot.
                   </p>
                 </div>
                 {assignmentError && (
@@ -1286,11 +1289,11 @@ export default function ShootWorkspaceDetails() {
                 {assignmentLoading ? (
                   <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-500">
                     <Loader2 size={16} className="animate-spin text-indigo-600" />
-                    Loading employees...
+                    Loading assignees...
                   </div>
                 ) : availableEmployees.length === 0 ? (
                   <p className="text-xs text-slate-400 italic text-center py-6">
-                    No employees are available to assign.
+                    No assignees are available to assign.
                   </p>
                 ) : (
                   availableEmployees.map((emp) => {
@@ -1320,7 +1323,7 @@ export default function ShootWorkspaceDetails() {
                               {emp.name}
                             </span>
                             <span className="text-[11px] text-slate-400 font-medium block truncate font-mono mt-0.5">
-                              {identifier} • {emp.position || "Staff Operator"}
+                              {identifier} •                               {emp.role === "MANAGER" ? "Manager" : emp.position || "Staff Operator"}
                             </span>
                           </div>
                         </div>

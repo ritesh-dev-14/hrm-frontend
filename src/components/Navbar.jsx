@@ -61,6 +61,7 @@ const NAV_CONFIG = [
     ],
   },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"], departments: ["Social Media Department", "social media department"] },
+  { id: "my-shoot-tasks", label: "My Shoot Tasks", icon: Camera, path: "/shoot-tasks", roles: ["MANAGER"] },
   { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "ADMIN", "HR"], managerDepartments: ["social media"] },
   { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"], managerDepartments: ["social media"] },
   { id: "editor-workload", label: "Editor Workload", icon: Keyboard, path: "/editor-workload", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
@@ -651,7 +652,7 @@ export default function ProfessionalSidebar({ children }) {
     if ((item.id === "project" || item.id === "tasks-emp") && unreadCounts.projects > 0) {
       setUnreadCounts(prev => ({ ...prev, projects: 0 }));
       menuIdToReset = "projects";
-    } else if (item.id === "shoots" && unreadCounts.shoots > 0) {
+    } else if (["shoots", "my-shoot-tasks"].includes(item.id) && unreadCounts.shoots > 0) {
       setUnreadCounts(prev => ({ ...prev, shoots: 0 }));
       menuIdToReset = "shoots";
     } else if (item.id === "editor" && (unreadCounts.creative > 0 || unreadCounts.editor > 0)) {
@@ -711,7 +712,7 @@ export default function ProfessionalSidebar({ children }) {
                 (departmentUnreadCounts.webDevelopment || 0) +
                 (unreadCounts.metaAds || 0);
             }
-            if (item.id === "shoots") badgeCount = unreadCounts.shoots;
+            if (["shoots", "my-shoot-tasks"].includes(item.id)) badgeCount = unreadCounts.shoots;
             if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
             if (item.id === "marketing") badgeCount = marketingReportsCount;
             if (item.id === "pending-manager") badgeCount = managerPendingCount;

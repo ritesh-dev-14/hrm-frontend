@@ -1,17 +1,16 @@
-import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 import ShootManagerPage from "./manager/ShootManagerPage.jsx";
 import ShootEmployeePage from "./employee/ShootEmployeePage.jsx";
 
-const ShootPage = () => {
+const ShootPage = ({ view = "workspaces" }) => {
   const { user } = useAuth();
 
   const role = user?.role;
 
   if (role === "MANAGER") {
-    return <ShootManagerPage />;
+    return view === "tasks" ? <ShootEmployeePage /> : <ShootManagerPage />;
   }
 
   if (role === "EMPLOYEE") {
