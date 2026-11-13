@@ -610,15 +610,31 @@ export default function AdminControlTower({
 
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
           <p className="text-sm font-medium text-slate-600">Filter projects</p>
-          <select
-            value={marketingFilter}
-            onChange={(e) => setMarketingFilter(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          <div
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
+            role="group"
+            aria-label="Filter marketing projects by ad running status"
           >
-            <option value="ALL">All Projects</option>
-            <option value="RUNNING">Ads Running</option>
-            <option value="NOT_RUNNING">Ads Not Running</option>
-          </select>
+            {[
+              ["ALL", "All Projects"],
+              ["RUNNING", "Ads Running"],
+              ["NOT_RUNNING", "Ads Not Running"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={marketingFilter === value}
+                onClick={() => setMarketingFilter(value)}
+                className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                  marketingFilter === value
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {marketingMetricsError && (
