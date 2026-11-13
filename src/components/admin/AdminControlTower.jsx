@@ -12,9 +12,7 @@ import {
   Building2,
   IndianRupee,
   X,
-  User,
   FolderOpen,
-  ChevronRight,
   Calendar,
   Eye,
   Target,
@@ -34,19 +32,14 @@ export default function AdminControlTower({
   data,
   loading,
   healthMap,
-  managers = [],
   projects = [],
   marketingMetrics = {},
   marketingMetricsLoading = false,
   marketingMetricsError = "",
-  managerDirectoryError = "",
-  onSelectProject,
   onSelectMarketingProject,
   uploadCalendarSheets = [],
   uploadCalendarError = "",
 }) {
-  const [selectedManagerId, setSelectedManagerId] = React.useState("");
-  const [selectedManagerDepartment, setSelectedManagerDepartment] = React.useState("");
   const [selectedSocialProjectId, setSelectedSocialProjectId] = React.useState("");
   const [showBudgetModal, setShowBudgetModal] = React.useState(false);
   const [showSpendModal, setShowSpendModal] = React.useState(false);
@@ -116,29 +109,6 @@ export default function AdminControlTower({
       }
     });
   }
-
-  const managerProjects = projects.filter((project) =>
-    project.assignments?.some(
-      (assignment) => assignment.manager?.id === selectedManagerId,
-    ),
-  );
-  const managerProjectGroups = [...managerProjects.reduce((groups, project) => {
-    const departmentName = project.department?.name || "Other";
-    const group = groups.get(departmentName) || [];
-    group.push(project);
-    groups.set(departmentName, group);
-    return groups;
-  }, new Map()).entries()];
-
-  const handleManagerSelect = (managerId) => {
-    setSelectedManagerId(managerId);
-    const firstGroup = projects.find((project) =>
-      project.assignments?.some(
-        (assignment) => assignment.manager?.id === managerId,
-      ),
-    )?.department?.name;
-    setSelectedManagerDepartment(firstGroup || "");
-  };
 
   const socialProjects = projects.filter((project) => {
     const departmentName = project.department?.name?.toLowerCase() || "";
@@ -450,101 +420,6 @@ export default function AdminControlTower({
           </div>
         </div>
       </div>
-
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-col gap-4 border-b border-blue-100 bg-blue-50/70 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-100 bg-white text-blue-700">
-              <User size={18} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Manager projects</h3>
-              <p className="text-sm text-slate-500">Choose a manager and project to view details.</p>
-            </div>
-          </div>
-          <label className="w-full md:max-w-sm">
-            <span className="sr-only">Select a manager</span>
-            <select
-              value={selectedManagerId}
-              onChange={(event) => handleManagerSelect(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            >
-              <option value="">Select a manager</option>
-              {managers.map((manager) => (
-                <option key={manager.id} value={manager.id}>
-                  {manager.name}{manager.employeeId ? ` (${manager.employeeId})` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {managerDirectoryError && (
-          <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm text-rose-700">
-            {managerDirectoryError}
-          </p>
-        )}
-
-        {!selectedManagerId ? (
-          <p className="p-8 text-center text-sm text-slate-500">
-            Select a manager to view their departments and projects.
-          </p>
-        ) : managerProjectGroups.length === 0 ? (
-          <p className="p-8 text-center text-sm text-slate-500">
-            No projects are assigned to this manager.
-          </p>
-        ) : (
-          <div className="space-y-4 p-4 sm:p-5">
-            <div className="flex flex-wrap gap-2">
-              {managerProjectGroups.map(([departmentName, groupProjects]) => (
-                <button
-                  key={departmentName}
-                  type="button"
-                  onClick={() => setSelectedManagerDepartment(departmentName)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                    selectedManagerDepartment === departmentName
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  {departmentName}
-                  <span className={`ml-2 rounded-full px-1.5 py-0.5 text-xs ${
-                    selectedManagerDepartment === departmentName ? "bg-white/20" : "bg-slate-100"
-                  }`}>
-                    {groupProjects.length}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(managerProjectGroups.find(
-                ([departmentName]) => departmentName === selectedManagerDepartment,
-              )?.[1] || []).map((project) => (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => onSelectProject?.(project)}
-                  className="group flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-indigo-300 hover:bg-slate-50"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
-                    {project.logo ? (
-                      <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
-                    ) : (
-                      <FolderOpen size={18} />
-                    )}
-                  </div>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-slate-900">{project.projectName}</span>
-                    <span className="mt-0.5 block truncate text-xs text-slate-500">{project.clientName || project.department?.name || "Project"}</span>
-                  </span>
-                  <ChevronRight size={15} className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="flex items-center gap-3 border-b border-blue-100 bg-blue-50/70 p-4 sm:p-5">

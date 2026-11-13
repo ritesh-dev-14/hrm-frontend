@@ -58,8 +58,6 @@ export default function AdminHomePage() {
   const [projects, setProjects] = useState([]);
   const [uploadCalendarSheets, setUploadCalendarSheets] = useState([]);
   const [uploadCalendarError, setUploadCalendarError] = useState("");
-  const [managers, setManagers] = useState([]);
-  const [managerDirectoryError, setManagerDirectoryError] = useState("");
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -123,21 +121,10 @@ export default function AdminHomePage() {
 
     const ancillaryRequests = Promise.allSettled([
       API.get("/api/departments"),
-      API.get("/api/hr/managers"),
       API.get("/api/monthly-sheets/uploads?summary=true"),
-    ]).then(([deptRes, managerRes, uploadCalendarRes]) => {
+    ]).then(([deptRes, uploadCalendarRes]) => {
       if (deptRes.status === "fulfilled" && deptRes.value?.data?.data) {
         setDepartments(deptRes.value.data.data || []);
-      }
-      if (managerRes.status === "fulfilled" && managerRes.value?.data?.success) {
-        setManagers(managerRes.value.data.data || []);
-        setManagerDirectoryError("");
-      } else {
-        setManagerDirectoryError(
-          managerRes.status === "rejected"
-            ? managerRes.reason?.response?.data?.message || "Failed to load managers."
-            : "Failed to load managers.",
-        );
       }
       if (uploadCalendarRes.status === "fulfilled" && uploadCalendarRes.value?.data?.success) {
         setUploadCalendarSheets(uploadCalendarRes.value.data.data || []);
@@ -483,13 +470,10 @@ export default function AdminHomePage() {
           data={controlTower}
           loading={controlTowerLoading}
           healthMap={healthMap}
-          managers={managers}
           projects={projects}
           marketingMetrics={marketingMetrics}
           marketingMetricsLoading={marketingMetricsLoading}
           marketingMetricsError={marketingMetricsError}
-          managerDirectoryError={managerDirectoryError}
-          onSelectProject={handleSelectProject}
           onSelectMarketingProject={(projectId) => {
             setSelectedAdsMarketingProjectId(projectId);
             setIsAdsMarketingModalOpen(true);
