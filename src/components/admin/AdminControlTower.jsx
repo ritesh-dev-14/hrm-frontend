@@ -1,4 +1,5 @@
 import React from "react";
+import API from "../../services/api";
 import {
   AlertTriangle,
   Clock,
@@ -57,8 +58,46 @@ export default function AdminControlTower({
   const [showClientsIgnoredModal, setShowClientsIgnoredModal] = React.useState(false);
   const [showCalendarModal, setShowCalendarModal] = React.useState(false);
   const [marketingFilter, setMarketingFilter] = React.useState("ALL");
+  const [todayReportProjectIds, setTodayReportProjectIds] = React.useState([]);
+  const [todayReportsLoading, setTodayReportsLoading] = React.useState(true);
+  const [todayReportsError, setTodayReportsError] = React.useState("");
   const currentMarketingMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const [selectedMarketingMonth, setSelectedMarketingMonth] = React.useState(currentMarketingMonth);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const today = new Date();
+    const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const to = new Date(from);
+    to.setDate(to.getDate() + 1);
+
+    API.get("/api/marketing-reports/submitted-projects", {
+      params: { from: from.toISOString(), to: to.toISOString() },
+    })
+      .then((response) => {
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || "Unable to load today's marketing report submissions.");
+        }
+        if (isMounted) {
+          setTodayReportProjectIds((response.data.data || []).map(String));
+          setTodayReportsError("");
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setTodayReportsError(
+            error.response?.data?.message || error.message || "Unable to load today's marketing report submissions.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) setTodayReportsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   let clientsAtRisk = 0;
   let notContacted7Days = 0;
@@ -183,10 +222,15 @@ export default function AdminControlTower({
   }), [projects]);
 
   const filteredMarketingProjects = React.useMemo(() => {
-    if (marketingFilter === "RUNNING") return marketingProjects.filter(p => p.isRunning === true);
-    if (marketingFilter === "NOT_RUNNING") return marketingProjects.filter(p => p.isRunning !== true);
+    if (todayReportsLoading || todayReportsError) return marketingProjects;
+    if (marketingFilter === "REPORT_FILLED") {
+      return marketingProjects.filter((project) => todayReportProjectIds.includes(String(project.id || project._id)));
+    }
+    if (marketingFilter === "REPORT_NOT_FILLED") {
+      return marketingProjects.filter((project) => !todayReportProjectIds.includes(String(project.id || project._id)));
+    }
     return marketingProjects;
-  }, [marketingProjects, marketingFilter]);
+  }, [marketingProjects, marketingFilter, todayReportProjectIds, todayReportsLoading, todayReportsError]);
 
   const marketingMonthOptions = React.useMemo(() => {
     const options = new Map();
@@ -623,18 +667,19 @@ export default function AdminControlTower({
           <div
             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
             role="group"
-            aria-label="Filter marketing projects by ad running status"
+            aria-label="Filter marketing projects by today's report status"
           >
             {[
               ["ALL", "All Projects"],
-              ["RUNNING", "Ads Running"],
-              ["NOT_RUNNING", "Ads Not Running"],
+              ["REPORT_FILLED", "Report Filled Today"],
+              ["REPORT_NOT_FILLED", "Report Not Filled Today"],
             ].map(([value, label]) => (
               <button
                 key={value}
                 type="button"
                 aria-pressed={marketingFilter === value}
                 onClick={() => setMarketingFilter(value)}
+                disabled={(todayReportsLoading || Boolean(todayReportsError)) && value !== "ALL"}
                 className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
                   marketingFilter === value
                     ? "bg-indigo-600 text-white shadow-sm"
@@ -646,6 +691,17 @@ export default function AdminControlTower({
             ))}
           </div>
         </div>
+
+        {todayReportsError && (
+          <p role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-sm text-rose-700">
+            {todayReportsError}
+          </p>
+        )}
+        {todayReportsLoading && (
+          <p className="border-b border-slate-200 bg-slate-50 px-5 py-2 text-xs text-slate-500">
+            Loading today&apos;s report submissions...
+          </p>
+        )}
 
         {marketingMetricsError && (
           <p role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-sm text-rose-700">
