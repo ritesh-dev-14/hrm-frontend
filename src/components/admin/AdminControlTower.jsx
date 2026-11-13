@@ -37,6 +37,7 @@ export default function AdminControlTower({
   marketingMetricsLoading = false,
   marketingMetricsError = "",
   onSelectMarketingProject,
+  onSelectSeoProject,
   uploadCalendarSheets = [],
   uploadCalendarError = "",
 }) {
@@ -54,6 +55,10 @@ export default function AdminControlTower({
   const [todayReportProjectIds, setTodayReportProjectIds] = React.useState([]);
   const [todayReportsLoading, setTodayReportsLoading] = React.useState(true);
   const [todayReportsError, setTodayReportsError] = React.useState("");
+  const [seoFilter, setSeoFilter] = React.useState("ALL");
+  const [todaySeoReportProjectIds, setTodaySeoReportProjectIds] = React.useState([]);
+  const [todaySeoReportsLoading, setTodaySeoReportsLoading] = React.useState(true);
+  const [todaySeoReportsError, setTodaySeoReportsError] = React.useState("");
   const currentMarketingMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const [selectedMarketingMonth, setSelectedMarketingMonth] = React.useState(currentMarketingMonth);
 
@@ -85,6 +90,41 @@ export default function AdminControlTower({
       })
       .finally(() => {
         if (isMounted) setTodayReportsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const today = new Date();
+    const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const to = new Date(from);
+    to.setDate(to.getDate() + 1);
+
+    API.get("/api/seo-reports/submitted-projects", {
+      params: { from: from.toISOString(), to: to.toISOString() },
+    })
+      .then((response) => {
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || "Unable to load today's SEO report submissions.");
+        }
+        if (isMounted) {
+          setTodaySeoReportProjectIds((response.data.data || []).map(String));
+          setTodaySeoReportsError("");
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setTodaySeoReportsError(
+            error.response?.data?.message || error.message || "Unable to load today's SEO report submissions.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) setTodaySeoReportsLoading(false);
       });
 
     return () => {
@@ -190,6 +230,20 @@ export default function AdminControlTower({
     const departmentName = project.department?.name?.toLowerCase() || "";
     return departmentName.includes("performance") || departmentName.includes("marketing") || departmentName.includes("ads") || departmentName.includes("meta");
   }), [projects]);
+  const seoProjects = React.useMemo(
+    () => projects.filter((project) => project.department?.name?.toLowerCase().includes("seo")),
+    [projects],
+  );
+  const filteredSeoProjects = React.useMemo(() => {
+    if (todaySeoReportsLoading || todaySeoReportsError) return seoProjects;
+    if (seoFilter === "REPORT_FILLED") {
+      return seoProjects.filter((project) => todaySeoReportProjectIds.includes(String(project.id || project._id)));
+    }
+    if (seoFilter === "REPORT_NOT_FILLED") {
+      return seoProjects.filter((project) => !todaySeoReportProjectIds.includes(String(project.id || project._id)));
+    }
+    return seoProjects;
+  }, [seoProjects, seoFilter, todaySeoReportProjectIds, todaySeoReportsLoading, todaySeoReportsError]);
 
   const filteredMarketingProjects = React.useMemo(() => {
     if (todayReportsLoading || todayReportsError) return marketingProjects;
@@ -680,6 +734,134 @@ export default function AdminControlTower({
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center gap-3 border-b border-emerald-100 bg-emerald-50/70 p-4 sm:p-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-100 bg-white text-emerald-700">
+            <Building2 size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">SEO &amp; Organic</h3>
+            <p className="text-sm text-slate-500">SEO projects and manager report submissions for today.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:px-5">
+          <p className="text-sm font-medium text-slate-600">Filter projects</p>
+          <div
+            className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-white p-1"
+            role="group"
+            aria-label="Filter SEO projects by today's report status"
+          >
+            {[
+              ["ALL", "All Projects"],
+              ["REPORT_FILLED", "Report Filled Today"],
+              ["REPORT_NOT_FILLED", "Report Not Filled Today"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={seoFilter === value}
+                onClick={() => setSeoFilter(value)}
+                disabled={(todaySeoReportsLoading || Boolean(todaySeoReportsError)) && value !== "ALL"}
+                className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                  seoFilter === value
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {todaySeoReportsError && (
+          <p role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-sm text-rose-700">
+            {todaySeoReportsError}
+          </p>
+        )}
+        {todaySeoReportsLoading && (
+          <p className="border-b border-slate-200 bg-slate-50 px-5 py-2 text-xs text-slate-500">
+            Loading today&apos;s SEO report submissions...
+          </p>
+        )}
+
+        {filteredSeoProjects.length === 0 ? (
+          <p className="p-8 text-center text-sm text-slate-500">
+            {seoProjects.length ? "No SEO projects found for this filter." : "No SEO projects are available."}
+          </p>
+        ) : (
+          <div className="p-4 sm:p-5">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+              <table className="w-full min-w-[600px] text-left">
+                <thead className="bg-slate-50">
+                  <tr className="text-xs font-semibold text-slate-500">
+                    <th className="px-4 py-3">Project</th>
+                    <th className="px-4 py-3">Manager</th>
+                    <th className="px-4 py-3 text-right">Today&apos;s Report</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredSeoProjects.map((project) => {
+                    const projectId = String(project.id || project._id);
+                    const reportSubmitted = todaySeoReportProjectIds.includes(projectId);
+                    const managers = [...new Set(
+                      (project.assignments || [])
+                        .map((assignment) => assignment.manager?.name)
+                        .filter(Boolean),
+                    )];
+                    return (
+                      <tr
+                        key={projectId}
+                        onClick={() => onSelectSeoProject?.(projectId)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onSelectSeoProject?.(projectId);
+                          }
+                        }}
+                        role={onSelectSeoProject ? "button" : undefined}
+                        tabIndex={onSelectSeoProject ? 0 : undefined}
+                        aria-label={onSelectSeoProject ? `Open SEO report details for ${project.projectName}` : undefined}
+                        className={`hover:bg-emerald-50/60 ${onSelectSeoProject ? "cursor-pointer focus:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-400" : ""}`}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-emerald-600">
+                              {project.logo ? (
+                                <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
+                              ) : (
+                                <FolderOpen size={16} />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-900">{project.projectName}</p>
+                              <p className="truncate text-xs text-slate-500">{project.clientName || project.department?.name}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {managers.length ? managers.join(", ") : "Unassigned"}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            reportSubmitted
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-amber-50 text-amber-700"
+                          }`}>
+                            {reportSubmitted ? "Filled" : "Not filled"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

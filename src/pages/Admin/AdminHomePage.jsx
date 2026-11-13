@@ -68,6 +68,7 @@ export default function AdminHomePage() {
   const [isSocialProjectDetailOpen, setIsSocialProjectDetailOpen] = useState(false);
   const [isSeoModalOpen, setIsSeoModalOpen] = useState(false);
   const [isSeoProjectDetailOpen, setIsSeoProjectDetailOpen] = useState(false);
+  const [selectedSeoProjectId, setSelectedSeoProjectId] = useState(null);
 
   // Health score state
   const [healthMap, setHealthMap] = useState({});
@@ -423,7 +424,10 @@ export default function AdminHomePage() {
 
           {/* SEO Dashboard Card */}
           <button
-            onClick={() => setIsSeoModalOpen(true)}
+            onClick={() => {
+              setSelectedSeoProjectId(null);
+              setIsSeoModalOpen(true);
+            }}
             className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-700 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-emerald-400/50"
           >
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
@@ -477,6 +481,10 @@ export default function AdminHomePage() {
           onSelectMarketingProject={(projectId) => {
             setSelectedAdsMarketingProjectId(projectId);
             setIsAdsMarketingModalOpen(true);
+          }}
+          onSelectSeoProject={(projectId) => {
+            setSelectedSeoProjectId(projectId);
+            setIsSeoModalOpen(true);
           }}
           uploadCalendarSheets={uploadCalendarSheets}
           uploadCalendarError={uploadCalendarError}
@@ -999,6 +1007,7 @@ export default function AdminHomePage() {
       {isSeoModalOpen && (
         <AdminSeoProjectsModal
           projects={seoProjects}
+          initialProjectId={selectedSeoProjectId}
           onClose={() => setIsSeoModalOpen(false)}
           onSelectProject={(projectId) => {
             setSelectedProjectId(projectId);

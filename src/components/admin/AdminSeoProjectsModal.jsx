@@ -32,7 +32,7 @@ const formatDateTime = (value) =>
     year: "numeric",
   });
 
-const AdminSeoProjectsModal = ({ projects, onClose, onSelectProject }) => {
+const AdminSeoProjectsModal = ({ projects, onClose, onSelectProject, initialProjectId = null }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [draftDate, setDraftDate] = useState(getToday);
   const [appliedDate, setAppliedDate] = useState("");
@@ -41,7 +41,9 @@ const AdminSeoProjectsModal = ({ projects, onClose, onSelectProject }) => {
   const [submittedProjectsError, setSubmittedProjectsError] = useState("");
 
   // Selected project inline view
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(() =>
+    projects.find((project) => String(project.id || project._id) === String(initialProjectId)) || null,
+  );
   const [pendingItems, setPendingItems] = useState([]);
   const [loadingPendingItems, setLoadingPendingItems] = useState(false);
   const [pendingItemsError, setPendingItemsError] = useState("");
