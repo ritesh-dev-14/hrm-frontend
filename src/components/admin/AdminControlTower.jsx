@@ -28,6 +28,31 @@ const getSafeExternalUrl = (value) => {
   }
 };
 
+const getTodayDateValue = () => {
+  const today = new Date();
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+};
+
+const getLocalDateBounds = (dateValue) => {
+  const from = new Date(`${dateValue}T00:00:00`);
+  const to = new Date(from);
+  to.setDate(to.getDate() + 1);
+  return { from: from.toISOString(), to: to.toISOString() };
+};
+
+const formatDateValue = (dateValue) => {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 export default function AdminControlTower({
   data,
   loading,
@@ -59,18 +84,18 @@ export default function AdminControlTower({
   const [todaySeoReportProjectIds, setTodaySeoReportProjectIds] = React.useState([]);
   const [todaySeoReportsLoading, setTodaySeoReportsLoading] = React.useState(true);
   const [todaySeoReportsError, setTodaySeoReportsError] = React.useState("");
+  const [marketingReportDate, setMarketingReportDate] = React.useState(getTodayDateValue);
+  const [draftMarketingReportDate, setDraftMarketingReportDate] = React.useState(getTodayDateValue);
+  const [seoReportDate, setSeoReportDate] = React.useState(getTodayDateValue);
+  const [draftSeoReportDate, setDraftSeoReportDate] = React.useState(getTodayDateValue);
   const currentMarketingMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const [selectedMarketingMonth, setSelectedMarketingMonth] = React.useState(currentMarketingMonth);
 
   React.useEffect(() => {
     let isMounted = true;
-    const today = new Date();
-    const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const to = new Date(from);
-    to.setDate(to.getDate() + 1);
 
     API.get("/api/marketing-reports/submitted-projects", {
-      params: { from: from.toISOString(), to: to.toISOString() },
+      params: getLocalDateBounds(marketingReportDate),
     })
       .then((response) => {
         if (!response.data?.success) {
@@ -95,17 +120,13 @@ export default function AdminControlTower({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [marketingReportDate]);
 
   React.useEffect(() => {
     let isMounted = true;
-    const today = new Date();
-    const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const to = new Date(from);
-    to.setDate(to.getDate() + 1);
 
     API.get("/api/seo-reports/submitted-projects", {
-      params: { from: from.toISOString(), to: to.toISOString() },
+      params: getLocalDateBounds(seoReportDate),
     })
       .then((response) => {
         if (!response.data?.success) {
@@ -130,7 +151,7 @@ export default function AdminControlTower({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [seoReportDate]);
 
   let clientsAtRisk = 0;
   let notContacted7Days = 0;
@@ -591,33 +612,57 @@ export default function AdminControlTower({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+        <div className="flex flex-col items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:px-5">
           <p className="text-sm font-medium text-slate-600">Filter projects</p>
-          <div
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
-            role="group"
-            aria-label="Filter marketing projects by today's report status"
-          >
-            {[
-              ["ALL", "All Projects"],
-              ["REPORT_FILLED", "Report Filled Today"],
-              ["REPORT_NOT_FILLED", "Report Not Filled Today"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={marketingFilter === value}
-                onClick={() => setMarketingFilter(value)}
-                disabled={(todayReportsLoading || Boolean(todayReportsError)) && value !== "ALL"}
-                className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
-                  marketingFilter === value
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+              Report date
+              <input
+                type="date"
+                value={draftMarketingReportDate}
+                onChange={(event) => setDraftMarketingReportDate(event.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setTodayReportsLoading(true);
+                setTodayReportsError("");
+                setTodayReportProjectIds([]);
+                setMarketingReportDate(draftMarketingReportDate);
+              }}
+              disabled={!draftMarketingReportDate || todayReportsLoading || draftMarketingReportDate === marketingReportDate}
+              className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Apply Date
+            </button>
+            <div
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
+              role="group"
+              aria-label={`Filter marketing projects by report status on ${formatDateValue(marketingReportDate)}`}
+            >
+              {[
+                ["ALL", "All Projects"],
+                ["REPORT_FILLED", "Report Filled"],
+                ["REPORT_NOT_FILLED", "Report Not Filled"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={marketingFilter === value}
+                  onClick={() => setMarketingFilter(value)}
+                  disabled={(todayReportsLoading || Boolean(todayReportsError)) && value !== "ALL"}
+                  className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                    marketingFilter === value
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -628,7 +673,7 @@ export default function AdminControlTower({
         )}
         {todayReportsLoading && (
           <p className="border-b border-slate-200 bg-slate-50 px-5 py-2 text-xs text-slate-500">
-            Loading today&apos;s report submissions...
+            Loading report submissions for {formatDateValue(marketingReportDate)}...
           </p>
         )}
 
@@ -754,31 +799,55 @@ export default function AdminControlTower({
 
         <div className="flex flex-col items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:px-5">
           <p className="text-sm font-medium text-slate-600">Filter projects</p>
-          <div
-            className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-white p-1"
-            role="group"
-            aria-label="Filter SEO projects by today's report status"
-          >
-            {[
-              ["ALL", "All Projects"],
-              ["REPORT_FILLED", "Report Filled Today"],
-              ["REPORT_NOT_FILLED", "Report Not Filled Today"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={seoFilter === value}
-                onClick={() => setSeoFilter(value)}
-                disabled={(todaySeoReportsLoading || Boolean(todaySeoReportsError)) && value !== "ALL"}
-                className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
-                  seoFilter === value
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+              Report date
+              <input
+                type="date"
+                value={draftSeoReportDate}
+                onChange={(event) => setDraftSeoReportDate(event.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setTodaySeoReportsLoading(true);
+                setTodaySeoReportsError("");
+                setTodaySeoReportProjectIds([]);
+                setSeoReportDate(draftSeoReportDate);
+              }}
+              disabled={!draftSeoReportDate || todaySeoReportsLoading || draftSeoReportDate === seoReportDate}
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Apply Date
+            </button>
+            <div
+              className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-white p-1"
+              role="group"
+              aria-label={`Filter SEO projects by report status on ${formatDateValue(seoReportDate)}`}
+            >
+              {[
+                ["ALL", "All Projects"],
+                ["REPORT_FILLED", "Report Filled"],
+                ["REPORT_NOT_FILLED", "Report Not Filled"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={seoFilter === value}
+                  onClick={() => setSeoFilter(value)}
+                  disabled={(todaySeoReportsLoading || Boolean(todaySeoReportsError)) && value !== "ALL"}
+                  className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                    seoFilter === value
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -789,7 +858,7 @@ export default function AdminControlTower({
         )}
         {todaySeoReportsLoading && (
           <p className="border-b border-slate-200 bg-slate-50 px-5 py-2 text-xs text-slate-500">
-            Loading today&apos;s SEO report submissions...
+            Loading SEO report submissions for {formatDateValue(seoReportDate)}...
           </p>
         )}
 
@@ -805,7 +874,7 @@ export default function AdminControlTower({
                   <tr className="text-xs font-semibold text-slate-500">
                     <th className="px-4 py-3">Project</th>
                     <th className="px-4 py-3">Manager</th>
-                    <th className="px-4 py-3 text-right">Today&apos;s Report</th>
+                    <th className="px-4 py-3 text-right">Report ({formatDateValue(seoReportDate)})</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
