@@ -123,6 +123,8 @@ const MarketingProjectsPage = () => {
       }
       if (activationFilter !== "all") {
         params.append("activation", activationFilter);
+      } else if (runningFilter !== "all") {
+        params.append("activation", "active");
       }
       if (runningFilter === "running") {
         params.append("isRunning", "true");
@@ -142,6 +144,7 @@ const MarketingProjectsPage = () => {
         .map(normalizeMetaAdsProject)
         .filter((project) => {
           if (runningFilter === "all") return true;
+          if (project.status === "PAUSED") return false;
           const isRunning = project.isRunning === true || project.isRunning === "true";
           return runningFilter === "running" ? isRunning : !isRunning;
         });
