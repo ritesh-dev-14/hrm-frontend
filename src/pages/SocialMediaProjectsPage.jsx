@@ -63,6 +63,7 @@ const SocialMediaProjectsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [activationFilter, setActivationFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
@@ -88,7 +89,11 @@ const SocialMediaProjectsPage = () => {
       const res = await API.patch(`/api/projects/${projectId}`, { status: newStatus });
       if (res?.data?.success) {
         toast.success(`Project ${isPaused ? 'activated' : 'deactivated'} successfully!`);
-        setAllProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+        if (activationFilter === "all" || (activationFilter === "active" && newStatus !== "PAUSED") || (activationFilter === "deactivated" && newStatus === "PAUSED")) {
+          setAllProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+        } else {
+          await loadData();
+        }
       }
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to update project status.");
@@ -116,6 +121,9 @@ const SocialMediaProjectsPage = () => {
         limit: 15,
         department: "Social Media",
       });
+      if (activationFilter !== "all") {
+        params.append("activation", activationFilter);
+      }
       if (debouncedSearch) {
         params.append("search", debouncedSearch);
       }
@@ -139,7 +147,7 @@ const SocialMediaProjectsPage = () => {
 
   useEffect(() => {
     loadData();
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, activationFilter]);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -222,18 +230,48 @@ const SocialMediaProjectsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[2rem] p-4 md:p-6 shadow-sm"
         >
-          <div className="relative w-full group">
-            <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-500 transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="Search social media projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10 transition-all bg-white"
-            />
+          <div className="flex flex-col gap-3 md:flex-row">
+            <div className="relative w-full group">
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-500 transition-colors"
+              />
+              <input
+                type="text"
+                placeholder="Search social media projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10 transition-all bg-white"
+              />
+            </div>
+            <div
+              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white p-1"
+              role="group"
+              aria-label="Filter projects by activation status"
+            >
+              {[
+                ["all", "All"],
+                ["active", "Activated"],
+                ["deactivated", "Deactivated"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={activationFilter === value}
+                  onClick={() => {
+                    setActivationFilter(value);
+                    setCurrentPage(1);
+                  }}
+                  className={`h-full rounded-lg px-3 text-xs font-bold transition-colors ${
+                    activationFilter === value
+                      ? "bg-cyan-500 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-cyan-50 hover:text-cyan-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
 
@@ -249,7 +287,7 @@ const SocialMediaProjectsPage = () => {
               No Social Media Projects Found
             </h3>
             <p className="text-sm font-medium text-slate-500 max-w-sm">
-              {searchQuery
+              {searchQuery || activationFilter !== "all"
                 ? "No projects match your search. Try a different keyword."
                 : "There are no projects assigned to the Social Media Department yet."}
             </p>

@@ -84,6 +84,7 @@ const MarketingProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [runningFilter, setRunningFilter] = useState("all");
+  const [activationFilter, setActivationFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
@@ -120,6 +121,9 @@ const MarketingProjectsPage = () => {
       if (debouncedSearch) {
         params.append("search", debouncedSearch);
       }
+      if (activationFilter !== "all") {
+        params.append("activation", activationFilter);
+      }
       if (runningFilter === "running") {
         params.append("isRunning", "true");
       } else if (runningFilter === "not-running") {
@@ -154,7 +158,7 @@ const MarketingProjectsPage = () => {
 
   useEffect(() => {
     loadData();
-  }, [currentPage, debouncedSearch, runningFilter, role]);
+  }, [currentPage, debouncedSearch, runningFilter, activationFilter, role]);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -212,7 +216,11 @@ const MarketingProjectsPage = () => {
       const res = await API.patch(`/api/projects/${projectId}`, { status: newStatus });
       if (res?.data?.success) {
         toast.success(`Project ${isPaused ? 'activated' : 'deactivated'} successfully!`);
-        setAllProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+        if (activationFilter === "all" || (activationFilter === "active" && newStatus !== "PAUSED") || (activationFilter === "deactivated" && newStatus === "PAUSED")) {
+          setAllProjects(prev => prev.map(p => (p.id || p._id) === projectId ? { ...p, status: newStatus } : p));
+        } else {
+          await loadData();
+        }
       }
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to update project status.");
@@ -291,19 +299,62 @@ const MarketingProjectsPage = () => {
               className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 transition-all bg-white"
             />
             </div>
-            <select
-              value={runningFilter}
-              onChange={(event) => {
-                setRunningFilter(event.target.value);
-                setCurrentPage(1); // Reset page on filter change
-              }}
-              className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 md:min-w-44"
-              aria-label="Filter projects by running status"
+            <div
+              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white p-1"
+              role="group"
+              aria-label="Filter projects by ad running status"
             >
-              <option value="all">All Projects</option>
-              <option value="running">Running Ads</option>
-              <option value="not-running">Not Running Ads</option>
-            </select>
+              {[
+                ["all", "All Ads"],
+                ["running", "Ads Running"],
+                ["not-running", "Ads Not Running"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={runningFilter === value}
+                  onClick={() => {
+                    setRunningFilter(value);
+                    setCurrentPage(1);
+                  }}
+                  className={`h-full rounded-lg px-3 text-xs font-bold transition-colors ${
+                    runningFilter === value
+                      ? "bg-pink-500 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-pink-50 hover:text-pink-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div
+              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white p-1"
+              role="group"
+              aria-label="Filter projects by activation status"
+            >
+              {[
+                ["all", "All"],
+                ["active", "Activated"],
+                ["deactivated", "Deactivated"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={activationFilter === value}
+                  onClick={() => {
+                    setActivationFilter(value);
+                    setCurrentPage(1);
+                  }}
+                  className={`h-full rounded-lg px-3 text-xs font-bold transition-colors ${
+                    activationFilter === value
+                      ? "bg-pink-500 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-pink-50 hover:text-pink-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
 
@@ -319,7 +370,7 @@ const MarketingProjectsPage = () => {
               No Meta Ads Found
             </h3>
             <p className="text-sm font-medium text-slate-500 max-w-sm">
-              {searchQuery || runningFilter !== "all"
+              {searchQuery || runningFilter !== "all" || activationFilter !== "all"
                 ? "No projects match your search. Try a different keyword."
                 : "There are no projects assigned to the Marketing Department yet."}
             </p>
