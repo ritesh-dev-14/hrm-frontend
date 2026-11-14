@@ -53,6 +53,9 @@ import AdminAdsMarketingReportsModal from "../../components/admin/AdminAdsMarket
 import AdminSocialMediaProjectsModal from "../../components/admin/AdminSocialMediaProjectsModal";
 import AdminSeoProjectsModal from "../../components/admin/AdminSeoProjectsModal";
 
+const isDeactivatedProject = (project) =>
+  String(project?.status || "").toUpperCase() === "PAUSED";
+
 export default function AdminHomePage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
@@ -298,7 +301,10 @@ export default function AdminHomePage() {
       }
 
       return true;
-    });
+    }).sort(
+      (left, right) =>
+        Number(isDeactivatedProject(left)) - Number(isDeactivatedProject(right)),
+    );
   }, [projects, selectedDept, statusFilter, healthFilter, searchQuery, healthMap]);
 
   // Derived Statistics
@@ -778,21 +784,26 @@ export default function AdminHomePage() {
               // ── Health score for this card ─────────────────────────
               const health = getHealth(p);
               const hCfg = getHealthConfig(health.status);
+              const isDeactivated = isDeactivatedProject(p);
 
               return (
                 <div
                   key={p.id}
-                  className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between group relative overflow-hidden ${
-                    health.status === "AT_RISK"
-                      ? "border-rose-200/70 hover:border-rose-400"
-                      : health.status === "ATTENTION"
-                      ? "border-amber-200/70 hover:border-amber-400"
-                      : "border-slate-200/80 hover:border-indigo-300"
+                  className={`rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between group relative overflow-hidden ${
+                    isDeactivated
+                      ? "bg-slate-100 border-slate-300 grayscale opacity-70"
+                      : `bg-white ${
+                          health.status === "AT_RISK"
+                            ? "border-rose-200/70 hover:border-rose-400"
+                            : health.status === "ATTENTION"
+                            ? "border-amber-200/70 hover:border-amber-400"
+                            : "border-slate-200/80 hover:border-indigo-300"
+                        }`
                   }`}
                 >
                   {/* Health colour accent bar at top of card */}
                   <div
-                    className={`absolute top-0 left-0 right-0 h-0.5 ${hCfg.bar}`}
+                    className={`absolute top-0 left-0 right-0 h-0.5 ${isDeactivated ? "bg-slate-400" : hCfg.bar}`}
                   />
 
                   <div className="space-y-4">

@@ -53,6 +53,15 @@ const formatDateValue = (dateValue) => {
   });
 };
 
+const isDeactivatedProject = (project) =>
+  String(project?.status || "").toUpperCase() === "PAUSED";
+
+const activeProjectsFirst = (projects) =>
+  [...projects].sort(
+    (left, right) =>
+      Number(isDeactivatedProject(left)) - Number(isDeactivatedProject(right)),
+  );
+
 export default function AdminControlTower({
   data,
   loading,
@@ -208,7 +217,7 @@ export default function AdminControlTower({
   const activeMonthLabel = activeMonthOption
     ? getMonthLabel(activeMonthOption.month, activeMonthOption.year)
     : "";
-  const socialProjectRows = React.useMemo(() => socialProjects.map((project) => {
+  const socialProjectRows = React.useMemo(() => activeProjectsFirst(socialProjects).map((project) => {
     const sheet = uploadCalendarSheets.find(
       (item) => item.projectId === project.id
         && `${item.year}-${String(item.month).padStart(2, "0")}` === activeMonthValue,
@@ -256,25 +265,27 @@ export default function AdminControlTower({
     [projects],
   );
   const filteredSeoProjects = React.useMemo(() => {
-    if (todaySeoReportsLoading || todaySeoReportsError) return seoProjects;
-    if (seoFilter === "REPORT_FILLED") {
-      return seoProjects.filter((project) => todaySeoReportProjectIds.includes(String(project.id || project._id)));
+    let filteredProjects = seoProjects;
+    if (!todaySeoReportsLoading && !todaySeoReportsError) {
+      if (seoFilter === "REPORT_FILLED") {
+        filteredProjects = seoProjects.filter((project) => todaySeoReportProjectIds.includes(String(project.id || project._id)));
+      } else if (seoFilter === "REPORT_NOT_FILLED") {
+        filteredProjects = seoProjects.filter((project) => !todaySeoReportProjectIds.includes(String(project.id || project._id)));
+      }
     }
-    if (seoFilter === "REPORT_NOT_FILLED") {
-      return seoProjects.filter((project) => !todaySeoReportProjectIds.includes(String(project.id || project._id)));
-    }
-    return seoProjects;
+    return activeProjectsFirst(filteredProjects);
   }, [seoProjects, seoFilter, todaySeoReportProjectIds, todaySeoReportsLoading, todaySeoReportsError]);
 
   const filteredMarketingProjects = React.useMemo(() => {
-    if (todayReportsLoading || todayReportsError) return marketingProjects;
-    if (marketingFilter === "REPORT_FILLED") {
-      return marketingProjects.filter((project) => todayReportProjectIds.includes(String(project.id || project._id)));
+    let filteredProjects = marketingProjects;
+    if (!todayReportsLoading && !todayReportsError) {
+      if (marketingFilter === "REPORT_FILLED") {
+        filteredProjects = marketingProjects.filter((project) => todayReportProjectIds.includes(String(project.id || project._id)));
+      } else if (marketingFilter === "REPORT_NOT_FILLED") {
+        filteredProjects = marketingProjects.filter((project) => !todayReportProjectIds.includes(String(project.id || project._id)));
+      }
     }
-    if (marketingFilter === "REPORT_NOT_FILLED") {
-      return marketingProjects.filter((project) => !todayReportProjectIds.includes(String(project.id || project._id)));
-    }
-    return marketingProjects;
+    return activeProjectsFirst(filteredProjects);
   }, [marketingProjects, marketingFilter, todayReportProjectIds, todayReportsLoading, todayReportsError]);
 
   const marketingMonthOptions = React.useMemo(() => {
@@ -556,8 +567,13 @@ export default function AdminControlTower({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {socialProjectRows.map((row) => (
-                    <tr key={row.project.id} className="hover:bg-slate-50">
+                  {socialProjectRows.map((row) => {
+                    const isDeactivated = isDeactivatedProject(row.project);
+                    return (
+                    <tr
+                      key={row.project.id}
+                      className={isDeactivated ? "bg-slate-100 grayscale opacity-70" : "hover:bg-slate-50"}
+                    >
                       <td className="px-4 py-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
@@ -591,7 +607,8 @@ export default function AdminControlTower({
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -729,7 +746,9 @@ export default function AdminControlTower({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {marketingProjectRows.map(({ project, budget, spent }) => (
+                  {marketingProjectRows.map(({ project, budget, spent }) => {
+                    const isDeactivated = isDeactivatedProject(project);
+                    return (
                     <tr
                       key={project.id}
                       onClick={() => onSelectMarketingProject?.(project.id)}
@@ -742,7 +761,7 @@ export default function AdminControlTower({
                       role={onSelectMarketingProject ? "button" : undefined}
                       tabIndex={onSelectMarketingProject ? 0 : undefined}
                       aria-label={onSelectMarketingProject ? `Open reports for ${project.projectName}` : undefined}
-                      className={`hover:bg-blue-50/70 ${onSelectMarketingProject ? "cursor-pointer focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400" : ""}`}
+                      className={`${isDeactivated ? "bg-slate-100 grayscale opacity-70" : "hover:bg-blue-50/70"} ${onSelectMarketingProject && !isDeactivated ? "cursor-pointer focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400" : ""}`}
                     >
                       <td className="px-4 py-3">
                         <div className="flex min-w-0 items-center gap-3">
@@ -778,7 +797,8 @@ export default function AdminControlTower({
                           : (Number(marketingMetrics[project.id]?.totalLeads) || 0).toLocaleString("en-IN")}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -880,6 +900,7 @@ export default function AdminControlTower({
                 <tbody className="divide-y divide-slate-100">
                   {filteredSeoProjects.map((project) => {
                     const projectId = String(project.id || project._id);
+                    const isDeactivated = isDeactivatedProject(project);
                     const reportSubmitted = todaySeoReportProjectIds.includes(projectId);
                     const managers = [...new Set(
                       (project.assignments || [])
@@ -899,7 +920,7 @@ export default function AdminControlTower({
                         role={onSelectSeoProject ? "button" : undefined}
                         tabIndex={onSelectSeoProject ? 0 : undefined}
                         aria-label={onSelectSeoProject ? `Open SEO report details for ${project.projectName}` : undefined}
-                        className={`hover:bg-emerald-50/60 ${onSelectSeoProject ? "cursor-pointer focus:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-400" : ""}`}
+                        className={`${isDeactivated ? "bg-slate-100 grayscale opacity-70" : "hover:bg-emerald-50/60"} ${onSelectSeoProject && !isDeactivated ? "cursor-pointer focus:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-400" : ""}`}
                       >
                         <td className="px-4 py-3">
                           <div className="flex min-w-0 items-center gap-3">
