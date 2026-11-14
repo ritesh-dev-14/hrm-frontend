@@ -670,6 +670,7 @@ const EmployeeTaskPage = () => {
 
                     {/* Resources */}
                     {(selectedTask.taskItem?.referenceLink ||
+                      selectedTask.taskItem?.googleDriveLink ||
                       selectedTask.taskItem?.rawDataLink ||
                       selectedTask.taskItem?.referenceLinks?.length ||
                       selectedTask.taskItem?.rawDataLinks?.length) && (
@@ -677,6 +678,17 @@ const EmployeeTaskPage = () => {
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-2">
                           <Link2 className="w-4 h-4" /> Provided Resources
                         </span>
+
+                        {selectedTask.taskItem.googleDriveLink && (
+                          <div className="bg-sky-50/50 p-4 rounded-xl border border-sky-100">
+                            <span className="text-[10px] font-bold text-sky-500 uppercase tracking-widest block mb-1">
+                              Google Drive Link
+                            </span>
+                            <a href={selectedTask.taskItem.googleDriveLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-sky-600 hover:text-sky-800 flex items-center gap-2 break-all transition">
+                              <ExternalLink className="w-4 h-4 shrink-0" /> {selectedTask.taskItem.googleDriveLink}
+                            </a>
+                          </div>
+                        )}
                         
                         {(selectedTask.taskItem.referenceLinks?.length
                           ? selectedTask.taskItem.referenceLinks

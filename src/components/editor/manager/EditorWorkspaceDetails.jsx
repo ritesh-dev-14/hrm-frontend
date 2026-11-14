@@ -74,6 +74,7 @@ const EditorWorkspaceDetails = () => {
     description: '',
     status: 'DRAFT',
     mediaType: 'VIDEO',
+    googleDriveLink: '',
     referenceLinks: [''],
     rawDataLinks: [''],
     shootTaskId: '',
@@ -98,6 +99,7 @@ const EditorWorkspaceDetails = () => {
     description: '',
     status: 'DRAFT',
     mediaType: 'VIDEO',
+    googleDriveLink: '',
     referenceLinks: [''],
     rawDataLinks: [''],
     shootTaskId: '',
@@ -374,6 +376,7 @@ const EditorWorkspaceDetails = () => {
         mediaType: subtaskForm.mediaType || 'VIDEO',
         title: subtaskForm.title.trim(),
         description: subtaskForm.description.trim(),
+        googleDriveLink: subtaskForm.googleDriveLink.trim() || null,
         dueDate: subtaskForm.dueDate ? new Date(subtaskForm.dueDate).toISOString() : null,
         referenceLinks: cleanLinkList(subtaskForm.referenceLinks),
         rawDataLinks: cleanLinkList(subtaskForm.rawDataLinks),
@@ -390,7 +393,7 @@ const EditorWorkspaceDetails = () => {
         setShowAddModal(false)
         setSubtaskForm({
           title: '', employeeId: '', dueDate: '', priority: 'MEDIUM',
-          description: '', status: 'DRAFT', mediaType: 'VIDEO', referenceLinks: [''], rawDataLinks: [''], shootTaskId: '', monthlySheetDayId: '', shootSubTaskId: '', shootExtraContentId: ''
+          description: '', status: 'DRAFT', mediaType: 'VIDEO', googleDriveLink: '', referenceLinks: [''], rawDataLinks: [''], shootTaskId: '', monthlySheetDayId: '', shootSubTaskId: '', shootExtraContentId: ''
         })
         setSelectedShootWorkspaceId('')
         setSelectedShootAssetGroup('')
@@ -468,6 +471,7 @@ const EditorWorkspaceDetails = () => {
       description: item.description || '',
       status: item.status || 'DRAFT',
       mediaType: item.mediaType || 'VIDEO',
+      googleDriveLink: item.googleDriveLink || '',
       referenceLinks: normalizeLinkList(item.referenceLinks, item.referenceLink),
       rawDataLinks: normalizeLinkList(item.rawDataLinks, item.rawDataLink)
     })
@@ -486,6 +490,7 @@ const EditorWorkspaceDetails = () => {
         mediaType: editSubtaskForm.mediaType || 'VIDEO',
         title: editSubtaskForm.title.trim(),
         description: editSubtaskForm.description.trim(),
+        googleDriveLink: editSubtaskForm.googleDriveLink.trim() || null,
         dueDate: editSubtaskForm.dueDate ? new Date(editSubtaskForm.dueDate).toISOString() : null,
         referenceLinks: cleanLinkList(editSubtaskForm.referenceLinks),
         rawDataLinks: cleanLinkList(editSubtaskForm.rawDataLinks),
@@ -1000,6 +1005,18 @@ const EditorWorkspaceDetails = () => {
               </div>
 
               <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Google Drive Link (Optional)</label>
+                <input
+                  type="url"
+                  name="googleDriveLink"
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 transition"
+                  value={subtaskForm.googleDriveLink}
+                  onChange={handleFormInputChange}
+                />
+              </div>
+
+              <div className="space-y-1">
                 <div className="flex items-center justify-between gap-2">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Content Reference Link (Optional)</label>
                   <button
@@ -1331,10 +1348,21 @@ const EditorWorkspaceDetails = () => {
                 )}
 
                 {/* Resource Repositories Links Deployment Frame */}
-                {(selectedSubtask.referenceLink || selectedSubtask.rawDataLink || selectedSubtask.referenceLinks?.length || selectedSubtask.rawDataLinks?.length) && (
+                {(selectedSubtask.googleDriveLink || selectedSubtask.referenceLink || selectedSubtask.rawDataLink || selectedSubtask.referenceLinks?.length || selectedSubtask.rawDataLinks?.length) && (
                   <div className="space-y-2 border-t border-slate-100 pt-4">
                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cloud Data Directories Links Map Vectors</h4>
                     <div className="space-y-2">
+                      {selectedSubtask.googleDriveLink && (
+                        <a
+                          href={selectedSubtask.googleDriveLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-sky-50/40 hover:bg-sky-50 border border-sky-100/50 text-sky-700 font-bold transition-all group"
+                        >
+                          <span className="flex min-w-0 items-center gap-1.5 break-all"><Link2 className="w-3.5 h-3.5 shrink-0 text-sky-400" /> Google Drive Link</span>
+                          <ExternalLink className="w-3 h-3 shrink-0 text-sky-400 group-hover:translate-x-0.5 transition-transform" />
+                        </a>
+                      )}
                       {normalizeLinkList(selectedSubtask.referenceLinks, selectedSubtask.referenceLink)
                         .filter(Boolean)
                         .map((link, index) => (
@@ -1560,6 +1588,17 @@ const EditorWorkspaceDetails = () => {
                   onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, description: e.target.value })}
                   rows={2}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Google Drive Link (Optional)</label>
+                <input
+                  type="url"
+                  value={editSubtaskForm.googleDriveLink}
+                  onChange={(e) => setEditSubtaskForm({ ...editSubtaskForm, googleDriveLink: e.target.value })}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
                 />
               </div>
 
