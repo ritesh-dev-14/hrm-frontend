@@ -458,7 +458,7 @@ const HrUploads = ({ embedded = false }) => {
 
   const submitApproval = () => {
     if (!hasApproveLinks) {
-      toast.error("Please provide at least one content or video upload link");
+      toast.error("Please provide at least one post or video upload link");
       return;
     }
 
@@ -740,12 +740,12 @@ const HrUploads = ({ embedded = false }) => {
                 {formatDate(approveItem.uploadDate)}.
               </p>
               <p className="text-xs text-slate-500">
-                At least one content or video upload link is required.
+                At least one post or video upload link is required.
               </p>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Content Upload Links (comma separated)
+                  Post Upload Links (comma separated)
                 </label>
                 <textarea
                   className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 min-h-[80px] resize-none"

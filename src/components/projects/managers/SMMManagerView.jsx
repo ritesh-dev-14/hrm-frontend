@@ -2582,7 +2582,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                     Deliverable Links
                                   </th>
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                                    Content Upload Links
+                                    Post Upload Links
                                   </th>
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">
                                     Video Upload Links
@@ -2821,7 +2821,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                         </div>
                                       </td>
 
-                                      {/* CONTENT UPLOAD LINKS */}
+                                      {/* POST UPLOAD LINKS */}
                                       <td className="px-4 py-3 min-w-[240px]">
                                         <div className="space-y-2">
                                           <textarea
@@ -2837,7 +2837,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                               )
                                             }
                                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                            placeholder="Paste Content / Post URLs (comma separated)..."
+                                            placeholder="Paste Post URLs (comma separated)..."
                                           />
                                           {dayItem.contentUploadLinks?.length >
                                             0 && (
@@ -2851,7 +2851,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                                       rel="noreferrer"
                                                       className="text-[11px] font-bold text-sky-600 hover:text-sky-800 break-all"
                                                     >
-                                                      Content Asset {i + 1} 🔗
+                                                      Post Asset {i + 1} 🔗
                                                     </a>
                                                   ),
                                                 )}
@@ -3546,7 +3546,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                     Visual References
                                   </th>
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                                    Content Upload Links
+                                    Post Upload Links
                                   </th>
                                   <th className="px-4 py-3.5 text-[11px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">
                                     Video Upload Links
@@ -3716,7 +3716,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                       />
                                     </td>
 
-                                    {/* CONTENT UPLOAD LINKS */}
+                                    {/* POST UPLOAD LINKS */}
                                     <td className="px-4 py-3 min-w-[240px]">
                                       <textarea
                                         rows={2}
@@ -3731,7 +3731,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                           )
                                         }
                                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-y min-h-[52px] shadow-xs"
-                                        placeholder="Paste Content / Post URLs (comma separated)..."
+                                        placeholder="Paste Post URLs (comma separated)..."
                                       />
                                     </td>
 
