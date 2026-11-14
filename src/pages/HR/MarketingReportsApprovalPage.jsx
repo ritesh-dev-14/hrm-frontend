@@ -16,7 +16,8 @@ const getReports = (response) => {
 const dateKey = (value) => {
   if (!value) return "";
   const text = String(value);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const dateOnly = text.match(/^(\d{4}-\d{2}-\d{2})(?:$|T)/);
+  if (dateOnly) return dateOnly[1];
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
@@ -63,10 +64,19 @@ export default function MarketingReportsApprovalPage() {
 
   const loadReports = useCallback(async () => {
     setLoading(true);
+    setMessage(null);
     try {
-      const projectsResponse = await API.get("/api/projects");
+      const firstProjectsResponse = await API.get("/api/projects", {
+        params: { page: 1, limit: 100 },
+      });
+      const totalPages = Math.max(1, Number(firstProjectsResponse.data?.pagination?.totalPages) || 1);
+      const remainingProjectResponses = await Promise.all(
+        Array.from({ length: totalPages - 1 }, (_, index) =>
+          API.get("/api/projects", { params: { page: index + 2, limit: 100 } }),
+        ),
+      );
       const projects = uniqueById(
-        getReports(projectsResponse).filter((project) =>
+        [firstProjectsResponse, ...remainingProjectResponses].flatMap(getReports).filter((project) =>
           String(project?.department?.name || project?.department || "").toLowerCase().includes("marketing"),
         ),
         (project) => `${project?.projectName || project?.name || "project"}-${project?.clientName || "client"}`,
@@ -75,20 +85,17 @@ export default function MarketingReportsApprovalPage() {
         projects.map(async (project) => {
           const projectId = project.id || project._id;
           if (!projectId) return [];
-          try {
-            const response = await API.get(`/api/marketing-reports?projectId=${encodeURIComponent(projectId)}`);
-            return getReports(response).map((report) => ({
-              ...report,
-              projectName: report.projectName || project.projectName || project.name,
-              clientName: report.clientName || project.clientName,
-            }));
-          } catch {
-            return [];
-          }
+          const response = await API.get(`/api/marketing-reports?projectId=${encodeURIComponent(projectId)}`);
+          return getReports(response).map((report) => ({
+            ...report,
+            projectName: report.projectName || project.projectName || project.name,
+            clientName: report.clientName || project.clientName,
+          }));
         }),
       );
-      setReports(uniqueByKey(reportResponses.flat(), reportBusinessKey));
+      setReports(uniqueById(reportResponses.flat(), reportBusinessKey));
     } catch (error) {
+      setReports([]);
       setMessage({ type: "error", text: getMessage(error, "Unable to load marketing reports.") });
     } finally {
       setLoading(false);
@@ -99,7 +106,7 @@ export default function MarketingReportsApprovalPage() {
 
   const reports = uniqueByKey(
     allReports.filter((report) => dateKey(report.date) === selectedDate),
-    reportBusinessKey,
+    (report) => report.id || report._id || reportBusinessKey(report),
   );
 
   const updateReviewNote = (reportId, value) => {

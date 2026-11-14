@@ -223,22 +223,12 @@ export default function ProfessionalSidebar({ children }) {
           return;
         }
 
-        const today = new Date();
-        const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
-        const response = await API.get("/api/department-reports", {
-          params: { department: "marketing", date },
-        });
-        const payload = response?.data?.data ?? response?.data;
-        const reports = Array.isArray(payload) ? payload : payload?.reports || payload?.items || [];
+        const response = await API.get("/api/marketing-reports/pending-count");
         if (active) {
-          setMarketingReportsCount(
-            reports.filter(
-              (report) => report.approvalStatus !== "APPROVED",
-            ).length,
-          );
+          setMarketingReportsCount(Number(response?.data?.data?.count) || 0);
         }
       } catch {
-        // The sidebar count is informational; the logout guard remains authoritative.
+        if (active && !hasUserRole("MANAGER")) setMarketingReportsCount(0);
       }
     };
 
