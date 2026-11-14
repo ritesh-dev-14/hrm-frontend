@@ -811,6 +811,7 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
 
       const activeDays = selectedCalendar.days.filter(
         (day) =>
+          day.id ||
           (day.reelType && day.reelType !== "NONE") ||
           (day.postType && day.postType !== "NONE") ||
           (day.title && day.title.trim() !== "") ||
@@ -832,14 +833,11 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
           dayObj.postType = day.postType;
         if (day.title && day.title.trim() !== "") dayObj.title = day.title;
         if (day.videoType) dayObj.videoType = day.videoType;
-        if (day.referenceLinks && day.referenceLinks.length > 0)
-          dayObj.referenceLinks = day.referenceLinks;
+        dayObj.referenceLinks = day.referenceLinks || [];
         if (day.submissionLinks && day.submissionLinks.length > 0)
           dayObj.submissionLinks = day.submissionLinks;
-        if (day.contentUploadLinks && day.contentUploadLinks.length > 0)
-          dayObj.contentUploadLinks = day.contentUploadLinks;
-        if (day.videoUploadLinks && day.videoUploadLinks.length > 0)
-          dayObj.videoUploadLinks = day.videoUploadLinks;
+        dayObj.contentUploadLinks = day.contentUploadLinks || [];
+        dayObj.videoUploadLinks = day.videoUploadLinks || [];
         if (day.script && day.script.trim() !== "") dayObj.script = day.script;
         if (day.description && day.description.trim() !== "")
           dayObj.description = day.description;
