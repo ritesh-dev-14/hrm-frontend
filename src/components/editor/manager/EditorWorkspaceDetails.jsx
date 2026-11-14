@@ -1001,7 +1001,7 @@ const EditorWorkspaceDetails = () => {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Layout Reference Cloud Links (Optional)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Content Reference Link (Optional)</label>
                   <button
                     type="button"
                     onClick={() => setSubtaskForm((previous) => ({
@@ -1043,7 +1043,7 @@ const EditorWorkspaceDetails = () => {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Raw Media Directory Dataset Links (Optional)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Raw Data Drive Link (Optional)</label>
                   <button
                     type="button"
                     onClick={() => setSubtaskForm((previous) => ({
@@ -1096,7 +1096,7 @@ const EditorWorkspaceDetails = () => {
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
                 >
                   {isActionLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                  Publish Subtask
+                  Assign Task
                 </button>
               </div>
             </form>
@@ -1565,7 +1565,7 @@ const EditorWorkspaceDetails = () => {
 
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Layout Reference Links</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Content Reference Link (Optional)</label>
                   <button
                     type="button"
                     onClick={() => setEditSubtaskForm((previous) => ({
@@ -1607,7 +1607,7 @@ const EditorWorkspaceDetails = () => {
 
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Raw Media Directory Dataset Links</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Raw Data Drive Link (Optional)</label>
                   <button
                     type="button"
                     onClick={() => setEditSubtaskForm((previous) => ({
