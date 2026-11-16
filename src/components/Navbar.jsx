@@ -85,7 +85,7 @@ const NAV_CONFIG = [
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA"] },
-  { id: "messages", label: "Messages", icon: MessageSquareText, path: "/messages", roles: ["ADMIN", "HR", "MANAGER"] },
+  { id: "messages", label: "Messages", icon: MessageSquareText, path: "/messages", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["HR", "EA"] },
   { id: "data", label: "Data", icon: Database, path: "/data", roles: ["HR", "EA"] },
   { id: "reports-overview", label: "Reports", icon: BarChart2, path: "/reports/overview", roles: ["HR"] },

@@ -107,7 +107,7 @@ export const AppRoutes = () => {
         <>
           <Route
             path="/messages"
-            element={hasRole("ADMIN", "HR", "MANAGER") ? <MessagesPage /> : <Navigate to="/dashboard" replace />}
+            element={hasRole("ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA") ? <MessagesPage /> : <Navigate to="/dashboard" replace />}
           />
           {/* HOME */}
           <Route
