@@ -53,6 +53,18 @@ const formatDateValue = (dateValue) => {
   });
 };
 
+const getCalendarDateValue = (value) => {
+  const match = String(value || "").match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?.[1] || "";
+};
+
+const hasPlannedCalendarContent = (day) =>
+  [day.reelType, day.postType, day.videoType, day.title, day.script, day.description]
+    .some((value) => {
+      const normalizedValue = String(value || "").trim();
+      return normalizedValue && normalizedValue.toUpperCase() !== "NONE";
+    });
+
 const isDeactivatedProject = (project) =>
   String(project?.status || "").toUpperCase() === "PAUSED";
 
@@ -97,6 +109,8 @@ export default function AdminControlTower({
   const [draftMarketingReportDate, setDraftMarketingReportDate] = React.useState(getTodayDateValue);
   const [seoReportDate, setSeoReportDate] = React.useState(getTodayDateValue);
   const [draftSeoReportDate, setDraftSeoReportDate] = React.useState(getTodayDateValue);
+  const [socialDelayCutoffDate, setSocialDelayCutoffDate] = React.useState(getTodayDateValue);
+  const [socialProjectFilter, setSocialProjectFilter] = React.useState("ALL");
   const currentMarketingMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const [selectedMarketingMonth, setSelectedMarketingMonth] = React.useState(currentMarketingMonth);
 
@@ -231,6 +245,13 @@ export default function AdminControlTower({
       },
       { reels: 0, posts: 0 },
     );
+    const delayedDays = (sheet?.days || []).filter((day) => {
+      const plannedDate = getCalendarDateValue(day.date);
+      return plannedDate
+        && plannedDate <= socialDelayCutoffDate
+        && hasPlannedCalendarContent(day)
+        && day.uploadStatus !== "APPROVED";
+    });
 
     return {
       project,
@@ -239,8 +260,12 @@ export default function AdminControlTower({
       approvedReels: approvedUploads.reels,
       plannedPosts: Number(sheet?.totalPosts) || 0,
       approvedPosts: approvedUploads.posts,
+      delayedDays,
     };
-  }), [socialProjects, uploadCalendarSheets, activeMonthValue]);
+  }), [socialProjects, uploadCalendarSheets, activeMonthValue, socialDelayCutoffDate]);
+  const filteredSocialProjectRows = socialProjectFilter === "DELAYED"
+    ? socialProjectRows.filter((row) => row.delayedDays.length > 0)
+    : socialProjectRows;
   const selectedSocialSheet = uploadCalendarSheets.find(
     (sheet) => sheet.projectId === selectedSocialProjectId
       && `${sheet.year}-${String(sheet.month).padStart(2, "0")}` === activeMonthValue,
@@ -534,28 +559,71 @@ export default function AdminControlTower({
           <div className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-semibold text-slate-500">
-                {activeMonthLabel ? `Showing all projects for ${activeMonthLabel}` : "No monthly content calendars are available yet."}
+                {activeMonthLabel
+                  ? socialProjectFilter === "DELAYED"
+                    ? `Showing projects with delayed content through ${formatDateValue(socialDelayCutoffDate)}`
+                    : `Showing all projects for ${activeMonthLabel}`
+                  : "No monthly content calendars are available yet."}
               </p>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                Month
-                <select
-                  value={activeMonthValue}
-                  onChange={(event) => setSelectedSocialMonth(event.target.value)}
-                  disabled={monthOptions.length === 0}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                >
-                  {monthOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {getMonthLabel(option.month, option.year)}
-                    </option>
-                  ))}
-                  {monthOptions.length === 0 && <option value={currentMonthValue}>No months available</option>}
-                </select>
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" role="group" aria-label="Filter social media projects">
+                  <button
+                    type="button"
+                    onClick={() => setSocialProjectFilter("ALL")}
+                    aria-pressed={socialProjectFilter === "ALL"}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                      socialProjectFilter === "ALL"
+                        ? "bg-indigo-600 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    All Projects
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSocialProjectFilter("DELAYED")}
+                    aria-pressed={socialProjectFilter === "DELAYED"}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                      socialProjectFilter === "DELAYED"
+                        ? "bg-amber-500 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Delayed
+                  </button>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                  Delayed through
+                  <input
+                    type="date"
+                    value={socialDelayCutoffDate}
+                    onChange={(event) => {
+                      if (event.target.value) setSocialDelayCutoffDate(event.target.value);
+                    }}
+                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                  Month
+                  <select
+                    value={activeMonthValue}
+                    onChange={(event) => setSelectedSocialMonth(event.target.value)}
+                    disabled={monthOptions.length === 0}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  >
+                    {monthOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {getMonthLabel(option.month, option.year)}
+                      </option>
+                    ))}
+                    {monthOptions.length === 0 && <option value={currentMonthValue}>No months available</option>}
+                  </select>
+                </label>
+              </div>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-              <table className="w-full min-w-[850px] text-left">
+              <table className="w-full min-w-[950px] text-left">
                 <thead className="bg-slate-50">
                   <tr className="text-xs font-semibold text-slate-500">
                     <th className="px-4 py-3">Project</th>
@@ -563,11 +631,12 @@ export default function AdminControlTower({
                     <th className="px-4 py-3 text-center">Approved reels</th>
                     <th className="px-4 py-3 text-center">Planned posts</th>
                     <th className="px-4 py-3 text-center">Approved posts</th>
+                    <th className="px-4 py-3 text-center">Delayed days</th>
                     <th className="px-4 py-3 text-right">Calendar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {socialProjectRows.map((row) => {
+                  {filteredSocialProjectRows.map((row) => {
                     const isDeactivated = isDeactivatedProject(row.project);
                     return (
                     <tr
@@ -593,6 +662,9 @@ export default function AdminControlTower({
                       <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.approvedReels}</td>
                       <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">{row.plannedPosts}</td>
                       <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.approvedPosts}</td>
+                      <td className={`px-4 py-3 text-center text-sm font-semibold ${row.delayedDays.length ? "text-amber-700" : "text-slate-400"}`}>
+                        {row.delayedDays.length}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
@@ -609,6 +681,15 @@ export default function AdminControlTower({
                     </tr>
                     );
                   })}
+                  {filteredSocialProjectRows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                        {socialProjectFilter === "DELAYED"
+                          ? `No delayed content through ${formatDateValue(socialDelayCutoffDate)} for ${activeMonthLabel || "this month"}.`
+                          : "No projects are available for this month."}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
