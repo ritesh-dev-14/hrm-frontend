@@ -98,6 +98,7 @@ export default function AdminControlTower({
   const [showClientsIgnoredModal, setShowClientsIgnoredModal] = React.useState(false);
   const [showCalendarModal, setShowCalendarModal] = React.useState(false);
   const [marketingFilter, setMarketingFilter] = React.useState("ALL");
+  const [socialManagerFilter, setSocialManagerFilter] = React.useState("ALL");
   const [todayReportProjectIds, setTodayReportProjectIds] = React.useState([]);
   const [todayReportsLoading, setTodayReportsLoading] = React.useState(true);
   const [todayReportsError, setTodayReportsError] = React.useState("");
@@ -212,6 +213,20 @@ export default function AdminControlTower({
     () => new Set(socialProjects.map((project) => project.id)),
     [socialProjects],
   );
+  const socialManagerOptions = React.useMemo(() => {
+    const managers = new Map();
+    socialProjects.forEach((project) => {
+      (project.assignments || []).forEach(({ manager }) => {
+        if (manager?.id && manager?.name) managers.set(manager.id, manager.name);
+      });
+    });
+    return [...managers.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [socialProjects]);
+  const selectedSocialManagerName = socialManagerOptions.find(
+    (manager) => manager.id === socialManagerFilter,
+  )?.name;
   const monthOptions = React.useMemo(() => {
     const options = new Map();
     uploadCalendarSheets.forEach((sheet) => {
@@ -263,9 +278,16 @@ export default function AdminControlTower({
       delayedDays,
     };
   }), [socialProjects, uploadCalendarSheets, activeMonthValue, socialDelayCutoffDate]);
+  const managerFilteredSocialProjectRows = socialManagerFilter === "ALL"
+    ? socialProjectRows
+    : socialProjectRows.filter((row) =>
+      (row.project.assignments || []).some(
+        ({ manager }) => manager?.id === socialManagerFilter,
+      ),
+    );
   const filteredSocialProjectRows = socialProjectFilter === "DELAYED"
-    ? socialProjectRows.filter((row) => row.delayedDays.length > 0)
-    : socialProjectRows;
+    ? managerFilteredSocialProjectRows.filter((row) => row.delayedDays.length > 0)
+    : managerFilteredSocialProjectRows;
   const selectedSocialSheet = uploadCalendarSheets.find(
     (sheet) => sheet.projectId === selectedSocialProjectId
       && `${sheet.year}-${String(sheet.month).padStart(2, "0")}` === activeMonthValue,
@@ -561,8 +583,8 @@ export default function AdminControlTower({
               <p className="text-xs font-semibold text-slate-500">
                 {activeMonthLabel
                   ? socialProjectFilter === "DELAYED"
-                    ? `Showing projects with delayed content through ${formatDateValue(socialDelayCutoffDate)}`
-                    : `Showing all projects for ${activeMonthLabel}`
+                    ? `Showing ${selectedSocialManagerName ? `${selectedSocialManagerName}'s` : "projects with"} delayed content through ${formatDateValue(socialDelayCutoffDate)}`
+                    : `Showing ${selectedSocialManagerName ? `${selectedSocialManagerName}'s projects` : "all projects"} for ${activeMonthLabel}`
                   : "No monthly content calendars are available yet."}
               </p>
               <div className="flex flex-wrap items-center gap-2">
@@ -617,6 +639,21 @@ export default function AdminControlTower({
                       </option>
                     ))}
                     {monthOptions.length === 0 && <option value={currentMonthValue}>No months available</option>}
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                  Manager
+                  <select
+                    value={socialManagerFilter}
+                    onChange={(event) => setSocialManagerFilter(event.target.value)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="ALL">All Managers</option>
+                    {socialManagerOptions.map((manager) => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
