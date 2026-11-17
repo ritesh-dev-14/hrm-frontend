@@ -339,7 +339,7 @@ const HrUploads = ({ embedded = false }) => {
   const fetchUploads = async () => {
     setLoading(true);
     try {
-      const sheetsRes = await API.get("/api/monthly-sheets/uploads");
+      const sheetsRes = await API.get("/api/monthly-sheets/uploads?activeProjectsOnly=true");
       const sheets = sheetsRes.data?.data || [];
       const results = sheets.map((sheet) =>
         (sheet.days || []).flatMap((day) => {
