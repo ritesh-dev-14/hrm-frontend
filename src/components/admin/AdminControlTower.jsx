@@ -1411,6 +1411,7 @@ export default function AdminControlTower({
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
                         <th className="px-4 py-3 font-bold text-xs uppercase">Date</th>
+                        <th className="px-4 py-3 font-bold text-xs uppercase">Uploaded On</th>
                         <th className="px-4 py-3 font-bold text-xs uppercase">Title</th>
                         <th className="px-4 py-3 font-bold text-xs uppercase">Content Type</th>
                         <th className="px-4 py-3 font-bold text-xs uppercase">Upload Status</th>
@@ -1422,6 +1423,11 @@ export default function AdminControlTower({
                         <tr key={idx} className="hover:bg-slate-50/50 transition">
                           <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
                             {new Date(day.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-slate-700">
+                            {day.uploadedAt
+                              ? new Date(day.uploadedAt).toLocaleDateString()
+                              : <span className="text-slate-400">-</span>}
                           </td>
                           <td className="px-4 py-3 text-slate-800">
                             {day.title || <span className="text-slate-400 italic">No Title</span>}
@@ -1481,7 +1487,7 @@ export default function AdminControlTower({
                       ))}
                       {(!selectedSocialSheet.days || selectedSocialSheet.days.length === 0) && (
                         <tr>
-                          <td colSpan="5" className="px-4 py-8 text-center text-slate-500">
+                          <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
                             No planned days in this calendar yet.
                           </td>
                         </tr>
