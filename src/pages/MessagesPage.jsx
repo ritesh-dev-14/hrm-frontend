@@ -4,26 +4,63 @@ import API from "../services/api";
 
 const fetchPreviews = () => API.get("/api/whatsapp-messages/previews");
 
-const ensureSocialMediaSection = (message) => {
-  const body = String(message.messageBody || "");
-  if (body.includes("📱 SOCIAL MEDIA REPORT")) return message;
+const buildProjectSpecificMessage = (message) => {
+  const parameters = message.templateParameters || [];
+  const departments = (message.departmentNames || []).map((name) => name.toLowerCase());
+  const hasSocialMedia = departments.some((name) => name.includes("social media"));
+  const hasSeo = departments.some((name) => name.includes("seo"));
+  const hasMetaAds = departments.some((name) =>
+    name.includes("marketing") || name.includes("meta ads") || name.includes("ads"),
+  );
+  const divider = "━━━━━━━━━━━━━━━━━━━━";
+  const reportSections = [];
 
-  const socialMediaReport = message.socialMediaReports?.[0];
-  const socialMediaSection = [
-    "📱 SOCIAL MEDIA REPORT",
+  if (hasMetaAds) {
+    reportSections.push([
+      `📣 META ADS REPORT : ${parameters[4] || ""}`,
+      "",
+      `Yesterday ad spend: ₹${parameters[1] || "0.00"}`,
+      `Reach: ${parameters[2] || "0"}`,
+      `Leads Obtained: ${parameters[3] || "0"}`,
+    ].join("\n"));
+  }
+
+  if (hasSeo) {
+    reportSections.push([
+      `🌐 SEO REPORT : ${parameters[4] || ""}`,
+      "",
+      `Project: ${parameters[5] || "Not available"}`,
+      `Keywords: ${parameters[6] || "Not available"}`,
+      `Ranking: #${parameters[7] || "N/A"}`,
+    ].join("\n"));
+  }
+
+  if (hasSocialMedia) {
+    const socialMediaReport = message.socialMediaReports?.[0];
+    reportSections.push([
+      "📱 SOCIAL MEDIA REPORT",
+      "",
+      `Last Content Uploaded: ${socialMediaReport?.lastContentUploaded || "No content uploaded yet"}`,
+      `Next Expected Upload Date: ${socialMediaReport?.nextExpectedUploadDate || "Not scheduled"}`,
+    ].join("\n"));
+  }
+
+  const pendingItems = parameters[10] || "• None";
+  const messageBody = [
+    `Hello ${message.clientName || "Client"},`,
     "",
-    `Last Content Uploaded: ${socialMediaReport?.lastContentUploaded || "No content uploaded yet"}`,
-    `Next Expected Upload Date: ${socialMediaReport?.nextExpectedUploadDate || "Not scheduled"}`,
-    "━━━━━━━━━━━━━━━━━━━━",
+    "Here is your complete daily report from We Promote.",
+    "",
+    ...reportSections.flatMap((section) => [section, divider, ""]),
+    "📌 PENDING FROM YOUR SIDE",
+    pendingItems,
+    "",
+    divider,
+    "",
+    "Thank you for choosing We Promote",
   ].join("\n");
-  const pendingHeading = "📌 PENDING FROM YOUR SIDE";
-  const pendingHeadingIndex = body.indexOf(pendingHeading);
-  if (pendingHeadingIndex === -1) return message;
 
-  return {
-    ...message,
-    messageBody: `${body.slice(0, pendingHeadingIndex).trimEnd()}\n\n${socialMediaSection}\n\n${body.slice(pendingHeadingIndex)}`,
-  };
+  return { ...message, messageBody };
 };
 
 export default function MessagesPage() {
@@ -37,7 +74,7 @@ export default function MessagesPage() {
     if (!Array.isArray(data)) {
       throw new Error("The server returned an invalid preview list.");
     }
-    setMessages(data.map(ensureSocialMediaSection));
+    setMessages(data.map(buildProjectSpecificMessage));
   }, []);
 
   const loadPreviews = useCallback(async () => {
@@ -86,7 +123,7 @@ export default function MessagesPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Client Messages</h1>
             <p className="mt-1 text-sm text-slate-500">
-              One combined daily report per client phone number. Pending notes come from each project’s “Pending from your side” items.
+              Reports include only departments represented by the client’s projects. Pending notes come from each project’s “Pending from your side” items.
             </p>
           </div>
         </div>
@@ -148,7 +185,7 @@ export default function MessagesPage() {
 
                 <div className="p-5">
                   <div>
-                    <h3 className="mb-2 text-sm font-semibold text-slate-700">Message as the client will see it</h3>
+                    <h3 className="mb-2 text-sm font-semibold text-slate-700">Message preview</h3>
                     <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 font-sans text-sm leading-6 text-slate-700">{message.messageBody}</pre>
                   </div>
                 </div>
