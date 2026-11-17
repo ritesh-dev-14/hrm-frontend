@@ -87,7 +87,8 @@ const SeoReportModal = ({ projectId, clientPhone = "", report = null, onClose, o
       setError("Please enter at least one keyword.");
       return;
     }
-    if (!rankingNo || isNaN(Number(rankingNo))) {
+    const parsedRankingNo = Number(rankingNo);
+    if (rankingNo === "" || !Number.isInteger(parsedRankingNo) || parsedRankingNo < 0 || parsedRankingNo > 9999) {
       setError("Please enter a valid ranking number.");
       return;
     }
@@ -263,7 +264,7 @@ const SeoReportModal = ({ projectId, clientPhone = "", report = null, onClose, o
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 transition">
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     max="9999"
                     value={rankingNo}
                     onChange={(e) => setRankingNo(e.target.value)}
