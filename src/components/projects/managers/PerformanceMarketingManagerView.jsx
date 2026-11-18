@@ -19,6 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getLocalDateString } from "../../../utils/managerLogoutStatus";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const fmt = (n) =>
@@ -68,6 +69,10 @@ export default function PerformanceMarketingManagerView({
   const [creatingCampaigns, setCreatingCampaigns] = useState(false);
   const submitInFlight = useRef(false);
   const [showForm, setShowForm] = useState(false);
+  const [showUnableReasonForm, setShowUnableReasonForm] = useState(false);
+  const [unableReason, setUnableReason] = useState("");
+  const [unableReasonDate, setUnableReasonDate] = useState(getLocalDateString());
+  const [submittingUnableReason, setSubmittingUnableReason] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [search, setSearch] = useState("");
@@ -266,6 +271,33 @@ export default function PerformanceMarketingManagerView({
     }
   };
 
+  const handleUnableReasonSubmit = async (event) => {
+    event.preventDefault();
+    const reason = unableReason.trim();
+    if (!campaignId || !projectId || !unableReasonDate || !reason) {
+      showToast("error", "Choose a report date and enter a reason.");
+      return;
+    }
+
+    setSubmittingUnableReason(true);
+    try {
+      await API.post(`/api/campaigns/${campaignId}/reports`, {
+        projectId,
+        clientName: project?.clientName || project?.projectName || "",
+        date: unableReasonDate,
+        unableToSubmitReason: reason,
+      });
+      setShowUnableReasonForm(false);
+      setUnableReason("");
+      await loadData();
+      showToast("success", "Your reason was submitted to HR.");
+    } catch (err) {
+      showToast("error", err?.response?.data?.message || "Failed to submit the reason.");
+    } finally {
+      setSubmittingUnableReason(false);
+    }
+  };
+
   /* ─── filtered list ───────────────────────────────────────────────────── */
   const filtered = reports.filter((r) => {
     const q = search.toLowerCase();
@@ -311,6 +343,72 @@ export default function PerformanceMarketingManagerView({
             <XCircle size={18} />
           )}
           {toast.msg}
+        </div>
+      )}
+
+      {showUnableReasonForm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <form
+            onSubmit={handleUnableReasonSubmit}
+            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Unable to submit this report?</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Select the report date and explain why you could not submit it.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUnableReasonForm(false)}
+                className="text-slate-500 hover:text-slate-900"
+                aria-label="Close reason form"
+              >
+                <X />
+              </button>
+            </div>
+            <label htmlFor="campaign-unable-report-date" className="mt-5 block text-sm font-semibold text-slate-700">
+              Report date
+            </label>
+            <input
+              id="campaign-unable-report-date"
+              type="date"
+              required
+              value={unableReasonDate}
+              onChange={(event) => setUnableReasonDate(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            />
+            <label htmlFor="campaign-unable-report-reason" className="mt-4 block text-sm font-semibold text-slate-700">
+              Reason
+            </label>
+            <textarea
+              id="campaign-unable-report-reason"
+              autoFocus
+              required
+              rows={5}
+              value={unableReason}
+              onChange={(event) => setUnableReason(event.target.value)}
+              placeholder="Explain why you could not submit this report."
+              className="mt-1 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            />
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowUnableReasonForm(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingUnableReason}
+                className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {submittingUnableReason ? "Submitting..." : "Submit reason"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
@@ -363,13 +461,28 @@ export default function PerformanceMarketingManagerView({
                   {activeCampaign?.name || "Campaign"}
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => navigate(`/project/${projectId}`)}
-                className="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
-              >
-                Back to campaigns
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {user?.role === "MANAGER" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnableReason("");
+                      setUnableReasonDate(getLocalDateString());
+                      setShowUnableReasonForm(true);
+                    }}
+                    className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 transition hover:bg-orange-100"
+                  >
+                    Unable to submit report?
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/project/${projectId}`)}
+                  className="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
+                >
+                  Back to campaigns
+                </button>
+              </div>
             </div>
           ) : (
             <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

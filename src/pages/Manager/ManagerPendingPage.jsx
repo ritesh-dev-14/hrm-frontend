@@ -146,6 +146,7 @@ export default function ManagerPendingPage() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [reasonTarget, setReasonTarget] = useState(null);
   const [unableReason, setUnableReason] = useState("");
+  const [unableReasonDate, setUnableReasonDate] = useState(today);
   const [submittingReason, setSubmittingReason] = useState(false);
 
   // Quick Preset and Custom Date Filter states
@@ -244,14 +245,22 @@ export default function ManagerPendingPage() {
       setError("Please select the project report you cannot submit.");
       return;
     }
+    if (!unableReasonDate) {
+      setError("Please select the report date.");
+      return;
+    }
+    if (!reason) {
+      setError("Please provide a reason for not submitting the report.");
+      return;
+    }
     setSubmittingReason(true);
     setError("");
     try {
       await submitMarketingUnableReason({
         projectId: reasonTarget.projectId,
         clientName: reasonTarget.clientName,
-        reason: reason || null,
-        date: today,
+        reason,
+        date: unableReasonDate,
       });
       const refreshedStatus = await refreshManagerLogoutStatus();
       setStatus(refreshedStatus || status);
@@ -814,6 +823,7 @@ export default function ManagerPendingPage() {
                                   onClick={() => {
                                     setReasonTarget(item);
                                     setUnableReason("");
+                                    setUnableReasonDate(getLocalDateString());
                                   }}
                                   className="rounded-xl border border-orange-300 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50"
                                 >
@@ -845,8 +855,8 @@ export default function ManagerPendingPage() {
           <form onSubmit={handleUnableReasonSubmit} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                  <h2 className="text-xl font-bold text-slate-900">Unable to submit today&apos;s report?</h2>
-                  <p className="mt-1 text-sm text-slate-500">Reason is optional. You can send this report status to HR.</p>
+                  <h2 className="text-xl font-bold text-slate-900">Unable to submit a report?</h2>
+                  <p className="mt-1 text-sm text-slate-500">Choose the report date and explain why it could not be submitted. This will be sent to HR.</p>
               </div>
               <button
                 type="button"
@@ -858,12 +868,24 @@ export default function ManagerPendingPage() {
               </button>
             </div>
             <p className="mt-5 rounded-xl bg-orange-50 p-3 text-sm font-semibold text-orange-800">{itemTitle(reasonTarget)}</p>
+            <label className="mt-4 block text-sm font-semibold text-slate-700" htmlFor="unable-report-date">
+              Report date
+            </label>
+            <input
+              id="unable-report-date"
+              type="date"
+              required
+              value={unableReasonDate}
+              onChange={(event) => setUnableReasonDate(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            />
             <textarea
               autoFocus
               rows={5}
+              required
               value={unableReason}
               onChange={(event) => setUnableReason(event.target.value)}
-              placeholder="Optional: Why can't you submit today's report?"
+              placeholder="Why can't you submit the report for this date?"
               className="mt-4 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
             />
             <div className="mt-5 flex justify-end gap-3">
