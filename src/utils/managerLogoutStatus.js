@@ -84,7 +84,7 @@ export const submitMarketingUnableReason = async ({ projectId, clientName, reaso
     projectId,
     clientName: clientName || null,
     date,
-    unableToSubmitReason: reason,
+    unableToSubmitReason: reason?.trim() || null,
   });
   return response?.data?.data || response?.data;
 };

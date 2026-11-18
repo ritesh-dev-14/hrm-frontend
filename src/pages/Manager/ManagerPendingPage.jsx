@@ -240,8 +240,8 @@ export default function ManagerPendingPage() {
   const handleUnableReasonSubmit = async (event) => {
     event.preventDefault();
     const reason = unableReason.trim();
-    if (!reasonTarget?.projectId || !reason) {
-      setError("Please enter the reason you cannot submit this report.");
+    if (!reasonTarget?.projectId) {
+      setError("Please select the project report you cannot submit.");
       return;
     }
     setSubmittingReason(true);
@@ -250,7 +250,7 @@ export default function ManagerPendingPage() {
       await submitMarketingUnableReason({
         projectId: reasonTarget.projectId,
         clientName: reasonTarget.clientName,
-        reason,
+        reason: reason || null,
         date: today,
       });
       const refreshedStatus = await refreshManagerLogoutStatus();
@@ -845,8 +845,8 @@ export default function ManagerPendingPage() {
           <form onSubmit={handleUnableReasonSubmit} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Unable to submit today&apos;s report?</h2>
-                <p className="mt-1 text-sm text-slate-500">Send your reason to HR for approval.</p>
+                  <h2 className="text-xl font-bold text-slate-900">Unable to submit today&apos;s report?</h2>
+                  <p className="mt-1 text-sm text-slate-500">Reason is optional. You can send this report status to HR.</p>
               </div>
               <button
                 type="button"
@@ -860,11 +860,10 @@ export default function ManagerPendingPage() {
             <p className="mt-5 rounded-xl bg-orange-50 p-3 text-sm font-semibold text-orange-800">{itemTitle(reasonTarget)}</p>
             <textarea
               autoFocus
-              required
               rows={5}
               value={unableReason}
               onChange={(event) => setUnableReason(event.target.value)}
-              placeholder="Why can't you submit today's report?"
+              placeholder="Optional: Why can't you submit today's report?"
               className="mt-4 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
             />
             <div className="mt-5 flex justify-end gap-3">

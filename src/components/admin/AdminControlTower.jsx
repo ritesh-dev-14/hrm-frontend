@@ -100,6 +100,7 @@ export default function AdminControlTower({
   const [marketingFilter, setMarketingFilter] = React.useState("ALL");
   const [socialManagerFilter, setSocialManagerFilter] = React.useState("ALL");
   const [todayReportProjectIds, setTodayReportProjectIds] = React.useState([]);
+  const [marketingSubmissionDetails, setMarketingSubmissionDetails] = React.useState([]);
   const [todayReportsLoading, setTodayReportsLoading] = React.useState(true);
   const [todayReportsError, setTodayReportsError] = React.useState("");
   const [seoFilter, setSeoFilter] = React.useState("ALL");
@@ -139,6 +140,32 @@ export default function AdminControlTower({
       })
       .finally(() => {
         if (isMounted) setTodayReportsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [marketingReportDate]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    API.get("/api/marketing-reports/submission-details", {
+      params: getLocalDateBounds(marketingReportDate),
+    })
+      .then((response) => {
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || "Unable to load Meta Ads report reasons.");
+        }
+        if (isMounted) setMarketingSubmissionDetails(response.data.data || []);
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setMarketingSubmissionDetails([]);
+          setTodayReportsError(
+            error.response?.data?.message || error.message || "Unable to load Meta Ads report reasons.",
+          );
+        }
       });
 
     return () => {
@@ -866,6 +893,9 @@ export default function AdminControlTower({
                 <tbody className="divide-y divide-slate-100">
                   {marketingProjectRows.map(({ project, budget, spent }) => {
                     const isDeactivated = isDeactivatedProject(project);
+                    const submissionDetails = marketingSubmissionDetails.filter(
+                      (submission) => String(submission.projectId) === String(project.id || project._id),
+                    );
                     return (
                     <tr
                       key={project.id}
@@ -893,6 +923,17 @@ export default function AdminControlTower({
                           <div className="min-w-0">
                             <p className="truncate text-xs font-bold text-slate-900">{project.projectName}</p>
                             <p className="truncate text-[10px] text-slate-500">{project.clientName || project.department?.name}</p>
+                            {submissionDetails.map((submission, index) => (
+                              <p
+                                key={`${submission.projectId}-${submission.date}-${submission.manager?.id || index}`}
+                                className="mt-1 whitespace-normal text-[11px] leading-4 text-amber-700"
+                              >
+                                {submission.manager?.name || "Manager"} did not submit
+                                {submission.unableToSubmitReason
+                                  ? `: ${submission.unableToSubmitReason}`
+                                  : " (no reason provided)."}
+                              </p>
+                            ))}
                           </div>
                         </div>
                       </td>
