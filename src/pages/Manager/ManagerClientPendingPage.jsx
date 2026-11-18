@@ -194,6 +194,7 @@ export default function ManagerClientPendingPage() {
       [projectId]: {
         dueDate: current[projectId]?.dueDate || getToday(),
         note: current[projectId]?.note || "",
+        screenshots: [],
         ...current[projectId],
         [field]: value,
       },
@@ -203,16 +204,18 @@ export default function ManagerClientPendingPage() {
 
   const addPendingItem = async (event, project) => {
     event.preventDefault();
-    const form = projectForms[project.id] || { dueDate: getToday(), note: "" };
+    const form = projectForms[project.id] || { dueDate: getToday(), note: "", screenshots: [] };
     if (!form.dueDate || !form.note.trim()) return;
 
     setSavingProjects((current) => ({ ...current, [project.id]: true }));
     setProjectErrors((current) => ({ ...current, [project.id]: "" }));
     try {
-      const response = await API.post(`/api/projects/${project.id}/pending-items`, {
-        dueDate: form.dueDate,
-        note: form.note.trim(),
-      });
+      const formData = new FormData();
+      formData.append("dueDate", form.dueDate);
+      formData.append("note", form.note.trim());
+      (form.screenshots || []).forEach((screenshot) => formData.append("screenshots", screenshot));
+
+      const response = await API.post(`/api/projects/${project.id}/pending-items`, formData);
       const newItem = response.data?.data;
       if (!newItem) {
         throw new Error("The server did not return the saved pending item.");
@@ -229,7 +232,7 @@ export default function ManagerClientPendingPage() {
       )));
       setProjectForms((current) => ({
         ...current,
-        [project.id]: { dueDate: getToday(), note: "" },
+        [project.id]: { dueDate: getToday(), note: "", screenshots: [] },
       }));
     } catch (requestError) {
       console.error(`Unable to add pending item for project ${project.id}:`, requestError);
@@ -363,7 +366,7 @@ export default function ManagerClientPendingPage() {
               <div className="grid gap-4 lg:grid-cols-2">
                 {filteredProjects.map((project) => {
                   const pendingItems = Array.isArray(project.pendingItems) ? project.pendingItems : [];
-                  const form = projectForms[project.id] || { dueDate: getToday(), note: "" };
+                  const form = projectForms[project.id] || { dueDate: getToday(), note: "", screenshots: [] };
                   const isSaving = Boolean(savingProjects[project.id]);
                   return (
                     <article
@@ -409,6 +412,16 @@ export default function ManagerClientPendingPage() {
                               className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                             />
                           </label>
+                          <label className="mt-3 block">
+                            <span className="mb-1.5 block text-xs font-semibold text-slate-600">Screenshots (optional)</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(event) => updateProjectForm(project.id, "screenshots", Array.from(event.target.files || []))}
+                              className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700"
+                            />
+                          </label>
                           {projectErrors[project.id] && (
                             <p role="alert" className="mt-2 text-xs text-rose-700">{projectErrors[project.id]}</p>
                           )}
@@ -444,6 +457,22 @@ export default function ManagerClientPendingPage() {
                                     </span>
                                   </div>
                                   <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{item.note}</p>
+                                  {Array.isArray(item.screenshots) && item.screenshots.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {item.screenshots.map((url, index) => (
+                                        <a
+                                          key={`${item.id}-${url}`}
+                                          href={url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                                        >
+                                          <ExternalLink size={12} />
+                                          Screenshot {index + 1}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
                                   {Array.isArray(item.followUps) && item.followUps.length > 0 && (
                                     <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Follow-up history</p>

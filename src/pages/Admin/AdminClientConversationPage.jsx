@@ -4,6 +4,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
+  ExternalLink,
   Headphones,
   LoaderCircle,
   MessageSquareText,
@@ -638,6 +639,61 @@ export default function AdminClientConversationPage() {
                                         </span>
                                       </div>
                                       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{item.note}</p>
+                                      {Array.isArray(item.screenshots) && item.screenshots.length > 0 && (
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                          {item.screenshots.map((url, index) => (
+                                            <a
+                                              key={`${item.id}-pending-${index}-${url}`}
+                                              href={url}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                                            >
+                                              <ExternalLink size={12} />
+                                              Pending screenshot {index + 1}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {Array.isArray(item.followUps) && item.followUps.length > 0 && (
+                                        <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Submitted follow-ups</p>
+                                          {item.followUps.map((followUp) => (
+                                            <div key={followUp.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
+                                                  followUp.status === "FOLLOWED_UP"
+                                                    ? "bg-emerald-50 text-emerald-700"
+                                                    : "bg-rose-50 text-rose-700"
+                                                }`}>
+                                                  {followUp.status === "FOLLOWED_UP" ? "Follow Up" : "Unable to Follow Up"}
+                                                </span>
+                                                <span className="text-[11px] text-slate-400">
+                                                  {followUp.submittedBy?.name || "Manager"} · {formatDate(followUp.createdAt)}
+                                                </span>
+                                              </div>
+                                              {followUp.mediaType === "VOICE" && followUp.audioUrl ? (
+                                                <audio controls preload="none" src={followUp.audioUrl} className="mt-2 h-9 w-full" />
+                                              ) : Array.isArray(followUp.screenshots) && followUp.screenshots.length > 0 ? (
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                  {followUp.screenshots.map((url, index) => (
+                                                    <a
+                                                      key={`${followUp.id}-follow-up-${index}-${url}`}
+                                                      href={url}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                                                    >
+                                                      <ExternalLink size={12} />
+                                                      Screenshot {index + 1}
+                                                    </a>
+                                                  ))}
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>

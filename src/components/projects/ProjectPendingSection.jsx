@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Clock3, LoaderCircle, MessageSquareText, Plus, X } from "lucide-react";
+import { CalendarDays, Clock3, ExternalLink, LoaderCircle, MessageSquareText, Plus, X } from "lucide-react";
 import API from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { getUserRoles } from "../../utils/userRoles";
@@ -29,6 +29,7 @@ export default function ProjectPendingSection({ projectId, triggerClassName }) {
   const [saving, setSaving] = useState(false);
   const [dueDate, setDueDate] = useState(today);
   const [note, setNote] = useState("");
+  const [screenshots, setScreenshots] = useState([]);
   const loading = isOpen && loadedProjectId !== projectId;
 
   useEffect(() => {
@@ -58,15 +59,18 @@ export default function ProjectPendingSection({ projectId, triggerClassName }) {
 
     setSaving(true);
     try {
-      const response = await API.post(`/api/projects/${projectId}/pending-items`, {
-        dueDate,
-        note: note.trim(),
-      });
+      const formData = new FormData();
+      formData.append("dueDate", dueDate);
+      formData.append("note", note.trim());
+      screenshots.forEach((screenshot) => formData.append("screenshots", screenshot));
+
+      const response = await API.post(`/api/projects/${projectId}/pending-items`, formData);
       setItems((previous) => [...previous, response.data.data].sort(
         (a, b) => new Date(a.dueDate) - new Date(b.dueDate),
       ));
       setDueDate(today());
       setNote("");
+      setScreenshots([]);
       notifySuccess("Pending item added to this project.");
     } catch (error) {
       notifyError(error.response?.data?.message || "Could not save the pending item.");
@@ -149,6 +153,16 @@ export default function ProjectPendingSection({ projectId, triggerClassName }) {
                       className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                     />
                   </label>
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-semibold text-slate-600">Screenshots (optional)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(event) => setScreenshots(Array.from(event.target.files || []))}
+                      className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-indigo-700"
+                    />
+                  </label>
                   <div className="flex justify-end">
                     <button
                       type="submit"
@@ -188,6 +202,22 @@ export default function ProjectPendingSection({ projectId, triggerClassName }) {
                         </span>
                       </div>
                       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{item.note}</p>
+                      {Array.isArray(item.screenshots) && item.screenshots.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {item.screenshots.map((url, index) => (
+                            <a
+                              key={`${item.id}-${url}`}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                            >
+                              <ExternalLink size={12} />
+                              Screenshot {index + 1}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </article>
                   ))
                 )}
