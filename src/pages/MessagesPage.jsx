@@ -14,6 +14,7 @@ const buildProjectSpecificMessage = (message) => {
   );
   const divider = "━━━━━━━━━━━━━━━━━━━━";
   const reportSections = [];
+  const pendingItemsByDepartment = message.pendingItemsByDepartment || {};
 
   if (hasMetaAds) {
     reportSections.push([
@@ -22,6 +23,9 @@ const buildProjectSpecificMessage = (message) => {
       `Yesterday ad spend: ₹${parameters[1] || "0.00"}`,
       `Reach: ${parameters[2] || "0"}`,
       `Leads Obtained: ${parameters[3] || "0"}`,
+      "",
+      "📌 PENDING FROM YOUR SIDE",
+      (pendingItemsByDepartment.marketing || []).join("\n") || "• None",
     ].join("\n"));
   }
 
@@ -32,6 +36,9 @@ const buildProjectSpecificMessage = (message) => {
       `Project: ${parameters[5] || "Not available"}`,
       `Keywords: ${parameters[6] || "Not available"}`,
       `Ranking: #${parameters[7] || "N/A"}`,
+      "",
+      "📌 PENDING FROM YOUR SIDE",
+      (pendingItemsByDepartment.seo || []).join("\n") || "• None",
     ].join("\n"));
   }
 
@@ -46,21 +53,17 @@ const buildProjectSpecificMessage = (message) => {
         `Next Expected Upload Date: ${report.nextExpectedUploadDate || "Not scheduled"}`,
         "",
       ]),
+      "📌 PENDING FROM YOUR SIDE",
+      (pendingItemsByDepartment.socialMedia || []).join("\n") || "• None",
     ].join("\n").trim());
   }
 
-  const pendingItems = parameters[10] || "• None";
   const messageBody = [
     `Hello ${message.clientName || "Client"},`,
     "",
     "Here is your complete daily report from We Promote.",
     "",
     ...reportSections.flatMap((section) => [section, divider, ""]),
-    "📌 PENDING FROM YOUR SIDE",
-    pendingItems,
-    "",
-    divider,
-    "",
     "Thank you for choosing We Promote",
   ].join("\n");
 
