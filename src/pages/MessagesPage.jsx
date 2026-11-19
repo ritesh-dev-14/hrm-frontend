@@ -17,7 +17,7 @@ const buildProjectSpecificMessage = (message) => {
 
   if (hasMetaAds) {
     reportSections.push([
-      `📣 META ADS REPORT : ${parameters[4] || ""}`,
+      `📣 META ADS REPORT : ${message.metaAdsReportDate || parameters[4] || ""}`,
       "",
       `Yesterday ad spend: ₹${parameters[1] || "0.00"}`,
       `Reach: ${parameters[2] || "0"}`,
