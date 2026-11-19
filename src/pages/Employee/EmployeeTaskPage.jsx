@@ -885,7 +885,7 @@ const EmployeeTaskPage = () => {
                         {/* Unable to Submit Log */}
                         <div className="border border-slate-200/60 bg-white rounded-2xl p-6 shadow-sm">
                           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4" /> Log Blockers
+                            <AlertTriangle className="w-4 h-4" /> Reason not to submit
                           </h3>
                           <div className="space-y-3">
                             <textarea
@@ -900,7 +900,7 @@ const EmployeeTaskPage = () => {
                               disabled={reportingIssue}
                               className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                              {reportingIssue ? <Loader2 className="w-4 h-4 animate-spin" /> : "Report Issue & Block Task"}
+                              {reportingIssue ? <Loader2 className="w-4 h-4 animate-spin" /> : "Report Issue"}
                             </button>
                           </div>
                         </div>
