@@ -351,9 +351,13 @@ export default function AdminWeeklyVoiceReports() {
                         <Mic className="w-3.5 h-3.5" /> Audio Playback
                       </p>
                       {report.audioUrl ? (
-                        <audio controls src={report.audioUrl} className="w-full h-10">
-                          Your browser does not support the audio element.
-                        </audio>
+                        /\.mp4(?:\?|$)/i.test(report.audioUrl) ? (
+                          <video controls src={report.audioUrl} className="w-full max-h-80 rounded-lg" />
+                        ) : (
+                          <audio controls src={report.audioUrl} className="w-full h-10">
+                            Your browser does not support the audio element.
+                          </audio>
+                        )
                       ) : (
                         <p className="text-xs text-gray-400 italic">No audio recording attached.</p>
                       )}

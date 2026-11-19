@@ -498,7 +498,13 @@ const AdminAdsMarketingReportsModal = ({ projects, onClose, initialProjectId = n
                           {isUnable ? (
                             <p className="mt-2 text-xs text-slate-600">{getWeeklyClients(report).find((client) => String(client?.id ?? client?.projectId) === String(selectedProject.id || selectedProject._id))?.reason || "Manager could not submit a recording or screenshot."}</p>
                           ) : null}
-                          {report.audioUrl && <audio controls preload="none" src={report.audioUrl} className="mt-3 h-10 w-full" />}
+                          {report.audioUrl && (
+                            /\.mp4(?:\?|$)/i.test(report.audioUrl) ? (
+                              <video controls preload="none" src={report.audioUrl} className="mt-3 w-full max-h-80 rounded-lg" />
+                            ) : (
+                              <audio controls preload="none" src={report.audioUrl} className="mt-3 h-10 w-full" />
+                            )
+                          )}
                           {screenshots.length > 0 && (
                             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                               {screenshots.map((url, index) => (

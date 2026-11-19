@@ -783,7 +783,11 @@ export default function QAMetaAdsWeeklyReports() {
                             <p className="text-[11px] font-bold text-blue-900 mb-2 flex items-center gap-1 uppercase tracking-wider">
                               <Mic className="w-3 h-3" /> Listen to Voice Update
                             </p>
-                            <audio controls src={item.audioUrl} className="w-full h-9" />
+                            { /\.mp4(?:\?|$)/i.test(item.audioUrl) ? (
+                              <video controls src={item.audioUrl} className="w-full max-h-64 rounded-lg" />
+                            ) : (
+                              <audio controls src={item.audioUrl} className="w-full h-9" />
+                            )}
                           </div>
                         ) : (
                           <div className="bg-indigo-50/40 p-3.5 rounded-2xl border border-indigo-100 mb-4">

@@ -160,6 +160,9 @@ export default function ManagerWeeklyVoiceReport() {
   // Track submitting state per client: { [clientId]: boolean }
   const [submittingClients, setSubmittingClients] = useState({});
 
+  // Client submission filter: ALL | SUBMITTED | NOT_SUBMITTED
+  const [submissionFilter, setSubmissionFilter] = useState("ALL");
+
   // Lightbox Modal state: { isOpen: boolean, images: string[], currentIndex: number, clientTitle: string }
   const [lightbox, setLightbox] = useState({
     isOpen: false,
@@ -262,8 +265,12 @@ export default function ManagerWeeklyVoiceReport() {
   // Audio handlers
   const handleAudioSelect = (clientId, file) => {
     if (file) {
-      if (!file.type.startsWith("audio/")) {
-        toast.error("Please select a valid audio file.");
+      const isMp4 = file.type === "video/mp4" || /\.mp4$/i.test(file.name);
+      const isSupportedRecording =
+        file.type.startsWith("audio/") ||
+        isMp4;
+      if (!isSupportedRecording) {
+        toast.error("Please select an audio file or MP4 video.");
         return;
       }
       setClientAudio((prev) => ({ ...prev, [clientId]: file }));
@@ -497,9 +504,19 @@ export default function ManagerWeeklyVoiceReport() {
   };
 
   const filteredClients = useMemo(() => {
-    if (selectedDeptTab === "ALL") return activeClients;
-    return activeClients.filter((c) => getDepartmentCategory(c) === selectedDeptTab);
-  }, [activeClients, selectedDeptTab]);
+    const departmentClients =
+      selectedDeptTab === "ALL"
+        ? activeClients
+        : activeClients.filter((c) => getDepartmentCategory(c) === selectedDeptTab);
+
+    if (submissionFilter === "SUBMITTED") {
+      return departmentClients.filter((c) => Boolean(submittedDetails[c.id]));
+    }
+    if (submissionFilter === "NOT_SUBMITTED") {
+      return departmentClients.filter((c) => !submittedDetails[c.id]);
+    }
+    return departmentClients;
+  }, [activeClients, selectedDeptTab, submissionFilter, submittedDetails]);
 
   const currentTabStats = getDeptStats(selectedDeptTab);
   const allSubmittedCurrentTab =
@@ -774,6 +791,42 @@ export default function ManagerWeeklyVoiceReport() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {(() => {
+              const departmentClients =
+                selectedDeptTab === "ALL"
+                  ? activeClients
+                  : activeClients.filter((c) => getDepartmentCategory(c) === selectedDeptTab);
+              const submittedCount = departmentClients.filter((c) => Boolean(submittedDetails[c.id])).length;
+              const notSubmittedCount = departmentClients.length - submittedCount;
+              const filters = [
+                { id: "ALL", label: "All", count: departmentClients.length },
+                { id: "SUBMITTED", label: "Submitted", count: submittedCount },
+                { id: "NOT_SUBMITTED", label: "Not Submitted", count: notSubmittedCount },
+              ];
+              return (
+                <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-50 border border-slate-200 rounded-xl">
+                  {filters.map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setSubmissionFilter(filter.id)}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        submissionFilter === filter.id
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "text-slate-600 hover:bg-white hover:text-slate-900"
+                      }`}
+                    >
+                      {filter.label}
+                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full ${
+                        submissionFilter === filter.id ? "bg-white/20" : "bg-slate-200"
+                      }`}>
+                        {filter.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
             {currentTabStats.revision > 0 && (
               <div className="bg-rose-50 text-rose-700 px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border border-rose-200 animate-pulse">
                 <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -818,7 +871,11 @@ export default function ManagerWeeklyVoiceReport() {
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">
             <CheckCircle className="w-16 h-16 text-gray-200 mb-4" />
             <p className="text-lg font-medium">
-              No active {selectedDeptTab === "ALL" ? "" : DEPARTMENT_TABS.find((t) => t.id === selectedDeptTab)?.label} clients assigned to you right now.
+              {submissionFilter === "SUBMITTED"
+                ? "No submitted clients found for this department and week."
+                : submissionFilter === "NOT_SUBMITTED"
+                ? "All clients in this department have submitted for this week."
+                : `No active ${selectedDeptTab === "ALL" ? "" : DEPARTMENT_TABS.find((t) => t.id === selectedDeptTab)?.label} clients assigned to you right now.`}
             </p>
           </div>
         ) : (
@@ -953,11 +1010,11 @@ export default function ManagerWeeklyVoiceReport() {
                               {submittedInfo?.reportType === "VOICE" &&
                                 submittedInfo.audioUrl && (
                                   <div className="w-full bg-white p-3 rounded-xl border border-green-200 mb-3">
-                                    <audio
-                                      controls
-                                      src={submittedInfo.audioUrl}
-                                      className="w-full h-8"
-                                    />
+                                    { /\.mp4(?:\?|$)/i.test(submittedInfo.audioUrl) ? (
+                                      <video controls src={submittedInfo.audioUrl} className="w-full max-h-64 rounded-lg" />
+                                    ) : (
+                                      <audio controls src={submittedInfo.audioUrl} className="w-full h-8" />
+                                    )}
                                   </div>
                                 )}
 
@@ -1059,7 +1116,11 @@ export default function ManagerWeeklyVoiceReport() {
                                   <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">
                                     Previous Voice Recording:
                                   </span>
-                                  <audio controls src={submittedInfo.audioUrl} className="w-full h-7" />
+                                  { /\.mp4(?:\?|$)/i.test(submittedInfo.audioUrl) ? (
+                                    <video controls src={submittedInfo.audioUrl} className="w-full max-h-64 rounded-lg" />
+                                  ) : (
+                                    <audio controls src={submittedInfo.audioUrl} className="w-full h-7" />
+                                  )}
                                 </div>
                               )}
                               <p className="text-[11px] text-rose-600 font-semibold mt-2">
@@ -1120,11 +1181,11 @@ export default function ManagerWeeklyVoiceReport() {
                                     Upload Recording
                                   </span>
                                   <span className="text-xs text-gray-400 mt-1">
-                                    MP3, M4A, WAV, AAC
+                                    MP3, M4A, WAV, AAC, MP4
                                   </span>
                                   <input
                                     type="file"
-                                    accept="audio/*"
+                                    accept="audio/*,video/mp4,.mp4"
                                     className="hidden"
                                     onChange={(e) =>
                                       handleAudioSelect(client.id, e.target.files[0])
@@ -1151,11 +1212,19 @@ export default function ManagerWeeklyVoiceReport() {
                                     {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
                                   </p>
 
-                                  <audio
-                                    controls
-                                    src={URL.createObjectURL(audioFile)}
-                                    className="w-full h-8 mb-4 scale-95"
-                                  />
+                                  {audioFile.type === "video/mp4" || /\.mp4$/i.test(audioFile.name) ? (
+                                    <video
+                                      controls
+                                      src={URL.createObjectURL(audioFile)}
+                                      className="w-full max-h-48 mb-4 rounded-lg"
+                                    />
+                                  ) : (
+                                    <audio
+                                      controls
+                                      src={URL.createObjectURL(audioFile)}
+                                      className="w-full h-8 mb-4 scale-95"
+                                    />
+                                  )}
 
                                   <div className="w-full flex items-center gap-2">
                                     {isEditing && !needsRevision && (
