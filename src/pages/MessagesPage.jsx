@@ -36,13 +36,17 @@ const buildProjectSpecificMessage = (message) => {
   }
 
   if (hasSocialMedia) {
-    const socialMediaReport = message.socialMediaReports?.[0];
+    const socialMediaReports = message.socialMediaReports || [];
     reportSections.push([
       "📱 SOCIAL MEDIA REPORT",
       "",
-      `Last Content Uploaded: ${socialMediaReport?.lastContentUploaded || "No content uploaded yet"}`,
-      `Next Expected Upload Date: ${socialMediaReport?.nextExpectedUploadDate || "Not scheduled"}`,
-    ].join("\n"));
+      ...socialMediaReports.flatMap((report) => [
+        `${report.projectName}:`,
+        `Last Content Uploaded: ${report.lastContentUploaded || "No content uploaded yet"}`,
+        `Next Expected Upload Date: ${report.nextExpectedUploadDate || "Not scheduled"}`,
+        "",
+      ]),
+    ].join("\n").trim());
   }
 
   const pendingItems = parameters[10] || "• None";
@@ -123,7 +127,7 @@ export default function MessagesPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 md:text-3xl">Client Messages</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Reports include only departments represented by the client’s projects. Pending notes come from each project’s “Pending from your side” items.
+              Each client has one combined report across all departments and projects, shared with everyone. Phone-number spaces are ignored when matching projects.
             </p>
           </div>
         </div>
