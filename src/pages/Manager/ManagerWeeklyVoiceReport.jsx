@@ -145,7 +145,7 @@ export default function ManagerWeeklyVoiceReport() {
   // Per-client submission mode: { [clientId]: 'VOICE' | 'SCREENSHOTS' | 'UNABLE_TO_SUBMIT' }
   const [clientModes, setClientModes] = useState({});
 
-  // Audio file per client: { [clientId]: File }
+  // Audio/MP4 files per client: { [clientId]: File[] }
   const [clientAudio, setClientAudio] = useState({});
 
   // Screenshot files per client: { [clientId]: File[] }
@@ -236,6 +236,11 @@ export default function ManagerWeeklyVoiceReport() {
                 ? "SCREENSHOTS"
                 : "VOICE"),
             audioUrl: report.audioUrl,
+            audioUrls: Array.isArray(report.audioUrls)
+              ? report.audioUrls
+              : report.audioUrl
+              ? [report.audioUrl]
+              : [],
             screenshots: report.screenshots || [],
             status: report.status,
             reason:
@@ -263,25 +268,37 @@ export default function ManagerWeeklyVoiceReport() {
   };
 
   // Audio handlers
-  const handleAudioSelect = (clientId, file) => {
-    if (file) {
+  const handleAudioSelect = (clientId, fileList) => {
+    if (!fileList || fileList.length === 0) return;
+
+    const newFiles = Array.from(fileList).filter((file) => {
       const isMp4 = file.type === "video/mp4" || /\.mp4$/i.test(file.name);
-      const isSupportedRecording =
-        file.type.startsWith("audio/") ||
-        isMp4;
+      const isSupportedRecording = file.type.startsWith("audio/") || isMp4;
       if (!isSupportedRecording) {
-        toast.error("Please select an audio file or MP4 video.");
-        return;
+        toast.warn(`Skipped unsupported file: ${file.name}`);
+        return false;
       }
-      setClientAudio((prev) => ({ ...prev, [clientId]: file }));
-    }
+      return true;
+    });
+
+    if (newFiles.length === 0) return;
+
+    setClientAudio((prev) => ({
+      ...prev,
+      [clientId]: [...(prev[clientId] || []), ...newFiles],
+    }));
   };
 
-  const handleRemoveAudio = (clientId) => {
+  const handleRemoveAudio = (clientId, indexToRemove) => {
     setClientAudio((prev) => {
-      const next = { ...prev };
-      delete next[clientId];
-      return next;
+      const current = prev[clientId] || [];
+      const updated = current.filter((_, index) => index !== indexToRemove);
+      if (updated.length === 0) {
+        const next = { ...prev };
+        delete next[clientId];
+        return next;
+      }
+      return { ...prev, [clientId]: updated };
     });
   };
 
@@ -354,14 +371,12 @@ export default function ManagerWeeklyVoiceReport() {
       clientPayload.reason = reason;
       formData.append("clients", JSON.stringify([clientPayload]));
     } else if (mode === "VOICE") {
-      const audioFile = clientAudio[client.id];
-      if (!audioFile) {
-        toast.error(
-          `Please upload an audio file for ${client.projectName || client.clientName}`
-        );
+      const audioFiles = clientAudio[client.id] || [];
+      if (audioFiles.length === 0) {
+        toast.error(`Please upload at least one recording for ${client.projectName || client.clientName}`);
         return;
       }
-      formData.append("audio", audioFile);
+      audioFiles.forEach((audioFile) => formData.append("audio", audioFile));
       formData.append("clients", JSON.stringify([clientPayload]));
     } else if (mode === "SCREENSHOTS") {
       const screenshots = clientScreenshots[client.id] || [];
@@ -892,13 +907,13 @@ export default function ManagerWeeklyVoiceReport() {
                 const isSubmitting = submittingClients[client.id];
                 const mode = clientModes[client.id] || "VOICE";
 
-                const audioFile = clientAudio[client.id];
+                const audioFiles = clientAudio[client.id] || [];
                 const screenshots = clientScreenshots[client.id] || [];
                 const reasonText = clientReasons[client.id] || "";
 
                 const hasSelection =
                   mode === "VOICE"
-                    ? !!audioFile
+                    ? audioFiles.length > 0
                     : mode === "SCREENSHOTS"
                     ? screenshots.length > 0
                     : !!reasonText.trim();
@@ -1008,12 +1023,14 @@ export default function ManagerWeeklyVoiceReport() {
 
                               {/* Preview if available */}
                               {submittedInfo?.reportType === "VOICE" &&
-                                submittedInfo.audioUrl && (
-                                  <div className="w-full bg-white p-3 rounded-xl border border-green-200 mb-3">
-                                    { /\.mp4(?:\?|$)/i.test(submittedInfo.audioUrl) ? (
-                                      <video controls src={submittedInfo.audioUrl} className="w-full max-h-64 rounded-lg" />
-                                    ) : (
-                                      <audio controls src={submittedInfo.audioUrl} className="w-full h-8" />
+                                (submittedInfo.audioUrls?.length > 0 || submittedInfo.audioUrl) && (
+                                  <div className="w-full space-y-2 bg-white p-3 rounded-xl border border-green-200 mb-3">
+                                    {(submittedInfo.audioUrls?.length ? submittedInfo.audioUrls : [submittedInfo.audioUrl]).map((url, index) =>
+                                      /\.mp4(?:\?|$)/i.test(url) ? (
+                                        <video key={`${url}-${index}`} controls src={url} className="w-full max-h-64 rounded-lg" />
+                                      ) : (
+                                        <audio key={`${url}-${index}`} controls src={url} className="w-full h-8" />
+                                      )
                                     )}
                                   </div>
                                 )}
@@ -1111,15 +1128,17 @@ export default function ManagerWeeklyVoiceReport() {
                                   <Eye className="w-3 h-3" /> View previously submitted {submittedInfo.screenshots.length} screenshot(s)
                                 </button>
                               )}
-                              {submittedInfo?.audioUrl && (
+                              {(submittedInfo?.audioUrls?.length > 0 || submittedInfo?.audioUrl) && (
                                 <div className="mt-2 pt-2 border-t border-rose-200/60">
                                   <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">
                                     Previous Voice Recording:
                                   </span>
-                                  { /\.mp4(?:\?|$)/i.test(submittedInfo.audioUrl) ? (
-                                    <video controls src={submittedInfo.audioUrl} className="w-full max-h-64 rounded-lg" />
-                                  ) : (
-                                    <audio controls src={submittedInfo.audioUrl} className="w-full h-7" />
+                                  {(submittedInfo.audioUrls?.length ? submittedInfo.audioUrls : [submittedInfo.audioUrl]).map((url, index) =>
+                                    /\.mp4(?:\?|$)/i.test(url) ? (
+                                      <video key={`${url}-${index}`} controls src={url} className="w-full max-h-64 rounded-lg mb-2" />
+                                    ) : (
+                                      <audio key={`${url}-${index}`} controls src={url} className="w-full h-7 mb-2" />
+                                    )
                                   )}
                                 </div>
                               )}
@@ -1172,7 +1191,7 @@ export default function ManagerWeeklyVoiceReport() {
                           {/* Mode: VOICE */}
                           {mode === "VOICE" && (
                             <div>
-                              {!audioFile ? (
+                              {audioFiles.length === 0 ? (
                                 <label className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/40 rounded-xl cursor-pointer transition-all group">
                                   <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                                     <UploadCloud className="w-6 h-6" />
@@ -1186,45 +1205,54 @@ export default function ManagerWeeklyVoiceReport() {
                                   <input
                                     type="file"
                                     accept="audio/*,video/mp4,.mp4"
+                                    multiple
                                     className="hidden"
                                     onChange={(e) =>
-                                      handleAudioSelect(client.id, e.target.files[0])
+                                      handleAudioSelect(client.id, e.target.files)
                                     }
                                   />
                                 </label>
                               ) : (
-                                <div className="w-full flex flex-col items-center relative bg-gray-50/70 p-4 rounded-xl border border-gray-200">
-                                  <button
-                                    onClick={() => handleRemoveAudio(client.id)}
-                                    className="absolute top-2 right-2 p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full shadow-sm transition-colors"
-                                    title="Remove audio"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-
-                                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2">
-                                    <FileAudio className="w-5 h-5" />
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                                      {audioFiles.length} Recording{audioFiles.length > 1 ? "s" : ""}
+                                    </span>
+                                    <label className="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg cursor-pointer transition-colors flex items-center gap-1">
+                                      <Plus className="w-3 h-3" /> Add More
+                                      <input
+                                        type="file"
+                                        accept="audio/*,video/mp4,.mp4"
+                                        multiple
+                                        className="hidden"
+                                        onChange={(e) => handleAudioSelect(client.id, e.target.files)}
+                                      />
+                                    </label>
                                   </div>
-                                  <p className="text-xs font-bold text-gray-800 w-full truncate text-center px-4">
-                                    {audioFile.name}
-                                  </p>
-                                  <p className="text-[11px] text-gray-500 mb-3">
-                                    {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
-                                  </p>
 
-                                  {audioFile.type === "video/mp4" || /\.mp4$/i.test(audioFile.name) ? (
-                                    <video
-                                      controls
-                                      src={URL.createObjectURL(audioFile)}
-                                      className="w-full max-h-48 mb-4 rounded-lg"
-                                    />
-                                  ) : (
-                                    <audio
-                                      controls
-                                      src={URL.createObjectURL(audioFile)}
-                                      className="w-full h-8 mb-4 scale-95"
-                                    />
-                                  )}
+                                  {audioFiles.map((audioFile, index) => (
+                                    <div key={`${audioFile.name}-${index}`} className="relative bg-gray-50/70 p-3 rounded-xl border border-gray-200">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveAudio(client.id, index)}
+                                        className="absolute top-2 right-2 z-10 p-1 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full shadow-sm"
+                                        title="Remove recording"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                      <p className="text-xs font-bold text-gray-800 w-full truncate pr-8 mb-1">
+                                        {audioFile.name}
+                                      </p>
+                                      <p className="text-[10px] text-gray-500 mb-2">
+                                        {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
+                                      </p>
+                                      {audioFile.type === "video/mp4" || /\.mp4$/i.test(audioFile.name) ? (
+                                        <video controls src={URL.createObjectURL(audioFile)} className="w-full max-h-48 rounded-lg" />
+                                      ) : (
+                                        <audio controls src={URL.createObjectURL(audioFile)} className="w-full h-8" />
+                                      )}
+                                    </div>
+                                  ))}
 
                                   <div className="w-full flex items-center gap-2">
                                     {isEditing && !needsRevision && (
