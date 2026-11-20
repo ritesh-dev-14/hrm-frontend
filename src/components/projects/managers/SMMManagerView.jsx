@@ -743,12 +743,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
         totalPosts: sheetMeta.totalPosts
           ? parseInt(sheetMeta.totalPosts, 10)
           : 0,
-        totalReelsUploaded: sheetMeta.totalReelsUploaded
-          ? parseInt(sheetMeta.totalReelsUploaded, 10)
-          : 0,
-        totalPostsUploaded: sheetMeta.totalPostsUploaded
-          ? parseInt(sheetMeta.totalPostsUploaded, 10)
-          : 0,
         days: activeDaysPayload.map((day) => ({
           date: day.date,
           // Normalise values: backend expects either "SHOOT_REQUIRED", "AI_REQUIRED", "DATA_AVAILABLE" or null for postType/reelType
@@ -853,12 +847,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
         totalPosts: selectedCalendar.totalPosts
           ? parseInt(selectedCalendar.totalPosts, 10)
           : 0,
-        totalReelsUploaded: selectedCalendar.totalReelsUploaded
-          ? parseInt(selectedCalendar.totalReelsUploaded, 10)
-          : 0,
-        totalPostsUploaded: selectedCalendar.totalPostsUploaded
-          ? parseInt(selectedCalendar.totalPostsUploaded, 10)
-          : 0,
       };
       if (
         selectedCalendar.moodBoardLink &&
@@ -946,8 +934,6 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
         year: targetYear,
         totalReels: Number(sourceCalendar.totalReels) || 0,
         totalPosts: Number(sourceCalendar.totalPosts) || 0,
-        totalReelsUploaded: 0,
-        totalPostsUploaded: 0,
         moodBoardLink: sourceCalendar.moodBoardLink || null,
         days: copiedDays,
       });
@@ -2484,15 +2470,14 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                           <input
                             type="number"
                             min="0"
-                            value={selectedCalendar.totalReelsUploaded || ""}
-                            onChange={(e) =>
-                              setSelectedCalendar((prev) => ({
-                                ...prev,
-                                totalReelsUploaded: e.target.value,
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
-                            placeholder="e.g. 5"
+                            readOnly
+                            value={(selectedCalendar.days || []).reduce(
+                              (total, day) => day.uploadStatus === "APPROVED"
+                                ? total + (day.videoUploadLinks || []).filter((link) => String(link || "").trim()).length
+                                : total,
+                              0,
+                            )}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-800 shadow-xs"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -2502,15 +2487,14 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                           <input
                             type="number"
                             min="0"
-                            value={selectedCalendar.totalPostsUploaded || ""}
-                            onChange={(e) =>
-                              setSelectedCalendar((prev) => ({
-                                ...prev,
-                                totalPostsUploaded: e.target.value,
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-800 shadow-xs"
-                            placeholder="e.g. 3"
+                            readOnly
+                            value={(selectedCalendar.days || []).reduce(
+                              (total, day) => day.uploadStatus === "APPROVED"
+                                ? total + (day.contentUploadLinks || []).filter((link) => String(link || "").trim()).length
+                                : total,
+                              0,
+                            )}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-800 shadow-xs"
                           />
                         </div>
                         <div className="col-span-2 md:col-span-1 space-y-1.5">
@@ -3459,10 +3443,9 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                 type="number"
                                 name="totalReelsUploaded"
                                 min="0"
-                                value={sheetMeta.totalReelsUploaded}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                                placeholder="e.g. 0"
+                                value="0"
+                                readOnly
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 shadow-xs"
                               />
                             </div>
                             <div className="space-y-1">
@@ -3473,10 +3456,9 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
                                 type="number"
                                 name="totalPostsUploaded"
                                 min="0"
-                                value={sheetMeta.totalPostsUploaded}
-                                onChange={handleMetaChange}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-bold text-slate-700 shadow-xs"
-                                placeholder="e.g. 0"
+                                value="0"
+                                readOnly
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 shadow-xs"
                               />
                             </div>
                           </div>
