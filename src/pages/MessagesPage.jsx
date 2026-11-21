@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, LoaderCircle, MessageSquareText, RefreshCw, Search } from "lucide-react";
+import { AlertCircle, Check, Copy, LoaderCircle, MessageSquareText, RefreshCw, Search } from "lucide-react";
 import API from "../services/api";
 
 const fetchPreviews = () => API.get("/api/whatsapp-messages/previews");
@@ -75,6 +75,41 @@ export default function MessagesPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [copiedGroupId, setCopiedGroupId] = useState(null);
+  const [copyFailedGroupId, setCopyFailedGroupId] = useState(null);
+
+  const copyMessage = async (message) => {
+    const text = message.messageBody || "";
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (!copied) throw new Error("Copy command failed");
+      }
+
+      setCopiedGroupId(message.groupId);
+      setCopyFailedGroupId(null);
+      window.setTimeout(() => setCopiedGroupId((current) => (
+        current === message.groupId ? null : current
+      )), 1800);
+    } catch (copyError) {
+      console.error("Unable to copy client message:", copyError);
+      setCopiedGroupId(null);
+      setCopyFailedGroupId(message.groupId);
+      window.setTimeout(() => setCopyFailedGroupId((current) => (
+        current === message.groupId ? null : current
+      )), 1800);
+    }
+  };
 
   const updatePreviews = useCallback((response) => {
     const data = response.data?.data;
@@ -192,7 +227,36 @@ export default function MessagesPage() {
 
                 <div className="p-5">
                   <div>
-                    <h3 className="mb-2 text-sm font-semibold text-slate-700">Message preview</h3>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-slate-700">Message preview</h3>
+                      <button
+                        type="button"
+                        onClick={() => copyMessage(message)}
+                        className={`inline-flex min-w-20 items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition ${
+                          copiedGroupId === message.groupId
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : copyFailedGroupId === message.groupId
+                              ? "border-rose-200 bg-rose-50 text-rose-700"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                        }`}
+                        title="Copy message"
+                        aria-label={`Copy message for ${message.clientName}`}
+                      >
+                        {copiedGroupId === message.groupId ? (
+                          <>
+                            <Check size={14} />
+                            Copied
+                          </>
+                        ) : copyFailedGroupId === message.groupId ? (
+                          "Copy failed"
+                        ) : (
+                          <>
+                            <Copy size={14} />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 font-sans text-sm leading-6 text-slate-700">{message.messageBody}</pre>
                   </div>
                 </div>
