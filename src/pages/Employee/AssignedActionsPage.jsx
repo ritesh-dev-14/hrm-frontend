@@ -442,7 +442,7 @@ export default function AssignedActionsPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Assigned Actions
+              {isAdmin ? "Tasks" : "Assigned Actions"}
             </h1>
             {!isAdmin && <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs font-semibold">
               <button

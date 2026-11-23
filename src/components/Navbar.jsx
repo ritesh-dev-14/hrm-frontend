@@ -42,6 +42,7 @@ import PendingWorkGuardModal from "./PendingWorkGuardModal";
 
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
+  { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
   { id: "client-pending", label: "Pending from Client Side", icon: ListTodo, path: "/manager/client-pending", roles: ["MANAGER", "ADMIN", "HR", "EA"] },
   { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
@@ -74,8 +75,7 @@ const NAV_CONFIG = [
   { id: "tasks-cor", label: "My Tasks", icon: BriefcaseBusiness, path: "/tasks", roles: ["COORDINATOR", "EA"] },
   { id: "priority-actions", label: "Priority Actions", icon: Zap, path: "/priority-actions", roles: ["COORDINATOR", "EA", "HR"], notificationCount: 4 },
   { id: "coordinator-task-progress", label: "Task Progress", icon: BarChart2, path: "/coordinator/task-progress", roles: ["COORDINATOR", "EA"] },
-  { id: "sidebar-appeals", label: "Sidebar Appeals", icon: ShieldCheck, path: "/sidebar-appeals", roles: ["EA", "ADMIN", "HR", "COORDINATOR"] },
-  { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },
+  { id: "sidebar-appeals", label: "Sidebar Appeals", icon: ShieldCheck, path: "/sidebar-appeals", roles: ["EA", "HR", "COORDINATOR"] },
   { id: "attendance", label: "Attendance", icon: CalendarDays, path: "/attendance", roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA", "QA"] },
   { id: "employee-attendance", label: "Employee Attendance", icon: CalendarDays, path: "/hr/employees-attendance", roles: ["HR"] },
   { id: "employee-leaves", label: "Employee Leaves", icon: FileText, path: "/hr/employees-leaves", roles: ["HR"] },
@@ -590,6 +590,13 @@ export default function ProfessionalSidebar({ children }) {
 
       return true;
     }).map((item) => {
+      if (item.id === "assigned-actions" && hasUserRole("ADMIN")) {
+        return {
+          ...item,
+          label: "Task",
+        };
+      }
+
       // Filter project children to only show the manager's own departments
       if (isManager && managerProjectChildIds && item.id === "project" && item.children?.length > 0) {
         return {
