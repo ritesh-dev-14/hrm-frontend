@@ -1,5 +1,6 @@
 import React from "react";
 import API from "../../services/api";
+import * as XLSX from "xlsx";
 import {
   AlertTriangle,
   Clock,
@@ -17,6 +18,7 @@ import {
   Eye,
   Target,
   Link2,
+  FileSpreadsheet,
 } from "lucide-react";
 
 const getSafeExternalUrl = (value) => {
@@ -329,6 +331,69 @@ export default function AdminControlTower({
     }),
     [selectedSocialSheet],
   );
+  const exportSocialMediaMonth = () => {
+    const [year, month] = activeMonthValue.split("-").map(Number);
+    const monthName = getMonthLabel(month, year);
+    const rowsForExport = managerFilteredSocialProjectRows;
+    const summaryRows = rowsForExport.map((row) => ({
+      Project: row.project.projectName || "",
+      Client: row.project.clientName || row.project.department?.name || "",
+      Managers: (row.project.assignments || [])
+        .map(({ manager }) => manager?.name)
+        .filter(Boolean)
+        .join(", "),
+      "Planned Reels": row.plannedReels,
+      "Approved Reels": row.approvedReels,
+      "Planned Posts": row.plannedPosts,
+      "Approved Posts": row.approvedPosts,
+      "Delayed Days": row.delayedDays.length,
+    }));
+    const calendarRows = rowsForExport.flatMap((row) =>
+      (row.sheet?.days || []).map((day) => ({
+        Project: row.project.projectName || "",
+        Client: row.project.clientName || row.project.department?.name || "",
+        Managers: (row.project.assignments || [])
+          .map(({ manager }) => manager?.name)
+          .filter(Boolean)
+          .join(", "),
+        Date: getCalendarDateValue(day.date),
+        Title: day.title || "",
+        Script: day.script || "",
+        Description: day.description || "",
+        "Reel Type": day.reelType && day.reelType !== "NONE" ? day.reelType : "",
+        "Post Type": day.postType && day.postType !== "NONE" ? day.postType : "",
+        "Video Type": day.videoType && day.videoType !== "NONE" ? day.videoType : "",
+        Status: day.uploadStatus || "NOT UPLOADED",
+        "Uploaded On": getCalendarDateValue(day.uploadedAt),
+        "Reel Links": (day.videoUploadLinks || [])
+          .filter((link) => String(link || "").trim())
+          .join(", "),
+        "Post Links": (day.contentUploadLinks || [])
+          .filter((link) => String(link || "").trim())
+          .join(", "),
+      })),
+    );
+
+    const workbook = XLSX.utils.book_new();
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+    summarySheet["!cols"] = [
+      { wch: 30 }, { wch: 24 }, { wch: 28 }, { wch: 16 },
+      { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 },
+    ];
+    const calendarSheet = XLSX.utils.json_to_sheet(calendarRows);
+    calendarSheet["!cols"] = [
+      { wch: 30 }, { wch: 24 }, { wch: 28 }, { wch: 14 },
+      { wch: 32 }, { wch: 40 }, { wch: 40 }, { wch: 18 },
+      { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 14 },
+      { wch: 50 }, { wch: 50 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Monthly Summary");
+    XLSX.utils.book_append_sheet(workbook, calendarSheet, "Monthly Calendar");
+    XLSX.writeFile(
+      workbook,
+      `social-media-output-${monthName.replace(/\s+/g, "-")}.xlsx`,
+    );
+  };
 
   const marketingProjects = React.useMemo(() => projects.filter((project) => {
     const departmentName = project.department?.name?.toLowerCase() || "";
@@ -615,6 +680,15 @@ export default function AdminControlTower({
                   : "No monthly content calendars are available yet."}
               </p>
               <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportSocialMediaMonth}
+                  disabled={!activeMonthOption}
+                  className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FileSpreadsheet size={15} />
+                  Download Excel
+                </button>
                 <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" role="group" aria-label="Filter social media projects">
                   <button
                     type="button"
