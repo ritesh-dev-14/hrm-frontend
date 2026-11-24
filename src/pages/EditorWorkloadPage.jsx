@@ -92,7 +92,7 @@ export default function EditorWorkloadPage() {
               <Users className="text-indigo-600" /> Editor Workload Dashboard
             </h1>
             <p className="text-slate-500 mt-1">
-              Live view of editor task assignments, turnaround times (TAT), and overdue items.
+              Video submissions and daily averages, plus editor task assignments, turnaround times (TAT), and overdue items.
             </p>
           </div>
           
@@ -192,6 +192,14 @@ export default function EditorWorkloadPage() {
                             ({editor.stats?.[timeframe]?.videoAvgTat || 0}h)
                           </p>
                         </div>
+                        {timeframe !== 'allTime' && (
+                          <p
+                            className="mt-1 text-[10px] font-semibold text-slate-500"
+                            title="Today's count, or the average per weekday elapsed for this week or month"
+                          >
+                            Avg/day: {editor.stats?.[timeframe]?.averageVideosPerDay ?? 0}
+                          </p>
+                        )}
                         {timeframe !== 'daily' && editor.dailyVideoTarget > 0 && (
                           <div className="mt-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block">
                             🎯 Hit: {editor.stats?.[timeframe]?.videoHitDays || 0}/{editor.stats?.[timeframe]?.workingDays || 1}d
@@ -222,6 +230,14 @@ export default function EditorWorkloadPage() {
                             ({editor.stats?.[timeframe]?.postAvgTat || 0}h)
                           </p>
                         </div>
+                        {timeframe !== 'allTime' && (
+                          <p
+                            className="mt-1 text-[10px] font-semibold text-slate-500"
+                            title="Today's count, or the average per weekday elapsed for this week or month"
+                          >
+                            Avg/day: {editor.stats?.[timeframe]?.averagePostsPerDay ?? 0}
+                          </p>
+                        )}
                         {timeframe !== 'daily' && editor.dailyPostTarget > 0 && (
                           <div className="mt-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block">
                             🎯 Hit: {editor.stats?.[timeframe]?.postHitDays || 0}/{editor.stats?.[timeframe]?.workingDays || 1}d
