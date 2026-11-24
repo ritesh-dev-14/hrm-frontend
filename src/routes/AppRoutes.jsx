@@ -70,6 +70,7 @@ const AssignedActionsPage = lazy(() => import("../pages/Employee/AssignedActions
 const CordinatorTasks = lazy(() => import("../pages/CordinatorTasks.jsx"));
 const EmployeeDailyReports = lazy(() => import("../pages/Employee/EmployeeDailyReports.jsx"));
 const EditorWorkloadPage = lazy(() => import("../pages/EditorWorkloadPage.jsx"));
+const EAOverdueTasksPage = lazy(() => import("../pages/EAOverdueTasksPage.jsx"));
 const PendingApprovalsPage = lazy(() => import("../pages/PendingApprovalsPage.jsx"));
 
 const MarketingReportsPage = lazy(() => import("../pages/Manager/MarketingReportsPage.jsx"));
@@ -189,6 +190,16 @@ export const AppRoutes = () => {
             element={
               hasRole("ADMIN", "HR", "EA", "MANAGER", "COORDINATOR") ? (
                 <EditorWorkloadPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/ea-overdue-tasks"
+            element={
+              hasRole("ADMIN", "HR", "EA") ? (
+                <EAOverdueTasksPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

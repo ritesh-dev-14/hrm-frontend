@@ -36,6 +36,7 @@ import MainLogo from "../assets/logo.jpeg";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 import TodayUploadPopup from "./TodayUploadPopup";
+import EAOverdueTasksPopup from "./EAOverdueTasksPopup";
 import { refreshEmployeeLogoutStatus } from "../utils/employeeLogoutStatus";
 import { getManagerPendingCategories, refreshManagerLogoutStatus } from "../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "./PendingWorkGuardModal";
@@ -43,6 +44,7 @@ import PendingWorkGuardModal from "./PendingWorkGuardModal";
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },
+  { id: "ea-overdue-tasks", label: "Overdue EA Tasks", icon: AlertTriangle, path: "/ea-overdue-tasks", roles: ["ADMIN", "HR", "EA"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
   { id: "client-pending", label: "Pending from Client Side", icon: ListTodo, path: "/manager/client-pending", roles: ["MANAGER", "ADMIN", "HR", "EA"] },
   { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
@@ -147,6 +149,8 @@ export default function ProfessionalSidebar({ children }) {
   const [employeeLogoutStatus, setEmployeeLogoutStatus] = useState({ canLogout: false, loading: true, pendingTasks: [] });
   const [marketingReportsCount, setMarketingReportsCount] = useState(0);
   const [managerPendingCount, setManagerPendingCount] = useState(0);
+  const [eaOverdueTaskCount, setEaOverdueTaskCount] = useState(0);
+  const [eaOverduePopup, setEaOverduePopup] = useState(null);
 
   const updateManagerPendingCount = (status) => {
     const categories = getManagerPendingCategories(status);
@@ -294,6 +298,63 @@ export default function ProfessionalSidebar({ children }) {
     });
   };
 
+  const dismissEaOverduePopup = async () => {
+    const notificationId = eaOverduePopup?.notification?.id;
+    setEaOverduePopup(null);
+    if (!notificationId) return;
+
+    try {
+      await API.patch(`/api/ea-overdue-tasks/notifications/${notificationId}/read`);
+    } catch (error) {
+      console.error("Failed to dismiss overdue task notification:", error);
+      toast.error("Could not dismiss this overdue task notification.");
+    }
+  };
+
+  const viewEaOverdueTasks = async () => {
+    await dismissEaOverduePopup();
+    navigate("/ea-overdue-tasks");
+  };
+
+  useEffect(() => {
+    if (!user?.id || !hasUserRole("ADMIN", "HR", "EA")) {
+      setEaOverdueTaskCount(0);
+      return undefined;
+    }
+
+    let active = true;
+    const fetchOverdueTaskCount = async () => {
+      try {
+        const response = await API.get("/api/ea-overdue-tasks");
+        if (active) setEaOverdueTaskCount(Number(response.data?.data?.count) || 0);
+      } catch (error) {
+        if (active) console.error("Failed to refresh overdue EA task count:", error);
+      }
+    };
+
+    fetchOverdueTaskCount();
+    const interval = setInterval(fetchOverdueTaskCount, 60000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [user?.id, userRoles, hasUserRole]);
+
+  useEffect(() => {
+    if (!user?.id || !hasUserRole("ADMIN", "HR", "EA")) return undefined;
+
+    let active = true;
+    API.get("/api/ea-overdue-tasks/notifications/unread")
+      .then((response) => {
+        if (active && response.data?.data) setEaOverduePopup(response.data.data);
+      })
+      .catch((error) => console.error("Failed to load overdue EA task notification:", error));
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, userRoles, hasUserRole]);
+
   useEffect(() => {
     if (!user?.id) return;
     const socketInstance = io(API_URL);
@@ -343,6 +404,17 @@ export default function ProfessionalSidebar({ children }) {
       "meta-ads-assigned",
     ];
     metaAdsEvents.forEach((eventName) => socketInstance.on(eventName, handleMetaAdsAssigned));
+
+    const handleEaOverdueTasks = async () => {
+      if (!hasUserRole("ADMIN", "HR", "EA")) return;
+      try {
+        const response = await API.get("/api/ea-overdue-tasks/notifications/unread");
+        if (response.data?.data) setEaOverduePopup(response.data.data);
+      } catch (error) {
+        console.error("Failed to load overdue EA task popup:", error);
+      }
+    };
+    socketInstance.on("ea-overdue-tasks-popup", handleEaOverdueTasks);
 
     socketInstance.on("task-submitted-popup", (data) => {
       recordDepartmentNotification(data);
@@ -428,6 +500,7 @@ export default function ProfessionalSidebar({ children }) {
     });
 
     return () => {
+      socketInstance.off("ea-overdue-tasks-popup", handleEaOverdueTasks);
       metaAdsEvents.forEach((eventName) => socketInstance.off(eventName, handleMetaAdsAssigned));
       ["task-approved-popup", "task-verified-popup", "task-submission-approved-popup"].forEach((eventName) => {
         socketInstance.off(eventName, handleTaskApproved);
@@ -713,6 +786,7 @@ export default function ProfessionalSidebar({ children }) {
             if (item.id === "editor") badgeCount = unreadCounts.creative + unreadCounts.editor;
             if (item.id === "marketing") badgeCount = marketingReportsCount;
             if (item.id === "pending-manager") badgeCount = managerPendingCount;
+            if (item.id === "ea-overdue-tasks") badgeCount = eaOverdueTaskCount;
             if (item.id === "pending-employee") badgeCount = employeeLogoutStatus.pendingTasks?.length || 0;
             const isUploadBadge = item.id === "uploads" && unreadCounts.projects > 0;
 
@@ -916,6 +990,11 @@ export default function ProfessionalSidebar({ children }) {
 
       {/* GLOBAL POPUP */}
       <TodayUploadPopup data={uploadPopupData} onClose={() => setUploadPopupData(null)} />
+      <EAOverdueTasksPopup
+        data={eaOverduePopup}
+        onClose={dismissEaOverduePopup}
+        onViewTasks={viewEaOverdueTasks}
+      />
 
     </div>
   );
