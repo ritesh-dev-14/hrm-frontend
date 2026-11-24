@@ -52,6 +52,7 @@ const STATUS_CONFIG = {
 export default function AssignedActionsPage() {
   const { user, role } = useAuth();
   const isAdmin = role === "ADMIN";
+  const isTaskCoordinator = role === "EA" || role === "COORDINATOR";
 
   const [loading, setLoading] = useState(true);
   const [actions, setActions] = useState([]);
@@ -127,10 +128,10 @@ export default function AssignedActionsPage() {
   }, [user, viewMode]);
 
   useEffect(() => {
-    if (user?.id && !isAdmin) {
+    if (user?.id && !isAdmin && !isTaskCoordinator) {
       fetchCoordinators();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, isTaskCoordinator]);
 
   // Thread Stream Auto-Scrolling Context Execution
   useEffect(() => {
@@ -546,7 +547,7 @@ export default function AssignedActionsPage() {
             )}
           </div>
 
-          {!isAdmin && <button
+          {!isAdmin && !isTaskCoordinator && <button
             onClick={() => setIsAssignModalOpen(true)}
             className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
@@ -1163,7 +1164,7 @@ export default function AssignedActionsPage() {
       </div>
 
       {/* DESIGN COMPONENT MODAL: ASSIGN COORDINATOR REQUIREMENT */}
-      {isAssignModalOpen && !isAdmin && (
+      {isAssignModalOpen && !isAdmin && !isTaskCoordinator && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl border border-slate-200 w-full max-w-md overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">

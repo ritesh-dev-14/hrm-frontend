@@ -154,7 +154,7 @@ export const AppRoutes = () => {
           />
           <Route
             path="/manager/client-pending"
-            element={hasRole("MANAGER", "ADMIN", "HR", "EA") ? <ManagerClientPendingPage /> : <Navigate to="/dashboard" replace />}
+            element={hasRole("MANAGER", "ADMIN", "HR", "EA", "COORDINATOR") ? <ManagerClientPendingPage /> : <Navigate to="/dashboard" replace />}
           />
 
           <Route path="/project/:id" element={<ProjectDetailsViewWrapper />} />
@@ -177,7 +177,16 @@ export const AppRoutes = () => {
             path="/shoot-tasks"
             element={hasRole("MANAGER") ? <ShootPage view="tasks" /> : <Navigate to="/dashboard" replace />}
           />
-          <Route path="/shoot-management" element={<ShootManagementPage />} />
+          <Route
+            path="/shoot-management"
+            element={
+              hasRole("ADMIN", "HR", "MANAGER", "EA", "COORDINATOR") ? (
+                <ShootManagementPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
 
           <Route
             path="/shoot/:workspaceId"
@@ -198,7 +207,7 @@ export const AppRoutes = () => {
           <Route
             path="/ea-overdue-tasks"
             element={
-              hasRole("ADMIN", "HR", "EA") ? (
+              hasRole("ADMIN", "HR", "EA", "COORDINATOR") ? (
                 <EAOverdueTasksPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -281,7 +290,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing"
             element={
-              hasRole("HR", "ADMIN") ? (
+              hasRole("HR", "ADMIN", "EA", "COORDINATOR") ? (
                 <MarketingReportsApprovalPage />
               ) : hasRole("MANAGER") ? (
                 <MarketingReportsPage />
@@ -294,7 +303,7 @@ export const AppRoutes = () => {
           <Route
             path="/admin/weekly-voice-reports"
             element={
-              hasRole("ADMIN", "HR", "EA") ? (
+              hasRole("ADMIN", "HR", "EA", "COORDINATOR") ? (
                 <AdminWeeklyVoiceReports />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -316,7 +325,7 @@ export const AppRoutes = () => {
           <Route
             path="/qa/weekly-reports"
             element={
-              hasRole("QA", "ADMIN", "EA", "HR") ? (
+              hasRole("QA", "ADMIN", "EA", "HR", "COORDINATOR") ? (
                 <QAMetaAdsWeeklyReports />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -391,7 +400,7 @@ export const AppRoutes = () => {
           <Route
             path="/assigned-actions"
             element={
-              hasRole("EMPLOYEE", "MANAGER", "HR", "ADMIN") ? (
+              hasRole("EMPLOYEE", "MANAGER", "HR", "ADMIN", "EA", "COORDINATOR") ? (
                 <AssignedActionsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -506,6 +515,15 @@ export const AppRoutes = () => {
             </>
           )}
 
+          {hasRole("EA", "COORDINATOR") && (
+            <>
+              <Route path="/hr/team/:id" element={<EmployeeDetails />} />
+              <Route path="/hr/team" element={<HrTeamPage />} />
+              <Route path="/reports/hr" element={<HrReports />} />
+              <Route path="/reports/hr/employee/:employeeId" element={<HrEmployeeProjectReport />} />
+            </>
+          )}
+
           {hasRole("EMPLOYEE") && (
             <>
               <Route path="/reports/employee" element={<EmployeeReports />} />
@@ -539,7 +557,7 @@ export const AppRoutes = () => {
       <Route
         path="/daily-reports"
         element={
-          hasRole("ADMIN", "HR", "EA", "MANAGER") ? (
+          hasRole("ADMIN", "HR", "EA", "MANAGER", "COORDINATOR") ? (
             <DailyDepartmentReportPage />
           ) : (
             <Navigate to="/dashboard" replace />

@@ -43,12 +43,12 @@ import PendingWorkGuardModal from "./PendingWorkGuardModal";
 
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
-  { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"] },
-  { id: "ea-overdue-tasks", label: "Overdue EA Tasks", icon: AlertTriangle, path: "/ea-overdue-tasks", roles: ["ADMIN", "HR", "EA"] },
+  { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN", "EA", "COORDINATOR"] },
+  { id: "ea-overdue-tasks", label: "Overdue EA Tasks", icon: AlertTriangle, path: "/ea-overdue-tasks", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
-  { id: "client-pending", label: "Pending from Client Side", icon: ListTodo, path: "/manager/client-pending", roles: ["MANAGER", "ADMIN", "HR", "EA"] },
+  { id: "client-pending", label: "Pending from Client Side", icon: ListTodo, path: "/manager/client-pending", roles: ["MANAGER", "ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
-  { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR"] },
+  { id: "reports-hr", label: "Employee Reports", icon: FileText, path: "/reports/hr", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "reports-emp", label: "Reports", icon: FileText, path: "/reports/employee", roles: ["EMPLOYEE"] },
   {
     id: "project",
@@ -65,12 +65,12 @@ const NAV_CONFIG = [
   },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"], departments: ["Social Media Department", "social media department"] },
   { id: "my-shoot-tasks", label: "My Shoot Tasks", icon: Camera, path: "/shoot-tasks", roles: ["MANAGER"] },
-  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "ADMIN", "HR"], managerDepartments: ["social media"] },
+  { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "ADMIN", "HR", "EA", "COORDINATOR"], managerDepartments: ["social media"] },
   { id: "editor", label: "Creative and Editors", icon: Keyboard, path: "/editor", roles: ["MANAGER"], managerDepartments: ["social media"] },
   { id: "editor-workload", label: "Editor Workload", icon: Keyboard, path: "/editor-workload", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
   { id: "weekly-voice-report", label: "Weekly Voice Report", icon: Mic, path: "/manager/weekly-voice-report", roles: ["MANAGER"] },
-  { id: "admin-weekly-voice-reports", label: "Voice Reports", icon: Mic, path: "/admin/weekly-voice-reports", roles: ["ADMIN", "HR", "EA"] },
-  { id: "qa-meta-ads-reports", label: "QA Reports", icon: ShieldCheck, path: "/qa/weekly-reports", roles: ["QA", "ADMIN", "EA"] },
+  { id: "admin-weekly-voice-reports", label: "Voice Reports", icon: Mic, path: "/admin/weekly-voice-reports", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
+  { id: "qa-meta-ads-reports", label: "QA Reports", icon: ShieldCheck, path: "/qa/weekly-reports", roles: ["QA", "ADMIN", "EA", "HR", "COORDINATOR"] },
   { id: "pending-approvals", label: "Pending Approvals", icon: ClipboardList, path: "/pending-approvals", roles: ["ADMIN", "HR", "MANAGER", "COORDINATOR", "EA"] },
   { id: "tasks-emp", label: "Tasks", icon: BriefcaseBusiness, path: "/projects", roles: ["EMPLOYEE"] },
   { id: "daily-reports", label: "Daily Reports", icon: FileText, path: "/employee-daily-reports", roles: ["EMPLOYEE"] },
@@ -81,12 +81,12 @@ const NAV_CONFIG = [
   { id: "attendance", label: "Attendance", icon: CalendarDays, path: "/attendance", roles: ["EMPLOYEE", "MANAGER", "HR", "COORDINATOR", "EA", "QA"] },
   { id: "employee-attendance", label: "Employee Attendance", icon: CalendarDays, path: "/hr/employees-attendance", roles: ["HR"] },
   { id: "employee-leaves", label: "Employee Leaves", icon: FileText, path: "/hr/employees-leaves", roles: ["HR"] },
-  { id: "team", label: "Team", icon: Users, path: "/hr/team", roles: ["HR", "ADMIN"] },
+  { id: "team", label: "Team", icon: Users, path: "/hr/team", roles: ["HR", "ADMIN", "EA", "COORDINATOR"] },
   { id: "leave", label: "Leave", icon: FileText, path: "/leave", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
-  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR"] },
-  { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA"] },
+  { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
+  { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "messages", label: "Messages", icon: MessageSquareText, path: "/messages", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["HR", "EA"] },
   { id: "data", label: "Data", icon: Database, path: "/data", roles: ["HR", "EA"] },
@@ -213,7 +213,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [role, userRoles, hasUserRole]);
 
   useEffect(() => {
-    if (!hasUserRole("ADMIN", "HR", "MANAGER")) return undefined;
+    if (!hasUserRole("ADMIN", "HR", "MANAGER", "EA", "COORDINATOR")) return undefined;
 
     let active = true;
     const loadMarketingReportCount = async () => {
@@ -317,7 +317,7 @@ export default function ProfessionalSidebar({ children }) {
   };
 
   useEffect(() => {
-    if (!user?.id || !hasUserRole("ADMIN", "HR", "EA")) {
+    if (!user?.id || !hasUserRole("ADMIN", "HR", "EA", "COORDINATOR")) {
       setEaOverdueTaskCount(0);
       return undefined;
     }
@@ -341,7 +341,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [user?.id, userRoles, hasUserRole]);
 
   useEffect(() => {
-    if (!user?.id || !hasUserRole("ADMIN", "HR", "EA")) return undefined;
+    if (!user?.id || !hasUserRole("ADMIN", "HR", "EA", "COORDINATOR")) return undefined;
 
     let active = true;
     API.get("/api/ea-overdue-tasks/notifications/unread")
@@ -406,7 +406,7 @@ export default function ProfessionalSidebar({ children }) {
     metaAdsEvents.forEach((eventName) => socketInstance.on(eventName, handleMetaAdsAssigned));
 
     const handleEaOverdueTasks = async () => {
-      if (!hasUserRole("ADMIN", "HR", "EA")) return;
+      if (!hasUserRole("ADMIN", "HR", "EA", "COORDINATOR")) return;
       try {
         const response = await API.get("/api/ea-overdue-tasks/notifications/unread");
         if (response.data?.data) setEaOverduePopup(response.data.data);
@@ -534,7 +534,7 @@ export default function ProfessionalSidebar({ children }) {
   }, [role, user]);
 
   useEffect(() => {
-    if (!hasUserRole("EMPLOYEE", "MANAGER", "HR", "ADMIN")) return;
+    if (!hasUserRole("EMPLOYEE", "MANAGER", "HR", "ADMIN", "EA", "COORDINATOR")) return;
     if (!user?.id) return;
 
     const fetchAssignedActionsCount = async () => {
