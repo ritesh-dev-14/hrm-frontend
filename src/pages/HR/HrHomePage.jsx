@@ -11,6 +11,9 @@ import API from "../../services/api";
 import { notifyError } from "../../utils/toast";
 import AttendanceCard from "../../components/attendece/AttendenceCard";
 import DownloadAttendanceExcelModal from "../../components/attendece/DownloadAttendanceExcelModal";
+import AdminControlTower from "../../components/admin/AdminControlTower";
+import AdminAdsMarketingReportsModal from "../../components/admin/AdminAdsMarketingReportsModal";
+import AdminSeoProjectsModal from "../../components/admin/AdminSeoProjectsModal";
 import { useAuth } from "../../context/AuthContext";
 
 const statusStyles = {
@@ -42,6 +45,17 @@ const HrHomePage = () => {
   const [selectedManager, setSelectedManager] = useState(null);
   const [managerSearch, setManagerSearch] = useState("");
   const { user } = useAuth();
+  const [reportProjects, setReportProjects] = useState([]);
+  const [uploadCalendarSheets, setUploadCalendarSheets] = useState([]);
+  const [uploadCalendarError, setUploadCalendarError] = useState("");
+  const [marketingMetrics, setMarketingMetrics] = useState({});
+  const [marketingMetricsError, setMarketingMetricsError] = useState("");
+  const [loadingDashboardReports, setLoadingDashboardReports] = useState(true);
+  const [reportProjectsError, setReportProjectsError] = useState("");
+  const [isAdsMarketingModalOpen, setIsAdsMarketingModalOpen] = useState(false);
+  const [selectedAdsMarketingProjectId, setSelectedAdsMarketingProjectId] = useState(null);
+  const [isSeoModalOpen, setIsSeoModalOpen] = useState(false);
+  const [selectedSeoProjectId, setSelectedSeoProjectId] = useState(null);
   
   const [activeSegment, setActiveSegment] = useState("EMPLOYEES");
 
@@ -116,8 +130,118 @@ const HrHomePage = () => {
     return rosterData.slice(0, INITIAL_ROSTER_COUNT);
   }, [rosterData, isRosterExpanded]);
 
+  const marketingProjects = useMemo(
+    () => reportProjects.filter((project) => {
+      const departmentName = project.department?.name?.toLowerCase() || "";
+      return departmentName.includes("marketing") || departmentName.includes("ads");
+    }),
+    [reportProjects],
+  );
+  const seoProjects = useMemo(
+    () => reportProjects.filter((project) =>
+      project.department?.name?.toLowerCase().includes("seo"),
+    ),
+    [reportProjects],
+  );
+
   useEffect(() => {
     fetchDashboard();
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProjects = async () => {
+      const firstPageResponse = await API.get(
+        "/api/projects?limit=100&page=1&summary=true",
+      );
+      if (!firstPageResponse.data?.success) {
+        throw new Error(firstPageResponse.data?.message || "Failed to load projects.");
+      }
+
+      const firstPageProjects = firstPageResponse.data.data || [];
+      const totalPages = Number(firstPageResponse.data.pagination?.totalPages) || 1;
+      const remainingPages = await Promise.all(
+        Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+          API.get(`/api/projects?limit=100&page=${index + 2}&summary=true`),
+        ),
+      );
+
+      if (remainingPages.some((response) => !response.data?.success)) {
+        throw new Error("Failed to load all dashboard projects.");
+      }
+
+      return [
+        ...firstPageProjects,
+        ...remainingPages.flatMap((response) => response.data.data || []),
+      ];
+    };
+
+    const loadDashboardReports = async () => {
+      const [projectsResult, uploadsResult, marketingResult] = await Promise.allSettled([
+        fetchProjects(),
+        API.get("/api/monthly-sheets/uploads?summary=true"),
+        API.get("/api/reports/projects-overview", { params: { type: "meta-ads" } }),
+      ]);
+
+      if (!isMounted) return;
+
+      if (projectsResult.status === "fulfilled") {
+        setReportProjects(projectsResult.value);
+        setReportProjectsError("");
+      } else {
+        console.error("Unable to load HR dashboard report projects:", projectsResult.reason);
+        setReportProjectsError(
+          projectsResult.reason?.response?.data?.message ||
+            projectsResult.reason?.message ||
+            "Could not load projects for dashboard reports.",
+        );
+      }
+
+      if (
+        uploadsResult.status === "fulfilled" &&
+        uploadsResult.value.data?.success
+      ) {
+        setUploadCalendarSheets(uploadsResult.value.data.data || []);
+        setUploadCalendarError("");
+      } else {
+        const error =
+          uploadsResult.status === "rejected"
+            ? uploadsResult.reason?.response?.data?.message ||
+              uploadsResult.reason?.message
+            : uploadsResult.value.data?.message;
+        setUploadCalendarError(error || "Failed to load content calendar uploads.");
+      }
+
+      if (
+        marketingResult.status === "fulfilled" &&
+        marketingResult.value.data?.success
+      ) {
+        const metaAds = marketingResult.value.data.data?.metaAds;
+        if (Array.isArray(metaAds)) {
+          setMarketingMetrics(
+            Object.fromEntries(metaAds.map((project) => [project.projectId, project])),
+          );
+          setMarketingMetricsError("");
+        } else {
+          setMarketingMetricsError("Meta Ads report data is unavailable.");
+        }
+      } else {
+        const error =
+          marketingResult.status === "rejected"
+            ? marketingResult.reason?.response?.data?.message ||
+              marketingResult.reason?.message
+            : marketingResult.value.data?.message;
+        setMarketingMetricsError(error || "Could not load Meta Ads reach and leads.");
+      }
+
+      setLoadingDashboardReports(false);
+    };
+
+    loadDashboardReports();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
 
@@ -346,6 +470,44 @@ const HrHomePage = () => {
             )}
           </div>
         </motion.div>
+
+        {reportProjectsError && (
+          <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {reportProjectsError}
+          </p>
+        )}
+        <AdminControlTower
+          data={null}
+          loading={loadingDashboardReports}
+          reportsOnly
+          projects={reportProjects}
+          marketingMetrics={marketingMetrics}
+          marketingMetricsError={marketingMetricsError}
+          onSelectMarketingProject={(projectId) => {
+            setSelectedAdsMarketingProjectId(projectId);
+            setIsAdsMarketingModalOpen(true);
+          }}
+          onSelectSeoProject={(projectId) => {
+            setSelectedSeoProjectId(projectId);
+            setIsSeoModalOpen(true);
+          }}
+          uploadCalendarSheets={uploadCalendarSheets}
+          uploadCalendarError={uploadCalendarError}
+        />
+        {isAdsMarketingModalOpen && (
+          <AdminAdsMarketingReportsModal
+            projects={marketingProjects}
+            initialProjectId={selectedAdsMarketingProjectId}
+            onClose={() => setIsAdsMarketingModalOpen(false)}
+          />
+        )}
+        {isSeoModalOpen && (
+          <AdminSeoProjectsModal
+            projects={seoProjects}
+            initialProjectId={selectedSeoProjectId}
+            onClose={() => setIsSeoModalOpen(false)}
+          />
+        )}
 
       </div>
     </div>

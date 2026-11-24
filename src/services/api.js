@@ -1,6 +1,15 @@
 import axios from "axios";
 
-export const API_URL = import.meta.env.VITE_API_URL;
+const LOCAL_API_URL = "http://localhost:8000";
+const PRODUCTION_API_URL = "https://hrm-oepc.onrender.com";
+const configuredApiUrl = import.meta.env.VITE_API_URL;
+
+export const API_URL = import.meta.env.PROD
+  ? configuredApiUrl && configuredApiUrl !== LOCAL_API_URL
+    ? configuredApiUrl
+    : PRODUCTION_API_URL
+  : configuredApiUrl || LOCAL_API_URL;
+
 const API = axios.create({
   baseURL: API_URL,
 });

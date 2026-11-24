@@ -84,6 +84,7 @@ export default function AdminControlTower({
   marketingMetrics = {},
   marketingMetricsLoading = false,
   marketingMetricsError = "",
+  reportsOnly = false,
   onSelectMarketingProject,
   onSelectSeoProject,
   uploadCalendarSheets = [],
@@ -473,16 +474,20 @@ export default function AdminControlTower({
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-center min-h-[150px]">
         <div className="flex flex-col items-center gap-2 text-slate-400">
           <Loader2 className="animate-spin" size={24} />
-          <span className="text-sm font-semibold">Loading Control Tower...</span>
+          <span className="text-sm font-semibold">
+            {reportsOnly ? "Loading dashboard reports..." : "Loading Control Tower..."}
+          </span>
         </div>
       </div>
     );
   }
 
-  if (!data) return null;
+  if (!reportsOnly && !data) return null;
 
   return (
     <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm space-y-5">
+    {!reportsOnly && (
+      <>
     <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
       <div className="bg-slate-900 p-2.5 rounded-xl text-white">
           <Activity size={20} />
@@ -645,6 +650,8 @@ export default function AdminControlTower({
           </div>
         </div>
       </div>
+      </>
+    )}
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="flex items-center gap-3 border-b border-blue-100 bg-blue-50/70 p-4 sm:p-5">
@@ -1192,6 +1199,8 @@ export default function AdminControlTower({
         )}
       </section>
 
+      {!reportsOnly && (
+        <>
       {/* Budget Breakdown Modal */}
       {showBudgetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -1534,6 +1543,9 @@ export default function AdminControlTower({
             </div>
           </div>
         </div>
+      )}
+
+        </>
       )}
 
       {/* Calendar Modal */}

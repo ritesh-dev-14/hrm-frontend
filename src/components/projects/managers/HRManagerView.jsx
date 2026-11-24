@@ -36,6 +36,7 @@ const HRManagerView = ({ projectId }) => {
   const [showYoutubePassword, setShowYoutubePassword] = useState(false);
   const [showLinkedinPassword, setShowLinkedinPassword] = useState(false);
   const [showTwitterPassword, setShowTwitterPassword] = useState(false);
+  const [showSeoPassword, setShowSeoPassword] = useState(false);
 
   const logoInputRef = useRef(null);
   const [managersList, setManagersList] = useState([]);
@@ -132,6 +133,7 @@ const HRManagerView = ({ projectId }) => {
   // SEO Reports
   const [seoReports, setSeoReports] = useState([]);
   const [seoReportsLoading, setSeoReportsLoading] = useState(false);
+  const [seoReportsError, setSeoReportsError] = useState("");
 
   const isWebDev = project?.department?.name && ['web development', 'webdevelopment', 'it'].some(
     (n) => project.department.name.toLowerCase().includes(n)
@@ -141,12 +143,18 @@ const HRManagerView = ({ projectId }) => {
   const fetchSeoReports = async (pid) => {
     try {
       setSeoReportsLoading(true);
+      setSeoReportsError("");
       const res = await API.get(`/api/seo-reports?projectId=${pid}`);
-      if (res.data?.success) {
-        setSeoReports(res.data.data || []);
+      if (!res.data?.success) {
+        throw new Error(res.data?.message || "Failed to fetch SEO reports.");
       }
+      setSeoReports(res.data.data || []);
     } catch (err) {
       console.error("Failed to fetch SEO reports:", err);
+      setSeoReports([]);
+      setSeoReportsError(
+        err.response?.data?.message || err.message || "Failed to fetch SEO reports.",
+      );
     } finally {
       setSeoReportsLoading(false);
     }
@@ -803,11 +811,29 @@ const HRManagerView = ({ projectId }) => {
                   ].map((field, idx) => (
                     <div key={idx} className="p-4 rounded-2xl bg-white border border-emerald-100 shadow-sm">
                       <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">{field.label}</p>
-                      <p className="text-sm font-semibold text-slate-800 break-all">
-                        {field.isPassword
-                          ? (field.value ? '••••••••' : <span className="text-slate-400 text-xs font-normal italic">Not set</span>)
-                          : (field.value || <span className="text-slate-400 text-xs font-normal italic">Not set</span>)}
-                      </p>
+                      {field.isPassword ? (
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-slate-800 font-mono break-all">
+                            {field.value
+                              ? (showSeoPassword ? field.value : '••••••••')
+                              : <span className="text-slate-400 text-xs font-normal italic font-sans">Not set</span>}
+                          </p>
+                          {field.value && (
+                            <button
+                              type="button"
+                              onClick={() => setShowSeoPassword((visible) => !visible)}
+                              aria-label={showSeoPassword ? "Hide SEO password" : "Show SEO password"}
+                              className="shrink-0 text-slate-400 hover:text-emerald-700"
+                            >
+                              {showSeoPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-slate-800 break-all">
+                          {field.value || <span className="text-slate-400 text-xs font-normal italic">Not set</span>}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -824,7 +850,11 @@ const HRManagerView = ({ projectId }) => {
                     {seoReportsLoading && <Loader2 size={20} className="animate-spin text-slate-400" />}
                   </div>
 
-                  {!seoReportsLoading && seoReports.length === 0 ? (
+                  {!seoReportsLoading && seoReportsError ? (
+                    <p role="alert" className="text-center py-6 text-sm text-rose-700">
+                      {seoReportsError}
+                    </p>
+                  ) : !seoReportsLoading && seoReports.length === 0 ? (
                     <div className="text-center py-6 text-slate-400">
                       <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm font-medium">No SEO reports submitted yet.</p>
