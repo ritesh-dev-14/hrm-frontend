@@ -281,7 +281,7 @@ export default function AdminControlTower({
       (item) => item.projectId === project.id
         && `${item.year}-${String(item.month).padStart(2, "0")}` === activeMonthValue,
     );
-    const approvedUploads = (sheet?.days || []).reduce(
+    const uploadedContent = (sheet?.days || []).reduce(
       (counts, day) => {
         if (day.uploadStatus !== "APPROVED") return counts;
         counts.reels += (day.videoUploadLinks || []).filter((link) => String(link || "").trim()).length;
@@ -302,9 +302,11 @@ export default function AdminControlTower({
       project,
       sheet,
       plannedReels: Number(sheet?.totalReels) || 0,
-      approvedReels: approvedUploads.reels,
+      uploadedReels: uploadedContent.reels,
       plannedPosts: Number(sheet?.totalPosts) || 0,
-      approvedPosts: approvedUploads.posts,
+      uploadedPosts: uploadedContent.posts,
+      pending: Math.max(0, (Number(sheet?.totalReels) || 0) - uploadedContent.reels)
+        + Math.max(0, (Number(sheet?.totalPosts) || 0) - uploadedContent.posts),
       delayedDays,
     };
   }), [socialProjects, uploadCalendarSheets, activeMonthValue, socialDelayCutoffDate]);
@@ -344,9 +346,10 @@ export default function AdminControlTower({
         .filter(Boolean)
         .join(", "),
       "Planned Reels": row.plannedReels,
-      "Approved Reels": row.approvedReels,
+      "Uploaded Reels": row.uploadedReels,
       "Planned Posts": row.plannedPosts,
-      "Approved Posts": row.approvedPosts,
+      "Uploaded Posts": row.uploadedPosts,
+      "Pending this month": row.pending,
       "Delayed Days": row.delayedDays.length,
     }));
     const calendarRows = rowsForExport.flatMap((row) =>
@@ -661,7 +664,7 @@ export default function AdminControlTower({
           <div>
             <h3 className="text-sm font-semibold text-slate-900">Social media project output</h3>
             <p className="text-sm text-slate-500">
-              Monthly planned content vs manager-approved uploads from the Uploads page.
+              Monthly planned content vs uploaded content from the Uploads page.
             </p>
           </div>
         </div>
@@ -768,14 +771,15 @@ export default function AdminControlTower({
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-              <table className="w-full min-w-[950px] text-left">
+              <table className="w-full min-w-[1080px] text-left">
                 <thead className="bg-slate-50">
                   <tr className="text-xs font-semibold text-slate-500">
                     <th className="px-4 py-3">Project</th>
                     <th className="px-4 py-3 text-center">Planned reels</th>
-                    <th className="px-4 py-3 text-center">Approved reels</th>
+                    <th className="px-4 py-3 text-center">Uploaded reels</th>
                     <th className="px-4 py-3 text-center">Planned posts</th>
-                    <th className="px-4 py-3 text-center">Approved posts</th>
+                    <th className="px-4 py-3 text-center">Uploaded posts</th>
+                    <th className="px-4 py-3 text-center">Pending this month</th>
                     <th className="px-4 py-3 text-center">Delayed days</th>
                     <th className="px-4 py-3 text-right">Calendar</th>
                   </tr>
@@ -804,9 +808,12 @@ export default function AdminControlTower({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">{row.plannedReels}</td>
-                      <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.approvedReels}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.uploadedReels}</td>
                       <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">{row.plannedPosts}</td>
-                      <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.approvedPosts}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-emerald-700">{row.uploadedPosts}</td>
+                      <td className={`px-4 py-3 text-center text-sm font-semibold ${row.pending ? "text-amber-700" : "text-slate-400"}`}>
+                        {row.pending}
+                      </td>
                       <td className={`px-4 py-3 text-center text-sm font-semibold ${row.delayedDays.length ? "text-amber-700" : "text-slate-400"}`}>
                         {row.delayedDays.length}
                       </td>
