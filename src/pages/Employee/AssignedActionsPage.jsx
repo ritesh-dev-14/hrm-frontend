@@ -404,15 +404,6 @@ export default function AssignedActionsPage() {
     });
 
     return [...underlyingSelection].sort((a, b) => {
-      const dueA = a?.completionDate
-        ? new Date(a.completionDate).getTime()
-        : Infinity;
-      const dueB = b?.completionDate
-        ? new Date(b.completionDate).getTime()
-        : Infinity;
-
-      if (dueA !== dueB) return dueA - dueB;
-
       const assignedA = a?.assignedTime
         ? new Date(a.assignedTime).getTime()
         : 0;
@@ -420,7 +411,16 @@ export default function AssignedActionsPage() {
         ? new Date(b.assignedTime).getTime()
         : 0;
 
-      return assignedA - assignedB;
+      if (assignedA !== assignedB) return assignedB - assignedA;
+
+      const dueA = a?.completionDate
+        ? new Date(a.completionDate).getTime()
+        : Infinity;
+      const dueB = b?.completionDate
+        ? new Date(b.completionDate).getTime()
+        : Infinity;
+
+      return dueA - dueB;
     });
   }, [actions, search, activeTab, dateFilter, pendingFilter]);
 
