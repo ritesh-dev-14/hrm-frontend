@@ -139,6 +139,8 @@ const HRManagerView = ({ projectId }) => {
     (n) => project.department.name.toLowerCase().includes(n)
   );
   const isSeoDept = project?.department?.name?.toLowerCase().includes('seo');
+  const isFrequencyDept = ['seo', 'seo department', 'social media', 'social media department']
+    .includes(project?.department?.name?.trim().toLowerCase());
 
   const fetchSeoReports = async (pid) => {
     try {
@@ -258,9 +260,7 @@ const HRManagerView = ({ projectId }) => {
       const payload = {
         projectName: formData.projectName?.trim() || null,
         description: formData.description?.trim() || null,
-        frequency: formData.frequency,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-        renewalDate: formData.renewalDate ? new Date(formData.renewalDate).toISOString() : null,
         projectStartDate: formData.projectStartDate ? new Date(formData.projectStartDate).toISOString() : null,
         assignTo: formData.assignTo,
         clientName: formData.clientName?.trim() || null,
@@ -286,6 +286,13 @@ const HRManagerView = ({ projectId }) => {
         seoEmail: formData.seoEmail?.trim() || null,
         seoPassword: formData.seoPassword || null,
       };
+
+      if (isFrequencyDept) {
+        payload.frequency = formData.frequency;
+        payload.renewalDate = formData.renewalDate
+          ? new Date(formData.renewalDate).toISOString()
+          : null;
+      }
 
       const config = { headers: { 'Content-Type': 'application/json' } };
 
@@ -477,15 +484,17 @@ const HRManagerView = ({ projectId }) => {
                       <label className="text-xs font-semibold text-slate-600">Project Description</label>
                       <textarea name="description" value={formData.description} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" rows="3" placeholder="Provide clear scopes..." />
                     </div>
-                    <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-600">Frequency</label>
-                      <select name="frequency" value={formData.frequency} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all">
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="quarterly">Quarterly</option>
-                      </select>
-                    </div>
+                    {isFrequencyDept && (
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600">Frequency</label>
+                        <select name="frequency" value={formData.frequency} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all">
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="quarterly">Quarterly</option>
+                        </select>
+                      </div>
+                    )}
                     <div className="flex flex-col space-y-1.5">
                       <label className="text-xs font-semibold text-slate-600">Assign Managers <span className="text-slate-400 font-normal">(Ctrl/Cmd for multiple)</span></label>
                       <select multiple value={formData.assignTo} onChange={handleAssigneeChange} className="w-full h-24 p-2 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all">
@@ -524,10 +533,12 @@ const HRManagerView = ({ projectId }) => {
                     <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Target End Date</label>
                     <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
                   </div>
-                  <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Renewal Date</label>
-                    <input type="date" name="renewalDate" value={formData.renewalDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
-                  </div>
+                  {isFrequencyDept && (
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Renewal Date</label>
+                      <input type="date" name="renewalDate" value={formData.renewalDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Social Media Credentials — hidden for SEO dept */}
