@@ -25,6 +25,12 @@ const dateKey = (value) => {
 
 const localToday = () => dateKey(new Date());
 
+const notifyMarketingReportDateChange = (date) => {
+  window.dispatchEvent(new CustomEvent("marketing-report-date-filter-change", {
+    detail: { date },
+  }));
+};
+
 const uniqueById = (items, fallbackKey) => {
   const seen = new Set();
   return items.filter((item) => {
@@ -103,6 +109,7 @@ export default function MarketingReportsApprovalPage() {
   }, []);
 
   useEffect(() => { loadReports(); }, [loadReports]);
+  useEffect(() => () => notifyMarketingReportDateChange(localToday()), []);
 
   const reports = uniqueByKey(
     allReports.filter((report) => dateKey(report.date) === selectedDate),
@@ -133,6 +140,7 @@ export default function MarketingReportsApprovalPage() {
       });
       setMessage({ type: "success", text: status === "APPROVED" ? "Report approved." : "Report rejected." });
       await loadReports();
+      notifyMarketingReportDateChange(selectedDate);
       await import("../../utils/managerLogoutStatus").then(({ refreshManagerLogoutStatus }) => refreshManagerLogoutStatus()).catch(() => {});
     } catch (error) {
       setMessage({ type: "error", text: getMessage(error, "Unable to review this report.") });
@@ -153,7 +161,16 @@ export default function MarketingReportsApprovalPage() {
           <div className="flex items-center gap-3">
             <label className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <span className="sr-only">Filter reports by date</span>
-              <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} className="bg-transparent text-sm font-semibold text-slate-600 outline-none" aria-label="Filter reports by date" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(event) => {
+                  setSelectedDate(event.target.value);
+                  notifyMarketingReportDateChange(event.target.value);
+                }}
+                className="bg-transparent text-sm font-semibold text-slate-600 outline-none"
+                aria-label="Filter reports by date"
+              />
             </label>
             <button type="button" onClick={loadReports} disabled={loading} className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600 hover:bg-slate-100 disabled:opacity-50" aria-label="Refresh reports">
               <RefreshCw size={17} className={loading ? "animate-spin" : ""} />

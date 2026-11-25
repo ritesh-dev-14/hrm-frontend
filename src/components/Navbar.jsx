@@ -38,7 +38,7 @@ import { toast } from "react-toastify";
 import TodayUploadPopup from "./TodayUploadPopup";
 import EAOverdueTasksPopup from "./EAOverdueTasksPopup";
 import { refreshEmployeeLogoutStatus } from "../utils/employeeLogoutStatus";
-import { getManagerPendingCategories, refreshManagerLogoutStatus } from "../utils/managerLogoutStatus";
+import { getLocalDateString, getManagerPendingCategories, refreshManagerLogoutStatus } from "../utils/managerLogoutStatus";
 import PendingWorkGuardModal from "./PendingWorkGuardModal";
 
 const NAV_CONFIG = [
@@ -216,35 +216,56 @@ export default function ProfessionalSidebar({ children }) {
     if (!hasUserRole("ADMIN", "HR", "MANAGER", "EA", "COORDINATOR")) return undefined;
 
     let active = true;
+    let selectedReportDate = getLocalDateString();
+    let latestCountRequest = 0;
     const loadMarketingReportCount = async () => {
+      const requestId = ++latestCountRequest;
       try {
         if (hasUserRole("MANAGER")) {
           const status = await refreshManagerLogoutStatus();
-          if (active) {
+          if (active && requestId === latestCountRequest) {
             setMarketingReportsCount(status?.pendingMarketingReports?.length || 0);
             updateManagerPendingCount(status);
           }
           return;
         }
 
-        const response = await API.get("/api/marketing-reports/pending-count");
-        if (active) {
+        const response = await API.get("/api/marketing-reports/pending-count", {
+          params: { date: selectedReportDate },
+        });
+        if (active && requestId === latestCountRequest) {
           setMarketingReportsCount(Number(response?.data?.data?.count) || 0);
         }
       } catch {
-        if (active && !hasUserRole("MANAGER")) setMarketingReportsCount(0);
+        if (active && requestId === latestCountRequest && !hasUserRole("MANAGER")) {
+          setMarketingReportsCount(0);
+        }
       }
     };
 
     loadMarketingReportCount();
+    const handleMarketingReportDateChange = (event) => {
+      const date = event.detail?.date;
+      if (typeof date !== "string") return;
+      selectedReportDate = date;
+      if (hasUserRole("MANAGER")) return;
+      if (!date) {
+        latestCountRequest += 1;
+        setMarketingReportsCount(0);
+        return;
+      }
+      loadMarketingReportCount();
+    };
     const handleManagerStatus = (event) => {
       if (active && hasUserRole("MANAGER")) updateManagerPendingCount(event.detail);
     };
+    window.addEventListener("marketing-report-date-filter-change", handleMarketingReportDateChange);
     window.addEventListener("manager-logout-status", handleManagerStatus);
     const interval = setInterval(loadMarketingReportCount, 30000);
     return () => {
       active = false;
       clearInterval(interval);
+      window.removeEventListener("marketing-report-date-filter-change", handleMarketingReportDateChange);
       window.removeEventListener("manager-logout-status", handleManagerStatus);
     };
   }, [role, userRoles, hasUserRole]);
