@@ -138,9 +138,20 @@ const HRManagerView = ({ projectId }) => {
   const isWebDev = project?.department?.name && ['web development', 'webdevelopment', 'it'].some(
     (n) => project.department.name.toLowerCase().includes(n)
   );
-  const isSeoDept = project?.department?.name?.toLowerCase().includes('seo');
-  const isFrequencyDept = ['seo', 'seo department', 'social media', 'social media department']
-    .includes(project?.department?.name?.trim().toLowerCase());
+  const departmentName = project?.department?.name?.trim().toLowerCase() || "";
+  const isSeoDept = departmentName.includes("seo");
+  const isSocialMediaDept = ["social media", "social media department"].includes(
+    departmentName,
+  );
+  const isMarketingDept = departmentName.includes("marketing");
+  const isClientDetailsDept =
+    isSocialMediaDept || isMarketingDept || isWebDev || isSeoDept;
+  const isFrequencyDept = [
+    "seo",
+    "seo department",
+    "social media",
+    "social media department",
+  ].includes(departmentName);
 
   const fetchSeoReports = async (pid) => {
     try {
@@ -261,37 +272,54 @@ const HRManagerView = ({ projectId }) => {
         projectName: formData.projectName?.trim() || null,
         description: formData.description?.trim() || null,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-        projectStartDate: formData.projectStartDate ? new Date(formData.projectStartDate).toISOString() : null,
-        assignTo: formData.assignTo,
-        clientName: formData.clientName?.trim() || null,
-        location: formData.location?.trim() || null,
-        phone: formData.phone?.trim() || null,
-        reference: formData.reference ? formData.reference.split(',').map(s => s.trim()).filter(Boolean) : [],
-        taste: formData.taste ? formData.taste.split(',').map(s => s.trim()).filter(Boolean) : [],
-        instaUsername: formData.instaUsername?.trim() || null,
-        facebookUsername: formData.facebookUsername?.trim() || null,
-        fbEmail: formData.fbEmail?.trim() || null,
-        fbPassword: formData.fbPassword || null,
-        instaEmail: formData.instaEmail?.trim() || null,
-        instaPassword: formData.instaPassword || null,
-        youtubeEmail: formData.youtubeEmail?.trim() || null,
-        youtubePassword: formData.youtubePassword || null,
-        linkedinEmail: formData.linkedinEmail?.trim() || null,
-        linkedinPassword: formData.linkedinPassword || null,
-        twitterEmail: formData.twitterEmail?.trim() || null,
-        twitterPassword: formData.twitterPassword || null,
-        // SEO fields
-        seoName: formData.seoName?.trim() || null,
-        seoContact: formData.seoContact?.trim() || null,
-        seoEmail: formData.seoEmail?.trim() || null,
-        seoPassword: formData.seoPassword || null,
       };
+
+      if (formData.assignTo.length > 0) {
+        payload.assignTo = formData.assignTo;
+      }
 
       if (isFrequencyDept) {
         payload.frequency = formData.frequency;
         payload.renewalDate = formData.renewalDate
           ? new Date(formData.renewalDate).toISOString()
           : null;
+      }
+
+      if (isClientDetailsDept) {
+        payload.clientName = formData.clientName?.trim() || null;
+        payload.phone = formData.phone?.trim() || null;
+      }
+
+      if (isSocialMediaDept) {
+        payload.projectStartDate = formData.projectStartDate
+          ? new Date(formData.projectStartDate).toISOString()
+          : null;
+        payload.location = formData.location?.trim() || null;
+        payload.reference = formData.reference
+          ? formData.reference.split(",").map((value) => value.trim()).filter(Boolean)
+          : [];
+        payload.taste = formData.taste
+          ? formData.taste.split(",").map((value) => value.trim()).filter(Boolean)
+          : [];
+        payload.instaUsername = formData.instaUsername?.trim() || null;
+        payload.facebookUsername = formData.facebookUsername?.trim() || null;
+        payload.fbEmail = formData.fbEmail?.trim() || null;
+        payload.fbPassword = formData.fbPassword || null;
+        payload.instaEmail = formData.instaEmail?.trim() || null;
+        payload.instaPassword = formData.instaPassword || null;
+        payload.youtubeEmail = formData.youtubeEmail?.trim() || null;
+        payload.youtubePassword = formData.youtubePassword || null;
+        payload.linkedinEmail = formData.linkedinEmail?.trim() || null;
+        payload.linkedinPassword = formData.linkedinPassword || null;
+        payload.twitterEmail = formData.twitterEmail?.trim() || null;
+        payload.twitterPassword = formData.twitterPassword || null;
+      }
+
+      if (isSeoDept) {
+        payload.seoName = formData.seoName?.trim() || null;
+        payload.seoContact = formData.seoContact?.trim() || null;
+        payload.seoEmail = formData.seoEmail?.trim() || null;
+        payload.seoPassword = formData.seoPassword || null;
       }
 
       const config = { headers: { 'Content-Type': 'application/json' } };
@@ -509,22 +537,30 @@ const HRManagerView = ({ projectId }) => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
-                  <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><User size={14} className="inline text-indigo-500 mr-1" /> Client Name</label>
-                    <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
-                  </div>
-                  <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><MapPin size={14} className="inline text-indigo-500 mr-1" /> Location</label>
-                    <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
-                  </div>
-                  <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Phone size={14} className="inline text-indigo-500 mr-1" /> Phone Number</label>
-                    <input type="text" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
-                  </div>
-                  <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Project Start Date</label>
-                    <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
-                  </div>
+                  {isClientDetailsDept && (
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><User size={14} className="inline text-indigo-500 mr-1" /> Client Name</label>
+                      <input type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                  )}
+                  {isSocialMediaDept && (
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><MapPin size={14} className="inline text-indigo-500 mr-1" /> Location</label>
+                      <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                  )}
+                  {isClientDetailsDept && (
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><Phone size={14} className="inline text-indigo-500 mr-1" /> Phone Number</label>
+                      <input type="text" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                  )}
+                  {isSocialMediaDept && (
+                    <div className="flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Project Start Date</label>
+                      <input type="date" name="projectStartDate" value={formData.projectStartDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
+                    </div>
+                  )}
                   <div className="flex flex-col space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600"><Calendar size={14} className="inline text-indigo-500 mr-1" /> Contract Start Date</label>
                     <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white/50 text-sm font-medium outline-none" />
@@ -541,8 +577,8 @@ const HRManagerView = ({ projectId }) => {
                   )}
                 </div>
 
-                {/* Social Media Credentials — hidden for SEO dept */}
-                {!isSeoDept && (
+                {/* Social Media credentials are only editable for Social Media projects. */}
+                {isSocialMediaDept && (
                 <div className="pt-4 border-t border-slate-100">
                   <h3 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-4">Social Media Credentials &amp; Links</h3>
 
