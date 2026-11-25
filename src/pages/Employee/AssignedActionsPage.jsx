@@ -93,9 +93,9 @@ export default function AssignedActionsPage() {
   const [visibleMessagesCount, setVisibleMessagesCount] = useState(10);
   const chatEndRef = useRef(null);
 
-  const fetchAssignedActions = async () => {
+  const fetchAssignedActions = async ({ showLoading = false } = {}) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       // Route routing splits depending on selected viewport perspective
       const endpoint = viewMode === "PERSONAL"
         ? `/api/coordinator-assignments/assigned-to/${user?.id}`
@@ -108,7 +108,7 @@ export default function AssignedActionsPage() {
     } catch (error) {
       console.error("Data pipeline execution failure:", error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -123,7 +123,7 @@ export default function AssignedActionsPage() {
 
   useEffect(() => {
     if (user?.id) {
-      fetchAssignedActions();
+      fetchAssignedActions({ showLoading: true });
     }
   }, [user, viewMode]);
 
@@ -146,6 +146,12 @@ export default function AssignedActionsPage() {
       await API.patch(
         `/api/coordinator-assignments/${assignmentId}/status`,
         payload,
+      );
+
+      setActions((currentActions) =>
+        currentActions.map((action) =>
+          action.id === assignmentId ? { ...action, ...payload } : action,
+        ),
       );
 
       // Clear exception tracking frames on successful update
