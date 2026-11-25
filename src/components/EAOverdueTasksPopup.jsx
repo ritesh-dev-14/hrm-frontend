@@ -26,7 +26,7 @@ export default function EAOverdueTasksPopup({ data, onClose, onViewTasks }) {
               <CalendarClock size={20} />
             </span>
             <div>
-              <h2 id="ea-overdue-title" className="font-bold text-slate-900">Overdue EA-Assigned Tasks</h2>
+              <h2 id="ea-overdue-title" className="font-bold text-slate-900">Overdue Coordinator Tasks</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {tasks.length} incomplete task{tasks.length === 1 ? "" : "s"} due today or earlier.
               </p>
@@ -60,7 +60,7 @@ export default function EAOverdueTasksPopup({ data, onClose, onViewTasks }) {
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  Assigned by {assignment.createdBy?.name || assignment.assignedBy || "EA"}
+                  Assigned by {assignment.createdBy?.name || assignment.assignedBy || "Coordinator"}
                 </p>
               </article>
             ))}

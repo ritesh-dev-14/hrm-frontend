@@ -44,7 +44,7 @@ import PendingWorkGuardModal from "./PendingWorkGuardModal";
 const NAV_CONFIG = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid, path: "/dashboard", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "assigned-actions", label: "Assigned Actions", icon: BellRing, path: "/assigned-actions", roles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN", "EA", "COORDINATOR"] },
-  { id: "ea-overdue-tasks", label: "Overdue EA Tasks", icon: AlertTriangle, path: "/ea-overdue-tasks", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
+  { id: "ea-overdue-tasks", label: "Coordinator Tasks", icon: AlertTriangle, path: "/ea-overdue-tasks", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "pending-manager", label: "Pending", icon: AlertTriangle, path: "/manager-pending", roles: ["MANAGER"] },
   { id: "client-pending", label: "Pending from Client Side", icon: ListTodo, path: "/manager/client-pending", roles: ["MANAGER", "ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "pending-employee", label: "Pending", icon: AlertTriangle, path: "/employee-pending", roles: ["EMPLOYEE", "HR"] },
@@ -328,7 +328,7 @@ export default function ProfessionalSidebar({ children }) {
         const response = await API.get("/api/ea-overdue-tasks");
         if (active) setEaOverdueTaskCount(Number(response.data?.data?.count) || 0);
       } catch (error) {
-        if (active) console.error("Failed to refresh overdue EA task count:", error);
+        if (active) console.error("Failed to refresh Coordinator task count:", error);
       }
     };
 
@@ -348,7 +348,7 @@ export default function ProfessionalSidebar({ children }) {
       .then((response) => {
         if (active && response.data?.data) setEaOverduePopup(response.data.data);
       })
-      .catch((error) => console.error("Failed to load overdue EA task notification:", error));
+      .catch((error) => console.error("Failed to load overdue Coordinator task notification:", error));
 
     return () => {
       active = false;
@@ -411,7 +411,7 @@ export default function ProfessionalSidebar({ children }) {
         const response = await API.get("/api/ea-overdue-tasks/notifications/unread");
         if (response.data?.data) setEaOverduePopup(response.data.data);
       } catch (error) {
-        console.error("Failed to load overdue EA task popup:", error);
+        console.error("Failed to load overdue Coordinator task popup:", error);
       }
     };
     socketInstance.on("ea-overdue-tasks-popup", handleEaOverdueTasks);
