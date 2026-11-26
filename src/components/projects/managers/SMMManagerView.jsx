@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../../services/api";
+import { getCloudinaryAttachmentUrl } from "../../../utils/cloudinaryDownload";
 import {
   Check,
   Copy,
@@ -648,6 +649,24 @@ const SMMManagerView = ({ projectId, initialProject = null }) => {
 
     try {
       setDownloadingAsset(assetType);
+      if (assetType === "end-screen") {
+        const sourceUrl = new URL(assetUrl);
+        const extension = sourceUrl.pathname.match(/\.([a-z0-9]+)$/i)?.[1] || "mp4";
+        const projectName = (project?.projectName || "project")
+          .trim()
+          .replace(/[^a-z0-9-_]/gi, "-")
+          .replace(/-+/g, "-") || "project";
+        const link = document.createElement("a");
+        link.href = getCloudinaryAttachmentUrl(
+          assetUrl,
+          `${projectName}-end-screen.${extension}`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      }
+
       const response = await fetch(assetUrl);
       if (!response.ok) {
         throw new Error(`Download failed with status ${response.status}.`);

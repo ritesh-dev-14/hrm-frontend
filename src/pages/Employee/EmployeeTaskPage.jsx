@@ -3,6 +3,7 @@ import API from "../../services/api";
 import { notifyError, notifyInfo, notifySuccess } from "../../utils/toast";
 import { refreshEmployeeLogoutStatus } from "../../utils/employeeLogoutStatus";
 import { getDeadlineStatus } from "../../utils/deadlineEngine";
+import { getCloudinaryAttachmentUrl } from "../../utils/cloudinaryDownload";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -218,40 +219,31 @@ const EmployeeTaskPage = () => {
     }
   };
 
-  const handleDownloadEndScreen = async () => {
+  const handleDownloadEndScreen = () => {
     const project = selectedTask?.taskItem?.task?.project;
     if (!project?.endScreenVideoUrl) return;
 
     setDownloadingEndScreen(true);
     try {
-      const response = await fetch(project.endScreenVideoUrl);
-      if (!response.ok) {
-        throw new Error("The end-screen video could not be downloaded.");
-      }
-
-      const videoBlob = await response.blob();
-      const objectUrl = window.URL.createObjectURL(videoBlob);
       const projectName = selectedTask.taskItem.task.projectName || "project";
       const safeProjectName = projectName
-        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
-        .trim() || "project";
-      const extensionByType = {
-        "video/mp4": ".mp4",
-        "video/quicktime": ".mov",
-        "video/webm": ".webm",
-      };
-      const extension = extensionByType[videoBlob.type] || ".mp4";
+        .trim()
+        .replace(/[^a-z0-9-_]/gi, "-")
+        .replace(/-+/g, "-") || "project";
+      const sourceUrl = new URL(project.endScreenVideoUrl);
+      const extension = sourceUrl.pathname.match(/\.([a-z0-9]+)$/i)?.[1] || "mp4";
       const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `${safeProjectName}-end-screen${extension}`;
+      link.href = getCloudinaryAttachmentUrl(
+        project.endScreenVideoUrl,
+        `${safeProjectName}-end-screen.${extension}`,
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+      window.setTimeout(() => setDownloadingEndScreen(false), 1000);
     } catch (error) {
       console.error("End-screen video download failed:", error);
       notifyError(error.message || "The end-screen video could not be downloaded.");
-    } finally {
       setDownloadingEndScreen(false);
     }
   };
