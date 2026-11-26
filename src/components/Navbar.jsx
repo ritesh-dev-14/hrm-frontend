@@ -24,7 +24,7 @@ import {
   Megaphone,
   BarChart2,
   Code2,
-  Database, ClipboardList, AlertTriangle, Mic,
+  Database, ClipboardList, ClipboardCheck, AlertTriangle, Mic,
   MessageSquareText,
   ListTodo,
 } from "lucide-react";
@@ -63,6 +63,7 @@ const NAV_CONFIG = [
       { id: "web-development-projects", label: "Web Development", icon: Code2, path: "/web-development-projects" },
     ],
   },
+  { id: "project-onboard", label: "Project Onboard", icon: ClipboardCheck, path: "/project-onboard", roles: ["ADMIN", "HR", "COORDINATOR"] },
   { id: "shoots", label: "Shoots", icon: Camera, path: "/shoot", roles: ["MANAGER", "EMPLOYEE"], departments: ["Social Media Department", "social media department"] },
   { id: "my-shoot-tasks", label: "My Shoot Tasks", icon: Camera, path: "/shoot-tasks", roles: ["MANAGER"] },
   { id: "shoot-management", label: "Shoot Management", icon: Camera, path: "/shoot-management", roles: ["MANAGER", "ADMIN", "HR", "EA", "COORDINATOR"], managerDepartments: ["social media"] },

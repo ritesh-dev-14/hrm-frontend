@@ -80,6 +80,7 @@ const MarketingProjectsPage = lazy(() => import("../pages/MarketingProjectsPage.
 const SocialMediaProjectsPage = lazy(() => import("../pages/SocialMediaProjectsPage.jsx"));
 const SEOProjectsPage = lazy(() => import("../pages/SEOProjectsPage.jsx"));
 const WebDevelopmentProjectsPage = lazy(() => import("../pages/WebDevelopmentProjectsPage.jsx"));
+const ProjectOnboardingPage = lazy(() => import("../pages/ProjectOnboardingPage.jsx"));
 const DailyDepartmentReportPage = lazy(() => import("../pages/DailyDepartmentReportPage"));
 const DepartmentReportsPage = lazy(() => import("../pages/DepartmentReportsPage"));
 const DataDashboardPage = lazy(() => import("../pages/DataDashboardPage"));
@@ -356,7 +357,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing-projects"
             element={
-              hasRole("ADMIN", "HR", "EA", "COORDINATOR", "MANAGER") ? (
+              hasRole("ADMIN", "HR", "COORDINATOR") ? (
                 <MarketingProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -391,6 +392,17 @@ export const AppRoutes = () => {
             element={
               hasRole("ADMIN", "HR", "EA", "COORDINATOR", "MANAGER") ? (
                 <WebDevelopmentProjectsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/project-onboard"
+            element={
+              hasRole("ADMIN", "HR", "COORDINATOR") ? (
+                <ProjectOnboardingPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )
