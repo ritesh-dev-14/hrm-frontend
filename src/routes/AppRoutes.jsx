@@ -357,7 +357,7 @@ export const AppRoutes = () => {
           <Route
             path="/marketing-projects"
             element={
-              hasRole("ADMIN", "HR", "COORDINATOR") ? (
+              hasRole("ADMIN", "HR", "COORDINATOR", "MANAGER") ? (
                 <MarketingProjectsPage />
               ) : (
                 <Navigate to="/dashboard" replace />
