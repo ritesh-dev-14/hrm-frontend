@@ -60,6 +60,31 @@ const getSafeExternalUrl = (value) => {
   }
 };
 
+const loadCalendarUploads = async () => {
+  const sheetsRes = await API.get("/api/monthly-sheets/uploads?activeProjectsOnly=true");
+  const sheets = sheetsRes.data?.data || [];
+  return sheets.flatMap((sheet) =>
+    (sheet.days || []).map((day) => ({
+      id: `${sheet.id}-${day.id}`,
+      projectId: sheet.projectId,
+      sheetId: sheet.id,
+      dayId: day.id,
+      projectName: sheet.projectName,
+      clientName: sheet.clientName || "-",
+      uploadDate: day.date,
+      title: day.title,
+      reelType: day.reelType || null,
+      postType: day.postType || null,
+      videoType: day.videoType || null,
+      contentUploadLinks: day.contentUploadLinks || [],
+      videoUploadLinks: day.videoUploadLinks || [],
+      uploadStatus: day.uploadStatus || "PENDING",
+      uploadRejectReason: day.uploadRejectReason,
+      uploadRetryDate: day.uploadRetryDate,
+    })),
+  );
+};
+
 // ─────────────────────────────────────────────────────────
 // Single Upload Card
 // ─────────────────────────────────────────────────────────
@@ -314,9 +339,11 @@ function UploadCard({ item, user, onUpdateStatus }) {
 // ─────────────────────────────────────────────────────────
 const HrUploads = ({ embedded = false }) => {
   const { user } = useAuth();
+  const isManager = user?.role === "MANAGER";
   const [uploads, setUploads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [today, setToday] = useState(todayISO());
   const [filterMode, setFilterMode] = useState("date"); // "date" | "all"
@@ -339,35 +366,7 @@ const HrUploads = ({ embedded = false }) => {
   const fetchUploads = async () => {
     setLoading(true);
     try {
-      const sheetsRes = await API.get("/api/monthly-sheets/uploads?activeProjectsOnly=true");
-      const sheets = sheetsRes.data?.data || [];
-      const results = sheets.map((sheet) =>
-        (sheet.days || []).flatMap((day) => {
-          const item = {
-            id: `${sheet.id}-${day.id}`,
-            projectId: sheet.projectId,
-            sheetId: sheet.id,
-            dayId: day.id,
-            projectName: sheet.projectName,
-            clientName: sheet.clientName || "-",
-            uploadDate: day.date,
-            title: day.title,
-            reelType: day.reelType || null,
-            postType: day.postType || null,
-            videoType: day.videoType || null,
-            contentUploadLinks: day.contentUploadLinks || [],
-            videoUploadLinks: day.videoUploadLinks || [],
-            uploadStatus: day.uploadStatus || "PENDING",
-            uploadRejectReason: day.uploadRejectReason,
-            uploadRetryDate: day.uploadRetryDate,
-          };
-          return item;
-        }),
-      );
-
-      // Sort globally by date (descending)
-      const flatResults = results.flat();
-      setUploads(flatResults);
+      setUploads(await loadCalendarUploads());
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load uploads");
     } finally {
@@ -376,8 +375,43 @@ const HrUploads = ({ embedded = false }) => {
   };
 
   useEffect(() => {
-    fetchUploads();
+    let active = true;
+    const loadInitialUploads = async () => {
+      try {
+        const loadedUploads = await loadCalendarUploads();
+        if (active) setUploads(loadedUploads);
+      } catch (error) {
+        if (active) toast.error(error.response?.data?.message || "Failed to load uploads");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    loadInitialUploads();
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const projectOptions = useMemo(() => {
+    const projectsById = new Map();
+    uploads.forEach((upload) => {
+      if (upload.projectId && !projectsById.has(upload.projectId)) {
+        projectsById.set(upload.projectId, {
+          id: upload.projectId,
+          projectName: upload.projectName,
+          clientName: upload.clientName,
+        });
+      }
+    });
+    return [...projectsById.values()].sort((a, b) => a.projectName.localeCompare(b.projectName));
+  }, [uploads]);
+
+  const projectUploads = useMemo(
+    () => selectedProjectId
+      ? uploads.filter((upload) => upload.projectId === selectedProjectId)
+      : uploads,
+    [uploads, selectedProjectId],
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -471,7 +505,7 @@ const HrUploads = ({ embedded = false }) => {
 
   // ── Filter ────────────────────────────────────────────
   const filteredUploads = useMemo(() => {
-    const retries = uploads.flatMap((item) => {
+    const retries = projectUploads.flatMap((item) => {
       if (item.uploadStatus === "APPROVED") return [];
 
       const originalDate = dateKey(item.uploadDate);
@@ -493,7 +527,7 @@ const HrUploads = ({ embedded = false }) => {
       }];
     });
 
-    let list = [...uploads, ...retries];
+    let list = [...projectUploads, ...retries];
 
     if (filterMode === "date" && selectedDate) {
       list = list.filter((u) => {
@@ -519,11 +553,11 @@ const HrUploads = ({ embedded = false }) => {
     }
 
     return list.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
-  }, [uploads, selectedDate, search, filterMode, today]);
+  }, [projectUploads, selectedDate, search, filterMode, today]);
 
   const stats = useMemo(() => {
     const currentMonthPrefix = today.slice(0, 7);
-    const thisMonthUploads = uploads.filter(
+    const thisMonthUploads = projectUploads.filter(
       (u) => String(u.uploadDate || "").slice(0, 7) === currentMonthPrefix
     );
     const total = thisMonthUploads.length;
@@ -531,7 +565,7 @@ const HrUploads = ({ embedded = false }) => {
     const pending = total - done;
 
     return { total, done, pending };
-  }, [uploads, today]);
+  }, [projectUploads, today]);
 
   // ─────────────────────────────────────────────────────
   return (
@@ -553,6 +587,14 @@ const HrUploads = ({ embedded = false }) => {
       )}
 
       {/* Statistics Cards */}
+      {isManager && selectedProjectId && (
+        <p className="mb-3 text-sm font-medium text-slate-500">
+          Showing upload totals for{" "}
+          <span className="font-semibold text-indigo-700">
+            {projectOptions.find((project) => project.id === selectedProjectId)?.projectName || "selected project"}
+          </span>
+        </p>
+      )}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex items-center gap-5 transition hover:shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
           <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -568,7 +610,9 @@ const HrUploads = ({ embedded = false }) => {
             <CheckCircle size={28} />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Done</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+              {isManager && selectedProjectId ? "Uploaded / approved" : "Done"}
+            </p>
             <p className="text-3xl font-black text-slate-800 leading-none">{stats.done}</p>
           </div>
         </div>
@@ -577,7 +621,9 @@ const HrUploads = ({ embedded = false }) => {
             <Loader2 size={28} />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Pending</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+              {isManager && selectedProjectId ? "Not OK / pending" : "Pending"}
+            </p>
             <p className="text-3xl font-black text-slate-800 leading-none">{stats.pending}</p>
           </div>
         </div>
@@ -585,6 +631,24 @@ const HrUploads = ({ embedded = false }) => {
 
       {/* Filters */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {isManager && (
+          <label className="min-w-52">
+            <span className="sr-only">Filter uploads by project</span>
+            <select
+              value={selectedProjectId}
+              onChange={(event) => setSelectedProjectId(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-500"
+            >
+              <option value="">All my projects</option>
+              {projectOptions.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.projectName}{project.clientName && project.clientName !== "-" && project.clientName !== project.projectName ? ` · ${project.clientName}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
         {/* Search */}
         <div className="relative flex-1">
           <Search
