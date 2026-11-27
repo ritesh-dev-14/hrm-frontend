@@ -76,6 +76,7 @@ const PendingApprovalsPage = lazy(() => import("../pages/PendingApprovalsPage.js
 const MarketingReportsPage = lazy(() => import("../pages/Manager/MarketingReportsPage.jsx"));
 
 const MarketingReportsApprovalPage = lazy(() => import("../pages/HR/MarketingReportsApprovalPage.jsx"));
+const ManagerIncentiveReport = lazy(() => import("../pages/HR/ManagerIncentiveReport.jsx"));
 const MarketingProjectsPage = lazy(() => import("../pages/MarketingProjectsPage.jsx"));
 const SocialMediaProjectsPage = lazy(() => import("../pages/SocialMediaProjectsPage.jsx"));
 const SEOProjectsPage = lazy(() => import("../pages/SEOProjectsPage.jsx"));
@@ -295,6 +296,17 @@ export const AppRoutes = () => {
                 <MarketingReportsApprovalPage />
               ) : hasRole("MANAGER") ? (
                 <MarketingReportsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/manager-incentives"
+            element={
+              hasRole("ADMIN", "HR", "COORDINATOR") ? (
+                <ManagerIncentiveReport />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

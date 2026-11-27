@@ -28,6 +28,7 @@ import API from "../../services/api";
 import SeoReportModal from "./SeoReportModal";
 import ProfessionalLoader from "../ProfessionalLoader";
 import { notifyError, notifySuccess } from "../../utils/toast";
+import { getLocalDateString } from "../../utils/managerLogoutStatus";
 
 const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
   const [project, setProject] = useState(null);
@@ -61,7 +62,14 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
   const [showSeoModal, setShowSeoModal] = useState(false);
   const [editingSeoReport, setEditingSeoReport] = useState(null);
   const [seoReports, setSeoReports] = useState([]);
+  const [seoUnableSubmissions, setSeoUnableSubmissions] = useState([]);
   const [seoReportsLoading, setSeoReportsLoading] = useState(false);
+  const [showSeoUnableModal, setShowSeoUnableModal] = useState(false);
+  const [seoUnableReason, setSeoUnableReason] = useState("");
+  const [seoUnableDate, setSeoUnableDate] = useState(getLocalDateString());
+  const [seoUnableScreenshot, setSeoUnableScreenshot] = useState(null);
+  const [seoUnableSubmitting, setSeoUnableSubmitting] = useState(false);
+  const [seoUnableError, setSeoUnableError] = useState("");
   const [showSeoPassword, setShowSeoPassword] = useState(false);
 
   // SEO Task states
@@ -227,14 +235,49 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
   const fetchSeoReports = async (pid) => {
     try {
       setSeoReportsLoading(true);
-      const res = await API.get(`/api/seo-reports?projectId=${pid}`);
-      if (res.data?.success) {
-        setSeoReports(res.data.data || []);
-      }
+      const [reportsResponse, unableResponse] = await Promise.all([
+        API.get(`/api/seo-reports?projectId=${pid}`),
+        API.get(`/api/seo-reports/unable-to-submit?projectId=${pid}`),
+      ]);
+      if (reportsResponse.data?.success) setSeoReports(reportsResponse.data.data || []);
+      if (unableResponse.data?.success) setSeoUnableSubmissions(unableResponse.data.data || []);
     } catch (err) {
       console.error("Failed to fetch SEO reports:", err);
     } finally {
       setSeoReportsLoading(false);
+    }
+  };
+
+  const handleSeoUnableSubmit = async (event) => {
+    event.preventDefault();
+    const reason = seoUnableReason.trim();
+    if (!reason || !seoUnableDate || !seoUnableScreenshot) {
+      setSeoUnableError("Report date, reason, and screenshot are required.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("projectId", projectId);
+    formData.append("reportDate", seoUnableDate);
+    formData.append("reason", reason);
+    formData.append("screenshot", seoUnableScreenshot);
+    setSeoUnableSubmitting(true);
+    setSeoUnableError("");
+    try {
+      await API.post("/api/seo-reports/unable-to-submit", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setShowSeoUnableModal(false);
+      setSeoUnableReason("");
+      setSeoUnableScreenshot(null);
+      await fetchSeoReports(projectId);
+      notifySuccess("SEO unable-to-submit reason recorded.");
+    } catch (requestError) {
+      setSeoUnableError(
+        requestError?.response?.data?.message || "Failed to submit the reason.",
+      );
+    } finally {
+      setSeoUnableSubmitting(false);
     }
   };
 
@@ -786,12 +829,27 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
                       )}
                     </h3>
                     {isManager && (
-                      <button
-                        onClick={() => setShowSeoModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition shadow-sm shadow-emerald-200"
-                      >
-                        <Plus size={13} /> Submit Report
-                      </button>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          onClick={() => setShowSeoModal(true)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition shadow-sm shadow-emerald-200"
+                        >
+                          <Plus size={13} /> Submit Report
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSeoUnableDate(getLocalDateString());
+                            setSeoUnableReason("");
+                            setSeoUnableScreenshot(null);
+                            setSeoUnableError("");
+                            setShowSeoUnableModal(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 text-xs font-semibold transition hover:bg-orange-100"
+                        >
+                          Unable to submit?
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -915,6 +973,33 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
                       ))}
                     </div>
                   )}
+                  {seoUnableSubmissions.map((submission) => (
+                    <div
+                      key={submission.id}
+                      className="flex items-start gap-4 rounded-2xl border border-orange-200 bg-orange-50/60 p-4"
+                    >
+                      <a
+                        href={submission.screenshotUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-orange-200 bg-white"
+                      >
+                        <img
+                          src={submission.screenshotUrl}
+                          alt="Unable-to-submit evidence"
+                          className="h-full w-full object-cover"
+                        />
+                      </a>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-orange-800">
+                          <span>Unable to submit</span>
+                          <span>{formatDate(submission.reportDate)}</span>
+                          {submission.manager?.name && <span>· {submission.manager.name}</span>}
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{submission.reason}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -1176,6 +1261,81 @@ const ProjectDetailsView = ({ projectId, onBack, userRole = "" }) => {
           </div>
         </div>
       </div>
+
+      {showSeoUnableModal && (
+        <div className="fixed inset-0 z-[105] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={handleSeoUnableSubmit}
+            className="w-full max-w-lg space-y-4 rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Unable to submit SEO report?</h2>
+                <p className="mt-1 text-sm text-slate-500">Submit a reason and screenshot as evidence.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSeoUnableModal(false)}
+                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+                aria-label="Close unable-to-submit form"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {seoUnableError && (
+              <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{seoUnableError}</p>
+            )}
+            <label className="block text-sm font-semibold text-slate-700">
+              Report date
+              <input
+                type="date"
+                value={seoUnableDate}
+                onChange={(event) => setSeoUnableDate(event.target.value)}
+                required
+                className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-slate-700">
+              Reason
+              <textarea
+                value={seoUnableReason}
+                onChange={(event) => setSeoUnableReason(event.target.value)}
+                required
+                rows={4}
+                maxLength={2000}
+                placeholder="Explain why you could not submit the SEO report."
+                className="mt-1 w-full resize-y rounded-xl border border-slate-200 p-3 text-sm"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-slate-700">
+              Screenshot evidence
+              <input
+                type="file"
+                accept="image/*"
+                required
+                onChange={(event) => setSeoUnableScreenshot(event.target.files?.[0] || null)}
+                className="mt-1 block w-full rounded-xl border border-slate-200 p-3 text-sm"
+              />
+            </label>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSeoUnableModal(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={seoUnableSubmitting}
+                className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {seoUnableSubmitting ? "Submitting..." : "Submit reason"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* SEO REPORT MODAL */}
       {showSeoModal && (

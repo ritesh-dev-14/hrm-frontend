@@ -72,6 +72,7 @@ export default function PerformanceMarketingManagerView({
   const [showUnableReasonForm, setShowUnableReasonForm] = useState(false);
   const [unableReason, setUnableReason] = useState("");
   const [unableReasonDate, setUnableReasonDate] = useState(getLocalDateString());
+  const [unableReasonScreenshot, setUnableReasonScreenshot] = useState(null);
   const [submittingUnableReason, setSubmittingUnableReason] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -274,21 +275,25 @@ export default function PerformanceMarketingManagerView({
   const handleUnableReasonSubmit = async (event) => {
     event.preventDefault();
     const reason = unableReason.trim();
-    if (!campaignId || !projectId || !unableReasonDate || !reason) {
-      showToast("error", "Choose a report date and enter a reason.");
+    if (!campaignId || !projectId || !unableReasonDate || !reason || !unableReasonScreenshot) {
+      showToast("error", "Choose a report date, enter a reason, and attach a screenshot.");
       return;
     }
 
     setSubmittingUnableReason(true);
     try {
-      await API.post(`/api/campaigns/${campaignId}/reports`, {
-        projectId,
-        clientName: project?.clientName || project?.projectName || "",
-        date: unableReasonDate,
-        unableToSubmitReason: reason,
+      const formData = new FormData();
+      formData.append("projectId", projectId);
+      formData.append("clientName", project?.clientName || project?.projectName || "");
+      formData.append("date", unableReasonDate);
+      formData.append("unableToSubmitReason", reason);
+      formData.append("screenshot", unableReasonScreenshot);
+      await API.post(`/api/campaigns/${campaignId}/reports`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       setShowUnableReasonForm(false);
       setUnableReason("");
+      setUnableReasonScreenshot(null);
       await loadData();
       showToast("success", "Your reason was submitted to HR.");
     } catch (err) {
@@ -392,6 +397,17 @@ export default function PerformanceMarketingManagerView({
               placeholder="Explain why you could not submit this report."
               className="mt-1 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
             />
+            <label htmlFor="campaign-unable-report-screenshot" className="mt-4 block text-sm font-semibold text-slate-700">
+              Screenshot evidence
+            </label>
+            <input
+              id="campaign-unable-report-screenshot"
+              type="file"
+              accept="image/*"
+              required
+              onChange={(event) => setUnableReasonScreenshot(event.target.files?.[0] || null)}
+              className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm"
+            />
             <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
@@ -468,6 +484,7 @@ export default function PerformanceMarketingManagerView({
                     onClick={() => {
                       setUnableReason("");
                       setUnableReasonDate(getLocalDateString());
+                      setUnableReasonScreenshot(null);
                       setShowUnableReasonForm(true);
                     }}
                     className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 transition hover:bg-orange-100"

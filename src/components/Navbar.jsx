@@ -87,6 +87,7 @@ const NAV_CONFIG = [
   { id: "payslips", label: "Payslips", icon: CreditCard, path: "/payslips", roles: ["HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "uploads", label: "Uploads", icon: FolderOpen, path: "/uploads", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "EA", "COORDINATOR"] },
   { id: "marketing", label: "Marketing Reports", icon: TrendingUp, path: "/marketing", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
+  { id: "manager-incentives", label: "Manager Incentives", icon: TrendingUp, path: "/manager-incentives", roles: ["ADMIN", "HR", "COORDINATOR"] },
   { id: "daily-reports", label: "Daily Reports", icon: Megaphone, path: "/daily-reports", roles: ["ADMIN", "HR", "EA", "COORDINATOR"] },
   { id: "messages", label: "Messages", icon: MessageSquareText, path: "/messages", roles: ["ADMIN", "HR", "MANAGER", "EMPLOYEE", "COORDINATOR", "EA", "QA"] },
   { id: "department-reports", label: "Department Reports", icon: BarChart2, path: "/department-reports", roles: ["HR", "EA"] },
