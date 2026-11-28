@@ -1626,11 +1626,12 @@ export default function AdminControlTower({
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
                                 day.uploadStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                day.uploadStatus === 'PENDING' && hasSubmittedLinks ? 'bg-blue-100 text-blue-700' :
                                 day.uploadStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' :
                                 'bg-slate-100 text-slate-500'
                               }`}>
                                 {day.uploadStatus === "PENDING" && hasSubmittedLinks
-                                  ? "SUBMITTED · PENDING APPROVAL"
+                                  ? "SUBMITTED"
                                   : day.uploadStatus || "NOT UPLOADED"}
                               </span>
                             </td>
