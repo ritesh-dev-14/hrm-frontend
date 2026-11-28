@@ -1590,72 +1590,80 @@ export default function AdminControlTower({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {selectedSocialCalendarDays.map((day, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition">
-                          <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
-                            {new Date(day.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-slate-700">
-                            {day.uploadedAt
-                              ? new Date(day.uploadedAt).toLocaleDateString()
-                              : <span className="text-slate-400">-</span>}
-                          </td>
-                          <td className="px-4 py-3 text-slate-800">
-                            {day.title || <span className="text-slate-400 italic">No Title</span>}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-1">
-                              {day.reelType && day.reelType !== 'NONE' && (
-                                <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-bold rounded">REEL</span>
-                              )}
-                              {day.postType && day.postType !== 'NONE' && (
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded">POST</span>
-                              )}
-                              {(!day.reelType || day.reelType === 'NONE') && (!day.postType || day.postType === 'NONE') && (
-                                <span className="text-slate-400 text-xs italic">Unspecified</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
-                              day.uploadStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
-                              day.uploadStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                              'bg-slate-100 text-slate-500'
-                            }`}>
-                              {day.uploadStatus || 'NOT UPLOADED'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            {day.uploadStatus === "APPROVED" ? (
-                              <div className="flex min-w-40 flex-col items-start gap-1.5">
-                                {[
-                                  ...(day.videoUploadLinks || []).map((link) => ({ link, type: "Reel" })),
-                                  ...(day.contentUploadLinks || []).map((link) => ({ link, type: "Post" })),
-                                ].map(({ link, type }, linkIndex) => {
-                                  const safeUrl = getSafeExternalUrl(link);
-                                  return safeUrl ? (
-                                    <a
-                                      key={`${day.id}-${type}-${linkIndex}`}
-                                      href={safeUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex max-w-64 items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                                    >
-                                      <Link2 size={13} className="shrink-0" />
-                                      <span className="truncate">{type} link {linkIndex + 1}</span>
-                                    </a>
-                                  ) : null;
-                                })}
-                                {!(day.videoUploadLinks || []).some((link) => getSafeExternalUrl(link))
-                                  && !(day.contentUploadLinks || []).some((link) => getSafeExternalUrl(link))
-                                  && <span className="text-xs text-slate-400">No links submitted</span>}
+                      {selectedSocialCalendarDays.map((day, idx) => {
+                        const submittedLinks = [
+                          ...(day.videoUploadLinks || []).map((link) => ({ link, type: "Reel" })),
+                          ...(day.contentUploadLinks || []).map((link) => ({ link, type: "Post" })),
+                        ].filter(({ link }) => String(link || "").trim());
+                        const hasSubmittedLinks = submittedLinks.length > 0;
+
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50/50 transition">
+                            <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
+                              {new Date(day.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-slate-700">
+                              {day.uploadedAt
+                                ? new Date(day.uploadedAt).toLocaleDateString()
+                                : <span className="text-slate-400">-</span>}
+                            </td>
+                            <td className="px-4 py-3 text-slate-800">
+                              {day.title || <span className="text-slate-400 italic">No Title</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-1">
+                                {day.reelType && day.reelType !== 'NONE' && (
+                                  <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-bold rounded">REEL</span>
+                                )}
+                                {day.postType && day.postType !== 'NONE' && (
+                                  <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded">POST</span>
+                                )}
+                                {(!day.reelType || day.reelType === 'NONE') && (!day.postType || day.postType === 'NONE') && (
+                                  <span className="text-slate-400 text-xs italic">Unspecified</span>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-xs text-slate-400">Available after approval</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
+                                day.uploadStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                day.uploadStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                'bg-slate-100 text-slate-500'
+                              }`}>
+                                {day.uploadStatus === "PENDING" && hasSubmittedLinks
+                                  ? "SUBMITTED · PENDING APPROVAL"
+                                  : day.uploadStatus || "NOT UPLOADED"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              {hasSubmittedLinks ? (
+                                <div className="flex min-w-40 flex-col items-start gap-1.5">
+                                  {submittedLinks.map(({ link, type }, linkIndex) => {
+                                    const safeUrl = getSafeExternalUrl(link);
+                                    return safeUrl ? (
+                                      <a
+                                        key={`${day.id}-${type}-${linkIndex}`}
+                                        href={safeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex max-w-64 items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                                      >
+                                        <Link2 size={13} className="shrink-0" />
+                                        <span className="truncate">{type} link {linkIndex + 1}</span>
+                                      </a>
+                                    ) : (
+                                      <span key={`${day.id}-${type}-${linkIndex}`} className="text-xs text-slate-500 break-all">
+                                        {type} link {linkIndex + 1}: {link}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">No links submitted</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {(!selectedSocialSheet.days || selectedSocialSheet.days.length === 0) && (
                         <tr>
                           <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
