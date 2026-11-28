@@ -67,6 +67,10 @@ const hasPlannedCalendarContent = (day) =>
       return normalizedValue && normalizedValue.toUpperCase() !== "NONE";
     });
 
+const hasSubmittedUploadLinks = (day) =>
+  [...(day.contentUploadLinks || []), ...(day.videoUploadLinks || [])]
+    .some((link) => String(link || "").trim());
+
 const isDeactivatedProject = (project) =>
   String(project?.status || "").toUpperCase() === "PAUSED";
 
@@ -283,7 +287,7 @@ export default function AdminControlTower({
     );
     const uploadedContent = (sheet?.days || []).reduce(
       (counts, day) => {
-        if (day.uploadStatus !== "APPROVED") return counts;
+        if (day.uploadStatus === "REJECTED") return counts;
         counts.reels += (day.videoUploadLinks || []).filter((link) => String(link || "").trim()).length;
         counts.posts += (day.contentUploadLinks || []).filter((link) => String(link || "").trim()).length;
         return counts;
@@ -295,7 +299,8 @@ export default function AdminControlTower({
       return plannedDate
         && plannedDate <= socialDelayCutoffDate
         && hasPlannedCalendarContent(day)
-        && day.uploadStatus !== "APPROVED";
+        && day.uploadStatus !== "APPROVED"
+        && (day.uploadStatus === "REJECTED" || !hasSubmittedUploadLinks(day));
     });
 
     return {
@@ -367,7 +372,9 @@ export default function AdminControlTower({
         "Reel Type": day.reelType && day.reelType !== "NONE" ? day.reelType : "",
         "Post Type": day.postType && day.postType !== "NONE" ? day.postType : "",
         "Video Type": day.videoType && day.videoType !== "NONE" ? day.videoType : "",
-        Status: day.uploadStatus || "NOT UPLOADED",
+        Status: day.uploadStatus === "PENDING" && hasSubmittedUploadLinks(day)
+          ? "SUBMITTED"
+          : day.uploadStatus || "NOT UPLOADED",
         "Uploaded On": getCalendarDateValue(day.uploadedAt),
         "Reel Links": (day.videoUploadLinks || [])
           .filter((link) => String(link || "").trim())
